@@ -5,7 +5,6 @@ import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import Label from "../../../components/form/Label";
 import Select from "../../../components/form/Select";
-import BasicTableOne from "../../../components/tables/WhatsappLeadTable/WhatsappTableLead";
 import Alert, { AlertProps } from "../../../components/ui/alert/Alert";
 import Button from "../../../components/ui/button/Button";
 import { Modal } from "../../../components/ui/modal";
@@ -15,6 +14,8 @@ import { CustomerRequestDto } from "../../../services/model/Dto/Request/Customer
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
 import { postCustomerAsync } from "../../../services/service/CustomerService";
+import WhatsappTableLead from "../../../components/tables/whatsappLeadTable/WhatsappTableLead";
+import CustomerTable from "../../../components/tables/customer/CustomerTable";
 
 export default function Customer() {
 
@@ -387,7 +388,7 @@ export default function Customer() {
             )}
 
             <div className="space-y-6">
-                <BasicTableOne />
+                <CustomerTable />
             </div>
 
         </>

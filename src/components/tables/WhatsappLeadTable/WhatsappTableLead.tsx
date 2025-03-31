@@ -12,7 +12,7 @@ import Message from "../../whatsapp/message";
 import { GroupMessage } from "../../../services/model/GroupMessage";
 import { useModal } from "../../../hooks/useModal";
 
-export default function BasicTableOne() {
+export default function WhatsappTableLead() {
 
   const { isOpen, openModal, closeModal } = useModal();
 

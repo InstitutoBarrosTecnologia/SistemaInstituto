@@ -1,7 +1,7 @@
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
-import BasicTableOne from "../../components/tables/WhatsappLeadTable/WhatsappTableLead";
+import WhatsappTableLead from "../../components/tables/whatsappLeadTable/WhatsappTableLead";
 
 export default function BasicTables() {
   return (
@@ -13,7 +13,7 @@ export default function BasicTables() {
       <PageBreadcrumb pageTitle="Whatsapp" />
       <div className="space-y-6">
         <ComponentCard title="Atendimentos">
-          <BasicTableOne />
+          <WhatsappTableLead />
         </ComponentCard>
       </div>
     </>

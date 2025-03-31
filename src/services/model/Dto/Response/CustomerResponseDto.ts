@@ -4,4 +4,7 @@ export interface CustomerResponseDto {
     email?: string;
     sexo: number;
     cpf?: string;
+    status?: string;
+    sessao?: string;
+    phoneNumber?: string;
 }
