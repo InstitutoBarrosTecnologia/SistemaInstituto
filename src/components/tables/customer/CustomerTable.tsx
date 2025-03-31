@@ -54,7 +54,7 @@ export default function CustomerTable() {
         formData.sexo = Number.parseInt(value);
     };
 
-    const handleSelectChangeEmailEdit = (value: string) => {
+    const handleSelectChangeEmailEdit = () => {
 
     };
 

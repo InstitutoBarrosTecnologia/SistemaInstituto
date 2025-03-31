@@ -14,10 +14,9 @@ import { CustomerRequestDto } from "../../../services/model/Dto/Request/Customer
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
 import { postCustomerAsync } from "../../../services/service/CustomerService";
-import WhatsappTableLead from "../../../components/tables/whatsappLeadTable/WhatsappTableLead";
 import CustomerTable from "../../../components/tables/customer/CustomerTable";
 
-export default function Customer() {
+export default function CustomerComponent() {
 
     const { isOpen, openModal, closeModal } = useModal();
     const [historicoTemp, setHistoricoTemp] = useState("");

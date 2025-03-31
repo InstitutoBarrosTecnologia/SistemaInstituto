@@ -17,7 +17,7 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
-import Customer from "./pages/Forms/Customer/customer";
+import Customer from "./pages/Forms/Customer/CustomerComponent";
 
 export default function App() {
   return (
