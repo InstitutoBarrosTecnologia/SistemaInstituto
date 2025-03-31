@@ -18,7 +18,7 @@ import Select from "../../form/Select";
 import { useState } from "react";
 import TextArea from "../../form/input/TextArea";
 
-export default function CustomerTable() {
+export default function CustomerTableComponent() {
 
     const [formData, setFormData] = useState<CustomerResponseDto>({
         id: "",

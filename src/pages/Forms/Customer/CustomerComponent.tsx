@@ -14,7 +14,7 @@ import { CustomerRequestDto } from "../../../services/model/Dto/Request/Customer
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
 import { postCustomerAsync } from "../../../services/service/CustomerService";
-import CustomerTable from "../../../components/tables/customer/CustomerTable";
+import CustomerTableComponent from "../../../components/tables/CustomerComponent/CustomerTableComponent";
 
 export default function CustomerComponent() {
 
@@ -387,7 +387,7 @@ export default function CustomerComponent() {
             )}
 
             <div className="space-y-6">
-                <CustomerTable />
+                <CustomerTableComponent />
             </div>
 
         </>
