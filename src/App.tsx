@@ -12,12 +12,12 @@ import Buttons from "./pages/UiElements/Buttons";
 import LineChart from "./pages/Charts/LineChart";
 import BarChart from "./pages/Charts/BarChart";
 import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
-import FormElements from "./pages/Forms/FormElements";
+import BasicTables from "./pages/Tables/WhatsappLead";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
+import Customer from "./pages/Forms/Customer/customer";
 
 export default function App() {
   return (
@@ -35,7 +35,7 @@ export default function App() {
             <Route path="/blank" element={<Blank />} />
 
             {/* Forms */}
-            <Route path="/form-elements" element={<FormElements />} />
+            <Route path="/customer" element={<Customer />} />
 
             {/* Tables */}
             <Route path="/basic-tables" element={<BasicTables />} />

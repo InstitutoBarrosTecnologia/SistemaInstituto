@@ -38,7 +38,7 @@ const navItems: NavItem[] = [
   {
     name: "Gestão",
     icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
+    subItems: [{ name: "Clientes", path: "/customer", pro: false }],
   },
   {
     name: "Whatsapp",

@@ -1,12 +1,13 @@
 import { Link } from "react-router";
 
-interface AlertProps {
+export interface AlertProps {
   variant: "success" | "error" | "warning" | "info"; // Alert type
   title: string; // Title of the alert
   message: string; // Message of the alert
   showLink?: boolean; // Whether to show the "Learn More" link
   linkHref?: string; // Link URL
-  linkText?: string; // Link text
+  linkText?: string; // Link text  
+  customFont?: string; // Optional custom font family
 }
 
 const Alert: React.FC<AlertProps> = ({
