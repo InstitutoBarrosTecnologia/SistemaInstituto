@@ -3,17 +3,59 @@ import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
-import { useNavigate,  } from "react-router";
+import { useNavigate, } from "react-router";
+import { postLoginUserAsync } from "../../services/service/AuthService";
+import { useMutation } from "@tanstack/react-query";
 
 export default function SignInForm() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    userName: ""
+  });
 
-  const redirecionarHome = () => {
-    // Simula login bem-sucedido
-    localStorage.setItem("token", "fake-jwt-token");
-    navigate("/"); // Redireciona para home
+  const handleLoginSimulado = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Simulando um "token fake" e dados do usuário
+    const fakeToken = "fake-jwt-token-1234567890";
+    const fakeRole = "Administrador";
+    const fakeUserName = "usuarioteste";
+
+    // Salvando no localStorage
+    localStorage.setItem("token", fakeToken);
+    localStorage.setItem("role", fakeRole);
+    localStorage.setItem("username", fakeUserName);
+
+    // Redirecionando para a home (ou dashboard)
+    navigate("/", { replace: true });
   };
+
+  const mutation = useMutation({
+    mutationFn: postLoginUserAsync,
+    onSuccess: (response) => {
+      const { status, data } = response;
+
+      if (status === 200 && data) {
+        localStorage.setItem("token", data.accessToken ?? "");
+        localStorage.setItem("role", data.roles[0]);
+        localStorage.setItem("username", data.userName);
+
+        navigate("/", { replace: true });
+      }
+    },
+    onError: (error) => {
+      console.error("Erro ao enviar dados:", error);
+    }
+  });
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    mutation.mutate(formData);
+  };
+
   return (
     <div className="flex flex-col flex-1">
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
@@ -27,22 +69,29 @@ export default function SignInForm() {
             </p>
           </div>
           <div>
-            <form>
+            <form onSubmit={handleLogin}>
               <div className="space-y-6">
                 <div>
                   <Label>
-                    E-mail <span className="text-error-500">*</span>{" "}
+                    E-mail <span className="text-error-500">*</span>
                   </Label>
-                  <Input placeholder="info@gmail.com" />
+                  <Input
+                    type="text"
+                    placeholder="info@gmail.com"
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    value={formData.email}
+                  />
                 </div>
                 <div>
                   <Label>
-                    Senha <span className="text-error-500">*</span>{" "}
+                    Senha <span className="text-error-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Entre com sua senha"
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      value={formData.password}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -56,9 +105,10 @@ export default function SignInForm() {
                     </span>
                   </div>
                 </div>
+
                 <div>
-                  <Button className="w-full" size="sm" onClick={redirecionarHome}>
-                    Login
+                  <Button className="w-full" size="sm">
+                    Logar
                   </Button>
                 </div>
               </div>
