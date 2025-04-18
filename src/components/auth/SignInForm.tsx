@@ -16,23 +16,6 @@ export default function SignInForm() {
     userName: ""
   });
 
-  const handleLoginSimulado = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Simulando um "token fake" e dados do usuário
-    const fakeToken = "fake-jwt-token-1234567890";
-    const fakeRole = "Administrador";
-    const fakeUserName = "usuarioteste";
-
-    // Salvando no localStorage
-    localStorage.setItem("token", fakeToken);
-    localStorage.setItem("role", fakeRole);
-    localStorage.setItem("username", fakeUserName);
-
-    // Redirecionando para a home (ou dashboard)
-    navigate("/", { replace: true });
-  };
-
   const mutation = useMutation({
     mutationFn: postLoginUserAsync,
     onSuccess: (response) => {

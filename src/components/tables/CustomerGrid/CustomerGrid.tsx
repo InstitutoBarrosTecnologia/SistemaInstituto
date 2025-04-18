@@ -15,135 +15,64 @@ import Label from "../../form/Label";
 import Input from "../../form/input/InputField";
 import Button from "../../ui/button/Button";
 import Select from "../../form/Select";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TextArea from "../../form/input/TextArea";
 import FormCustomer from "../../../pages/Forms/Customer/FormCustomer";
-import { getCustomerIdAsync } from "../../../services/service/CustomerService";
+import { getAllCustomersAsync } from "../../../services/service/CustomerService";
+import { CustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
 
 export default function CustomerTableComponent() {
+    const [selectedCustomer, setSelectedCustomer] = useState<CustomerRequestDto | undefined>(undefined);
 
-    const [formData, setFormDataResponse] = useState<CustomerResponseDto>(
-        {
-            id: "",
-            nome: "",
-            rg: "",
-            dataNascimento: "",
-            imc: undefined,
-            altura: undefined,
-            peso: undefined,
-            sexo: 0,
-            endereco: {
-                rua: "",
-                numero: "",
-                bairro: "",
-                cidade: "",
-                estado: "",
-                cep: "",
-            },
-            email: "",
-            nrTelefone: "",
-            patologia: "",
-            cpf: "",
-            redeSocial: "",
-            status: 0
-        }
-    );
+    const [clientes, setClientes] = useState<CustomerResponseDto[]>([]);
+    const [loading, setLoading] = useState(true);
+
 
     const { isOpen, openModal, closeModal } = useModal();
     const { isOpen: isOpenEmail, openModal: openModalEmail, closeModal: closeModalEmail } = useModelEmail();
     const { isOpen: isOpenDelete, openModal: openModalDelete, closeModal: closeModalDelete } = useModelDelete();
 
-    const handleOpenModal = (id: string) => {
-        loadCustomerData(id);
+    const handleOpenModal = (customer: CustomerRequestDto) => {
+        setSelectedCustomer(customer);
         openModal();
     };
+
     const handleOpenModalDelete = () => {
         openModalDelete();
     };
 
+    const handleCloseModal = () => {
+        setSelectedCustomer(undefined);
+        closeModal(); // se você tiver definido esse `closeModal` via hook
+    };
+
     const handleOpenModalEmail = () => openModalEmail();
-
-    // DROPDOWNS / SELECTS ---------------
-    const handleSelectChangeEdit = (value: number) => {
-        formData.status = value;
-    };
-
-    const handleSelectChangeSexo = (value: string) => {
-        formData.sexo = Number.parseInt(value);
-    };
 
     const handleSelectChangeEmailEdit = () => {
 
     };
 
-    const customers: CustomerResponseDto[] = [
-        {
-            id: "1",
-            nome: "Marina Oliveira",
-            email: "marina.oliveira@example.com",
-            sexo: 1,
-            cpf: "123.456.789-00",
-            status: 0,
-            dataNascimento: "1990-01-01"
-        },
-        {
-            id: "2",
-            nome: "Carlos Eduardo",
-            email: "carlos.eduardo@example.com",
-            sexo: 0,
-            cpf: "987.654.321-00",
-            status: 1,
-            dataNascimento: "1985-06-15"
-        },
-        {
-            id: "3",
-            nome: "Fernanda Lima",
-            email: "fernanda.lima@example.com",
-            sexo: 1,
-            cpf: "321.987.654-00",
-            status: 2,
-            dataNascimento: "1992-03-22"
-        },
-        {
-            id: "4",
-            nome: "Rodrigo Alves",
-            email: "rodrigo.alves@example.com",
-            sexo: 0,
-            cpf: "654.321.987-00",
-            status: 4,
-            dataNascimento: "1988-11-10"
-        },
-        {
-            id: "5",
-            nome: "Patrícia Gomes",
-            email: "patricia.gomes@example.com",
-            sexo: 1,
-            cpf: "789.123.456-00",
-            status: 4,
-            dataNascimento: "1991-07-05"
-        },
-        {
-            id: "6",
-            nome: "João Pedro",
-            email: "joao.pedro@example.com",
-            sexo: 0,
-            cpf: "159.753.486-00",
-            status: 5,
-            nrTelefone: "(11) 90011-9911",
-            dataNascimento: "1989-02-27"
-        },
-        {
-            id: "7",
-            nome: "Aline Ferreira",
-            email: "aline.ferreira@example.com",
-            sexo: 1,
-            cpf: "852.369.741-00",
-            status: 6,
-            nrTelefone: "(11) 90011-9911",
-            dataNascimento: "1993-12-09"
-        }
-    ];
 
+    useEffect(() => {
+        const fetchClientes = async () => {
+            try {
+                const response = await getAllCustomersAsync();
+                if (response) {
+                    setClientes(response);
+                }
+            } catch (error) {
+                console.error("Erro ao buscar clientes:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchClientes();
+    }, []);
+
+    if (loading) {
+        return <p className="p-4">Carregando pacientes...</p>;
+    }
 
     const optionsEmailEdit = [
         { value: "0", label: "Comercial" },
@@ -152,16 +81,6 @@ export default function CustomerTableComponent() {
         { value: "3", label: "Fisio" }
     ];
 
-    const loadCustomerData = async (id: string) => {
-        try {
-            const customer = await getCustomerIdAsync(id);
-            if (typeof customer !== "string")
-                setFormDataResponse(customer!);
-            else console.log(customer);
-        } catch (error) {
-            console.error("Erro ao buscar o lead:", error);
-        }
-    };
 
     return (
         <>
@@ -198,7 +117,7 @@ export default function CustomerTableComponent() {
                         </TableHeader>
 
                         <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                            {customers.map((customer) => (
+                            {clientes.map((customer) => (
                                 <TableRow key={customer.id}>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400t">
                                         {customer.nome}
@@ -245,7 +164,7 @@ export default function CustomerTableComponent() {
                                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             <button
-                                                onClick={() => handleOpenModal(customer.id!)}
+                                                onClick={() => handleOpenModal(customer)}
                                                 rel="noopener"
                                                 className="p-3 flex h-11 w-11 items-center justify-center rounded-full border border-yellow-300 bg-white text-sm font-medium text-yellow-700 shadow-theme-xs hover:bg-yellow-50 hover:text-yellow-800 dark:border-yellow-700 dark:bg-yellow-800 dark:text-yellow-400 dark:hover:bg-white/[0.03] dark:hover:text-yellow-200"
                                             >
@@ -276,7 +195,7 @@ export default function CustomerTableComponent() {
                                             </button>
 
                                             <a
-                                                href={`https://wa.me/+55${customer.nrTelefone?.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')}?text=Transforme%20seu%20Neg%C3%B3cio%20com%20a%20InnovaSfera!%20%F0%9F%9A%80%0A%0AOl%C3%A1%20%7BCliente%7D%20tudo%20bem%3F%20Somos%20a%20InnovaSfera%2C%20somos%20especializados%20em%20solu%C3%A7%C3%B5es%20digitais%20personalizadas%20para%20empresas%20que%20buscam%20alavancar%20seus%20resultados%2C%20expandir%20sua%20presen%C3%A7a%20online%20e%20melhorar%20mais%20ainda%20seus%20esfor%C3%A7os.%20Se%20voc%C3%AA%20precisa%20de%20um%20site%20dedicado%20para%20mostrar%20o%20melhor%20do%20seu%20neg%C3%B3cio%2C%20integrar%20um%20chatbot%20no%20WhatsApp%20para%20atendimento%20%C3%A1gil%20ou%20de%20consultoria%20estrat%C3%A9gica%20para%20impulsionar%20suas%20vendas%20e%20resultados%2C%20temos%20a%20solu%C3%A7%C3%A3o%20certa%20para%20voc%C3%AA!%0A%0A%F0%9F%94%B9%20Cria%C3%A7%C3%A3o%20de%20Sites%3A%20Websites%20otimizados%20e%20responsivos%2C%20criados%20especialmente%20para%20atender%20%C3%A0s%20necessidades%20do%20seu%20neg%C3%B3cio.%0A%0A%F0%9F%94%B9%20Chatbot%20no%20WhatsApp%3A%20Automatize%20o%20atendimento%20e%20se%20conecte%20com%20seus%20clientes%20de%20forma%20r%C3%A1pida%20e%20eficiente.%0A%0A%F0%9F%94%B9%20Consultoria%20Estrat%C3%A9gica%3A%20Estrat%C3%A9gias%20para%20alavancar%20seu%20neg%C3%B3cio%20e%20conquistar%20resultados%20extraordin%C3%A1rios%2C%20com%20foco%20no%20crescimento%20e%20na%20inova%C3%A7%C3%A3o.%0A%0AN%C3%A3o%20deixe%20de%20aproveitar%20as%20oportunidades%20que%20a%20transforma%C3%A7%C3%A3o%20digital%20oferece!%20Entre%20em%20contato%20com%20a%20gente%20e%20saiba%20como%20podemos%20impulsionar%20o%20seu%20neg%C3%B3cio.%0A%0A%F0%9F%93%9E%2011%2096510-8080%0A%F0%9F%8C%90%20innova-sfera-site.vercel.app%0A%0AVamos%20juntos%20inovar%20e%20crescer!%20%E2%9C%A8`}
+                                                href={`https://wa.me/+55${customer.nrTelefone?.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')}?text=Ol%C3%A1%20tudo%20bem%3F%20Somos%20a%20equipe%20do%20Instituto%20Barros%20%F0%9F%98%80`}
                                                 target="_blank"
                                                 rel="noopener"
                                                 className="p-3 flex h-11 w-11 items-center justify-center rounded-full border border-green-300 bg-white text-sm font-medium text-green-700 shadow-theme-xs hover:bg-green-50 hover:text-green-800 dark:border-green-700 dark:bg-green-800 dark:text-green-400 dark:hover:bg-white/[0.03] dark:hover:text-green-200"
@@ -304,11 +223,9 @@ export default function CustomerTableComponent() {
                 </div>
             </div>
 
-            <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
-                <FormCustomer data={formData} edit={!!formData?.id} closeModal={closeModal} />
-
+            <Modal isOpen={isOpen} onClose={handleCloseModal} className="max-w-[700px] m-4">
+                <FormCustomer data={selectedCustomer} edit={!!selectedCustomer?.id} closeModal={handleCloseModal} />
             </Modal>
-
             <Modal isOpen={isOpenEmail} onClose={closeModalEmail} className="max-w-[700px] m-4">
                 <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
                     <form>
@@ -398,7 +315,7 @@ export default function CustomerTableComponent() {
                 <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
                     <div className="px-2 pr-14">
                         <h4 className="mb-2 text-2xl font-semibold text-center text-gray-800 dark:text-white/90">
-                            Apagar Cliente
+                            Apagar Paciente
                         </h4>
                     </div>
                     <form className="flex flex-col" >

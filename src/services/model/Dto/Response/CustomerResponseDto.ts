@@ -1,13 +1,23 @@
 export interface AndressResponseDto {
     rua?: string;
     numero?: string;
+    cep?: string;
+    complemento?: string;
     bairro?: string;
     cidade?: string;
     estado?: string;
-    cep?: string;
-}
-export interface CustomerResponseDto {
-id?: string;
+  }
+  
+  export interface HistoryCustomerResponseDto {
+    assunto?: string;
+    descricao?: string;
+    dataAtualizacao?: string; 
+    clienteId?: string;
+    cliente?: CustomerResponseDto;
+  }
+  
+  export interface CustomerResponseDto {
+    id?: string;
     nome: string;
     rg?: string;
     dataNascimento: string;
@@ -22,4 +32,5 @@ id?: string;
     cpf: string;
     redeSocial?: string;
     status: number;
-}
+    historico?: HistoryCustomerResponseDto[]; 
+  }

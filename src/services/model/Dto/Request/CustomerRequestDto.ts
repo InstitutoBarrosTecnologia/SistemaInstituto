@@ -5,9 +5,17 @@ export interface AndressRequestDto {
     cidade?: string;
     estado?: string;
     cep?: string;
-}
-
-export interface CustomerRequestDto {
+  }
+  
+  export interface HistoryCustomerRequestDto {
+    assunto?: string;
+    descricao?: string;
+    dataAtualizacao?: string; // em C# é DateTime
+    clienteId?: string;
+    cliente?: CustomerRequestDto;
+  }
+  
+  export interface CustomerRequestDto {
     id?: string;
     nome: string;
     rg?: string;
@@ -23,4 +31,5 @@ export interface CustomerRequestDto {
     cpf: string;
     redeSocial?: string;
     status: number;
-}
+    historico?: HistoryCustomerRequestDto[]; // Adicionado conforme o DTO C#
+  }

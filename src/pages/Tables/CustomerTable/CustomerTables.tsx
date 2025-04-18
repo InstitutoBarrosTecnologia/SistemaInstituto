@@ -65,7 +65,7 @@ export default function CustomerTables() {
                             ></path>
                         </svg>
                     </span>
-                    Cadastrar Cliente
+                    Cadastrar Paciente
                 </button>
             </div>
             <div className=" mb-6">
