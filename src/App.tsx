@@ -19,6 +19,7 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import ProtectedRoute from "./ProtectedRoute";
 import CustomerTables from "./pages/Tables/CustomerTable/CustomerTables";
+import ServiceCategoryTables from "./pages/Tables/ServicesTable/ServiceCategoryTables";
 
 export default function App() {
   return (
@@ -43,9 +44,12 @@ export default function App() {
 
           {/* Forms */}
           <Route path="/customer" element={<CustomerTables />} />
+          
 
           {/* Tables */}
           <Route path="/basic-tables" element={<BasicTables />} />
+          <Route path="/form-cat-servico" element={<ServiceCategoryTables />} />
+          {/* <Route path="/form-sub-cat-servico" element={<SubServiceCategoryTable />} /> */}
 
           {/* Ui Elements */}
           <Route path="/alerts" element={<Alerts />} />

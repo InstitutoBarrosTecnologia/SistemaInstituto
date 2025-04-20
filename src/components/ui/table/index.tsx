@@ -31,6 +31,15 @@ interface TableCellProps {
   className?: string; // Optional className for styling
 }
 
+
+// Props for PaginationProps
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
+}
+
 // Table Component
 const Table: React.FC<TableProps> = ({ children, className }) => {
   return <table className={`min-w-full  ${className}`}>{children}</table>;
@@ -61,4 +70,33 @@ const TableCell: React.FC<TableCellProps> = ({
   return <CellTag className={` ${className}`}>{children}</CellTag>;
 };
 
-export { Table, TableHeader, TableBody, TableRow, TableCell };
+//Pagination Component
+const Pagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}) => {
+  return (
+    <div className="px-6 py-4 border-t flex justify-between">
+      <button
+        onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+        disabled={currentPage === 1}
+        className="px-4 py-2 bg-gray-300 border-gray-900 rounded dark:text-white dark:bg-blue-600 dark:border-blue-700"
+      >
+        Anterior
+      </button>
+      <span className="dark:text-white">
+        Página {currentPage} de {totalPages}
+      </span>
+      <button
+        onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
+        disabled={currentPage === totalPages}
+        className="px-4 py-2 bg-gray-300 border-gray-900 rounded dark:text-white dark:bg-blue-600 dark:border-blue-700"
+      >
+        Próximo
+      </button>
+    </div>
+  );
+};
+
+export { Table, TableHeader, TableBody, TableRow, TableCell, Pagination };
