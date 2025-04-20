@@ -4,7 +4,7 @@ import TextArea from "../../../components/form/input/TextArea";
 import Label from "../../../components/form/Label";
 import Select from "../../../components/form/Select";
 import Button from "../../../components/ui/button/Button";
-import { CustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
+import { CustomerRequestDto, HistoryCustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
 import { postCustomerAsync, putCustomerAsync } from "../../../services/service/CustomerService";
@@ -93,29 +93,57 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
     }
   }, [formData.peso, formData.altura]);
 
+  useEffect(() => {
+    if (edit && data) {
+      setFormData((prev) => ({
+        ...prev,
+        endereco: {
+          rua: data.endereco?.rua || "",
+          numero: data.endereco?.numero || "",
+          bairro: data.endereco?.bairro || "",
+          cidade: data.endereco?.cidade || "",
+          estado: data.endereco?.estado || "",
+          cep: data.endereco?.cep || "",
+        },
+      }));
+    }
+  }, [edit, data]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate(formData);
+
+    const novoHistorico: HistoryCustomerRequestDto = {
+      assunto: edit ? "Atualização histórico do paciente" : "Histórico Novo",
+      descricao: historicoTemp,
+      dataAtualizacao: new Date().toISOString(),
+    };
+
+    const formDataAtualizado: CustomerRequestDto = {
+      ...formData,
+      historico: [...(formData.historico ?? []), novoHistorico],
+    };
+
+    mutation.mutate(formDataAtualizado);
     setHistoricoTemp("");
   };
 
-  const handleSelectChange = (value: string) => {
-    setFormData({ ...formData, status: parseInt(value) });
-  };
-
   const options = [
-    { value: "3", label: "Aguardando decisão" },
-    { value: "1", label: "Buscando informações" },
-    { value: "6", label: "Cancelado" },
-    { value: "9", label: "Convertido" },
-    { value: "4", label: "Negociação" },
-    { value: "0", label: "Novo" },
-    { value: "2", label: "Prospecção" },
-    { value: "8", label: "Qualificado" },
-    { value: "7", label: "Requalificado" },
-    { value: "5", label: "Reunião" },
+    { value: "0", label: "Novo Paciente" },
+    { value: "1", label: "Aguardando Avaliação" },
+    { value: "2", label: "Em Avaliação" },
+    { value: "3", label: "Plano de Tratamento" },
+    { value: "4", label: "Em Atendimento" },
+    { value: "5", label: "Faltou Atendimento" },
+    { value: "6", label: "Tratamento Concluído" },
+    { value: "7", label: "Alta" },
+    { value: "8", label: "Cancelado" },
+    { value: "9", label: "Inativo" }
   ];
 
+  const optionsSexo = [
+    { value: "0", label: "Masculino" },
+    { value: "1", label: "Feminino" }
+  ];
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -142,6 +170,16 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                 <div>
                   <Label>Nome</Label>
                   <Input type="text" placeholder="Nome completo" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Sexo</Label>
+                  <Select
+                    options={optionsSexo}
+                    value={formData.sexo.toString()}
+                    placeholder="Selecione um sexo"
+                    onChange={(value) => setFormData(prev => ({ ...prev, sexo: parseInt(value) }))}
+                    className="dark:bg-dark-900"
+                  />
                 </div>
                 <div>
                   <Label>CPF</Label>
@@ -187,8 +225,7 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                     className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mt-4">
+
                 <div>
                   <Label>Altura (m)</Label>
                   <InputMask
@@ -235,21 +272,104 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
               <div className="mt-4">
                 <h5 className="mb-3 text-lg font-medium text-gray-800 dark:text-white/90">Endereço</h5>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  {Object.entries(formData.endereco || {}).map(([key, value]) => (
-                    <div key={key}>
-                      <Label>{key[0].toUpperCase() + key.slice(1)}</Label>
-                      <Input
-                        type="text"
-                        value={value ?? ""}
-                        onChange={(e) => setFormData({ ...formData, endereco: { ...formData.endereco!, [key]: e.target.value } })}
-                      />
-                    </div>
-                  ))}
+                  <div>
+                    <Label>Rua</Label>
+                    <Input
+                      type="text"
+                      value={formData.endereco?.rua ?? ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          endereco: { ...prev.endereco!, rua: e.target.value },
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Número</Label>
+                    <Input
+                      type="text"
+                      value={formData.endereco?.numero ?? ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          endereco: { ...prev.endereco!, numero: e.target.value },
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Bairro</Label>
+                    <Input
+                      type="text"
+                      value={formData.endereco?.bairro ?? ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          endereco: { ...prev.endereco!, bairro: e.target.value },
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Cidade</Label>
+                    <Input
+                      type="text"
+                      value={formData.endereco?.cidade ?? ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          endereco: { ...prev.endereco!, cidade: e.target.value },
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Estado</Label>
+                    <Input
+                      type="text"
+                      value={formData.endereco?.estado ?? ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          endereco: { ...prev.endereco!, estado: e.target.value },
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <Label>CEP</Label>
+                    <InputMask
+                      mask="99999-999"
+                      maskChar=""
+                      name="cep"
+                      value={formData.endereco?.cep ?? ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          endereco: { ...prev.endereco!, cep: e.target.value },
+                        }))
+                      }
+                      placeholder="00000-000"
+                      className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                    />
+                  </div>
                 </div>
               </div>
               <div>
                 <Label>Status</Label>
-                <Select options={options} placeholder="Selecione um status" onChange={handleSelectChange} className="dark:bg-dark-900" />
+                <Select
+                  options={options}
+                  value={formData.status.toString()}
+                  placeholder="Selecione um status"
+                  onChange={(value) => setFormData(prev => ({ ...prev, status: parseInt(value) }))}
+                  className="dark:bg-dark-900"
+                />
               </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
                 <div>
@@ -300,7 +420,13 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                           </TableCell>
                           <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                             <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                              {historico.dataAtualizacao}
+                              {new Date(historico.dataAtualizacao!).toLocaleString("pt-BR", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </span>
                           </TableCell>
                         </TableRow>

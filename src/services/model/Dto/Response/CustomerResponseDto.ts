@@ -1,3 +1,5 @@
+import { BaseResponseDto } from "./BaseResponseDto";
+
 export interface AndressResponseDto {
     rua?: string;
     numero?: string;
@@ -16,7 +18,7 @@ export interface AndressResponseDto {
     cliente?: CustomerResponseDto;
   }
   
-  export interface CustomerResponseDto {
+  export interface CustomerResponseDto extends BaseResponseDto {
     id?: string;
     nome: string;
     rg?: string;

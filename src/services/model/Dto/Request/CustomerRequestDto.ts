@@ -8,6 +8,7 @@ export interface AndressRequestDto {
   }
   
   export interface HistoryCustomerRequestDto {
+    id?: string;
     assunto?: string;
     descricao?: string;
     dataAtualizacao?: string; // em C# é DateTime

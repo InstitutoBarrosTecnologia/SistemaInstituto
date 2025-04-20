@@ -15,30 +15,72 @@ import Label from "../../form/Label";
 import Input from "../../form/input/InputField";
 import Button from "../../ui/button/Button";
 import Select from "../../form/Select";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import TextArea from "../../form/input/TextArea";
 import FormCustomer from "../../../pages/Forms/Customer/FormCustomer";
-import { getAllCustomersAsync } from "../../../services/service/CustomerService";
+import { disableCustomerAsync, getAllCustomersAsync } from "../../../services/service/CustomerService";
 import { CustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { formatPhone, formatCPF } from "../../helper/formatUtils";
 
 export default function CustomerTableComponent() {
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerRequestDto | undefined>(undefined);
-
-    const [clientes, setClientes] = useState<CustomerResponseDto[]>([]);
-    const [loading, setLoading] = useState(true);
-
-
     const { isOpen, openModal, closeModal } = useModal();
     const { isOpen: isOpenEmail, openModal: openModalEmail, closeModal: closeModalEmail } = useModelEmail();
     const { isOpen: isOpenDelete, openModal: openModalDelete, closeModal: closeModalDelete } = useModelDelete();
+    const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
+
+
+    const queryClient = useQueryClient();
+
+    const { data: clientes = [], isLoading, isError } = useQuery({
+        queryKey: ["allCustomer"],
+        queryFn: getAllCustomersAsync,
+    })
+
+    const mutationDelete = useMutation({
+        mutationFn: disableCustomerAsync,
+        onSuccess: ({ status }) => {
+
+            if (status === 200) {
+                toast.success("Cliente desativado com sucesso! 🎉", {
+                    duration: 3000,
+                });
+
+                queryClient.invalidateQueries<CustomerResponseDto[]>({
+                    queryKey: ["allCustomer"],
+                });
+
+                setTimeout(() => {
+                    if (closeModalDelete) closeModalDelete();
+                }, 3000);
+            } else {
+                toast.error("Não foi possível desativar o cliente.");
+            }
+        },
+        onError: (error) => {
+            toast.error("Erro ao desativar o cliente!", {
+                duration: 4000,
+            });
+            console.error("Erro ao desativar:", error);
+        },
+    });
 
     const handleOpenModal = (customer: CustomerRequestDto) => {
         setSelectedCustomer(customer);
         openModal();
     };
 
-    const handleOpenModalDelete = () => {
+    const handleOpenModalDelete = (id: string) => {
+        setIdDeleteRegister(id);
         openModalDelete();
+    };
+
+    const handlePostDelete = async (e: React.FormEvent) => {
+        e.preventDefault();
+        mutationDelete.mutate(idDeleteRegister);
+        setIdDeleteRegister("");
     };
 
     const handleCloseModal = () => {
@@ -52,27 +94,11 @@ export default function CustomerTableComponent() {
 
     };
 
-
-    useEffect(() => {
-        const fetchClientes = async () => {
-            try {
-                const response = await getAllCustomersAsync();
-                if (response) {
-                    setClientes(response);
-                }
-            } catch (error) {
-                console.error("Erro ao buscar clientes:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchClientes();
-    }, []);
-
-    if (loading) {
+    if (isLoading)
         return <p className="p-4">Carregando pacientes...</p>;
-    }
+    if (isError)
+        return <p className="p-4 text-red-500">Erro ao carregar pacientes!</p>;
+
 
     const optionsEmailEdit = [
         { value: "0", label: "Comercial" },
@@ -117,16 +143,16 @@ export default function CustomerTableComponent() {
                         </TableHeader>
 
                         <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                            {clientes.map((customer) => (
+                            {clientes instanceof Array ? clientes.map((customer: CustomerResponseDto) => (
                                 <TableRow key={customer.id}>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400t">
                                         {customer.nome}
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                        {customer.nrTelefone}
+                                        {formatPhone(customer.nrTelefone)}
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                        {customer.cpf}
+                                        {formatCPF(customer.cpf)}
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         {customer.email}
@@ -140,23 +166,59 @@ export default function CustomerTableComponent() {
                                         <Badge
                                             size="sm"
                                             color={
-                                                customer.status === 0
-                                                    ? "success"
-                                                    : customer.status === 1
-                                                        ? "warning"
-                                                        : customer.status === 2
-                                                            ? "error"
-                                                            : customer.status === 3
-                                                                ? "warning"
-                                                                : customer.status === 4
-                                                                    ? "info"
-                                                                    : customer.status === 5
-                                                                        ? "light"
-                                                                        : "light"
+                                                customer.dataDesativacao
+                                                    ? "error"
+                                                    : customer.status === 0
+                                                        ? "primary"     // Novo Paciente
+                                                        : customer.status === 1
+                                                            ? "info"      // Aguardando Avaliação
+                                                            : customer.status === 2
+                                                                ? "info"    // Em Avaliação
+                                                                : customer.status === 3
+                                                                    ? "success"  // Plano de Tratamento
+                                                                    : customer.status === 4
+                                                                        ? "success"  // Em Atendimento
+                                                                        : customer.status === 5
+                                                                            ? "warning" // Faltou Atendimento
+                                                                            : customer.status === 6
+                                                                                ? "success" // Tratamento Concluído
+                                                                                : customer.status === 7
+                                                                                    ? "success" // Alta
+                                                                                    : customer.status === 8
+                                                                                        ? "error" // Cancelado
+                                                                                        : customer.status === 9
+                                                                                            ? "error" // Inativo
+                                                                                            : "light"
                                             }
                                         >
-                                            {customer.status}
+                                            {
+                                                customer.dataDesativacao
+                                                    ? "Desativado"
+                                                    : customer.status === 0
+                                                        ? "Novo Paciente"
+                                                        : customer.status === 1
+                                                            ? "Aguardando Avaliação"
+                                                            : customer.status === 2
+                                                                ? "Em Avaliação"
+                                                                : customer.status === 3
+                                                                    ? "Plano de Tratamento"
+                                                                    : customer.status === 4
+                                                                        ? "Em Atendimento"
+                                                                        : customer.status === 5
+                                                                            ? "Faltou Atendimento"
+                                                                            : customer.status === 6
+                                                                                ? "Tratamento Concluído"
+                                                                                : customer.status === 7
+                                                                                    ? "Alta"
+                                                                                    : customer.status === 8
+                                                                                        ? "Cancelado"
+                                                                                        : customer.status === 9
+                                                                                            ? "Inativo"
+                                                                                            : "Desconhecido"
+                                            }
                                         </Badge>
+
+
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         1/2
@@ -185,7 +247,7 @@ export default function CustomerTableComponent() {
                                             </button>
 
                                             <button
-                                                onClick={() => handleOpenModalDelete()}
+                                                onClick={() => handleOpenModalDelete(customer.id!)}
                                                 rel="noopener"
                                                 className="p-3 flex h-11 w-11 items-center justify-center rounded-full border border-red-300 bg-white text-sm font-medium text-red-700 shadow-theme-xs hover:bg-red-50 hover:text-red-800 dark:border-red-700 dark:bg-red-800 dark:text-red-400 dark:hover:bg-white/[0.03] dark:hover:text-red-200"
                                             >
@@ -217,7 +279,7 @@ export default function CustomerTableComponent() {
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )) : <></>}
                         </TableBody>
                     </Table>
                 </div>
@@ -318,7 +380,7 @@ export default function CustomerTableComponent() {
                             Apagar Paciente
                         </h4>
                     </div>
-                    <form className="flex flex-col" >
+                    <form className="flex flex-col" onSubmit={handlePostDelete}>
                         <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
                             <div>
                                 <h5 className="mb-5 text-lg font-medium text-gray-800 text-center dark:text-white/90 lg:mb-6">
