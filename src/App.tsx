@@ -20,6 +20,7 @@ import Home from "./pages/Dashboard/Home";
 import ProtectedRoute from "./ProtectedRoute";
 import CustomerTables from "./pages/Tables/CustomerTable/CustomerTables";
 import ServiceCategoryTables from "./pages/Tables/ServicesTable/ServiceCategoryTables";
+import SubServiceCategoryTable from "./pages/Tables/ServicesTable/SubServiceCategoryTable";
 
 export default function App() {
   return (
@@ -49,7 +50,7 @@ export default function App() {
           {/* Tables */}
           <Route path="/basic-tables" element={<BasicTables />} />
           <Route path="/form-cat-servico" element={<ServiceCategoryTables />} />
-          {/* <Route path="/form-sub-cat-servico" element={<SubServiceCategoryTable />} /> */}
+          <Route path="/form-sub-cat-servico" element={<SubServiceCategoryTable />} />
 
           {/* Ui Elements */}
           <Route path="/alerts" element={<Alerts />} />
