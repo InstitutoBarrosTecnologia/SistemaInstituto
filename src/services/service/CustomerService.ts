@@ -55,3 +55,17 @@ export const disableCustomerAsync = async (id: string): Promise<{ status: number
     const response = await instanceApi.put(`/Customer/DesableCustomer/${id}`);
     return { status: response.status };
 };
+
+// POST - Enviar arquivo Excel para importar clientes
+export const postCustomerFromExcelAsync = async (file: File): Promise<{ status: number }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await instanceApi.post(`/Customer/AddCustomerFromExcel`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+
+    return { status: response.status };
+};
