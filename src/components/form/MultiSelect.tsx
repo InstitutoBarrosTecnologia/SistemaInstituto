@@ -1,9 +1,10 @@
 import type React from "react";
 import { useState } from "react";
 
-interface Option {
+export interface Option {
   value: string;
   text: string;
+  [key: string]: any;
 }
 
 interface MultiSelectProps {
@@ -11,6 +12,7 @@ interface MultiSelectProps {
   options: Option[];
   defaultSelected?: string[];
   onChange?: (selected: string[]) => void;
+  onChangeFull?: (selectedOptions: Option[]) => void; // <-- Adicione esta linha
   disabled?: boolean;
 }
 
@@ -19,6 +21,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   options,
   defaultSelected = [],
   onChange,
+  onChangeFull,
   disabled = false,
 }) => {
   const [selectedOptions, setSelectedOptions] =
@@ -36,6 +39,9 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
     setSelectedOptions(newSelectedOptions);
     onChange?.(newSelectedOptions);
+
+    const selectedFull = options.filter(opt => newSelectedOptions.includes(opt.value));
+    onChangeFull?.(selectedFull);
   };
 
   const removeOption = (value: string) => {
@@ -94,10 +100,10 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                   ))
                 ) : (
                   <input
-                    placeholder="Select option"
-                    className="w-full h-full p-1 pr-2 text-sm bg-transparent border-0 outline-hidden appearance-none placeholder:text-gray-800 focus:border-0 focus:outline-hidden focus:ring-0 dark:placeholder:text-white/90"
+                    placeholder="Selecione"
+                    className="w-full h-full p-1 pr-2 text-sm bg-transparent border-0 outline-hidden appearance-none placeholder:text-gray-800 focus:border-0 focus:outline-hidden focus:ring-0 dark:placeholder:text-white/90 dark:text-white"
                     readOnly
-                    value="Select option"
+                    value="Selecione"
                   />
                 )}
               </div>
@@ -141,11 +147,10 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                     onClick={() => handleSelect(option.value)}
                   >
                     <div
-                      className={`relative flex w-full items-center p-2 pl-2 ${
-                        selectedOptions.includes(option.value)
-                          ? "bg-primary/10"
-                          : ""
-                      }`}
+                      className={`relative flex w-full items-center p-2 pl-2 ${selectedOptions.includes(option.value)
+                        ? "bg-primary/10"
+                        : ""
+                        }`}
                     >
                       <div className="mx-2 leading-6 text-gray-800 dark:text-white/90">
                         {option.text}
