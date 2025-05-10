@@ -5,9 +5,6 @@ import Button from "../../../components/ui/button/Button";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
-import { createCategoriaAsync, updateCategoriaAsync } from "../../../services/service/ServiceCategoryService";
-import { CategoryServiceResponseDto } from "../../../services/model/Dto/Response/CategoryServiceResponseDto";
-import { CategoryServiceResquestDto } from "../../../services/model/Dto/Request/CategoryServiceResquestDto";
 import Select from "../../../components/form/Select";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { Option } from "../../../components/form/MultiSelect";
@@ -17,84 +14,73 @@ import { getAllCustomersAsync } from "../../../services/service/CustomerService"
 import { getAllSubCategoriasAsync } from "../../../services/service/SubCategoryService";
 import { EFormaPagamento } from "../../../services/model/Enum/EFormaPagamento";
 import { statusOrderServiceOptions } from "../../../services/model/Constants/StatusOrderService";
+import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/OrderServiceResponseDto";
+import { OrderServiceRequestDto } from "../../../services/model/Dto/Request/OrderServiceRequestDto";
+import { createOrderServiceAsync, updateOrderServiceAsync } from "../../../services/service/OrderServiceService";
+import { ServiceRequestDto } from "../../../services/model/Dto/Request/ServiceRequestDto";
 
-interface FormCategoryServiceProps {
-    data?: CategoryServiceResponseDto;
-    edit?: boolean,
+interface FormOrderServiceProps {
+    data?: OrderServiceResponseDto;
+    edit?: boolean;
     closeModal?: () => void;
 }
 
-export default function FormOrderService({ data, edit, closeModal }: FormCategoryServiceProps) {
+export default function FormOrderService({ data, edit, closeModal }: FormOrderServiceProps) {
 
-    const [formData, setFormData] = useState<CategoryServiceResquestDto>({
-        desc: "",
-        titulo: ""
+    const [formData, setFormData] = useState<OrderServiceRequestDto>({
+        referencia: "",
+        status: 0,
+        precoOrdem: 0,
+        precoDesconto: 0,
+        percentualGanho: 0,
+        precoDescontado: 0,
+        descontoPercentual: 0,
+        formaPagamento: 0,
+        clienteId: "",
+        funcionarioId: "",
+        dataPagamento: new Date().toISOString().split("T")[0],
+        qtdSessaoTotal: 0,
+        qtdSessaoRealizada: 0,
+        servicos: [],
+        sessoes: [],
     });
     const [customersOptions, setCustomersOptions] = useState<{ value: string, label: string }[]>([]);
     const [servicesOptions, setServicesOptions] = useState<Option[]>([]);
     const [selectedServices, setSelectedServices] = useState<Option[]>([]);
-
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
-        mutationFn: createCategoriaAsync,
+        mutationFn: createOrderServiceAsync,
         onSuccess: (response) => {
-
-            const { status } = response;
-
-            if (status === 200) {
-                toast.success("Categoria cadastrada com sucesso! 🎉", {
-                    duration: 3000, // 3 segundos
-                });
-
-                queryClient.invalidateQueries<CategoryServiceResquestDto[]>({
-                    queryKey: ["getAllCategory"],
-                });
-
+            if (response.status === 200) {
+                toast.success("Ordem cadastrada com sucesso!");
+                queryClient.invalidateQueries(["getAllOrderService"]);
                 setTimeout(() => {
                     if (closeModal) closeModal();
-                }, 3000);
+                }, 2000);
             }
         },
-        onError: (error) => {
-            toast.error("Erro ao cadastrar! Sentimos muito pelo transtorno vamos investigar!", {
-                duration: 4000, // 4 segundos
-            });
-            console.error("Erro ao enviar dados:", error);
-        }
+        onError: () => toast.error("Erro ao cadastrar ordem de serviço."),
     });
 
     const mutationEdit = useMutation({
-        mutationFn: updateCategoriaAsync,
+        mutationFn: updateOrderServiceAsync,
         onSuccess: (response) => {
-
-            const { status } = response;
-
-            if (status === 200) {
-                toast.success("Categoria atualizada com sucesso! 🎉", {
-                    duration: 3000, // 3 segundos
-                });
-
-                queryClient.invalidateQueries<CategoryServiceResquestDto[]>({
-                    queryKey: ["getAllCategory"],
-                });
+            if (response.status === 200) {
+                toast.success("Ordem atualizada com sucesso!");
+                queryClient.invalidateQueries(["getAllOrderService"]);
                 setTimeout(() => {
                     if (closeModal) closeModal();
-                }, 3000);
+                }, 2000);
             }
         },
-        onError: (error) => {
-            toast.error("Erro ao cadastrar! Sentimos muito pelo transtorno vamos investigar!", {
-                duration: 4000, // 4 segundos
-            });
-            console.error("Erro ao enviar dados:", error);
-        }
+        onError: () => toast.error("Erro ao atualizar ordem."),
     });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Carregar clientes
+
                 const customers = await getAllCustomersAsync();
                 if (Array.isArray(customers)) {
                     const mappedCustomers = customers.map((c: CustomerResponseDto) => ({
@@ -104,7 +90,6 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
                     setCustomersOptions(mappedCustomers);
                 }
 
-                // Carregar serviços
                 const services = await getAllSubCategoriasAsync();
                 if (Array.isArray(services)) {
                     const mappedServices = services.map((s: SubCategoryServiceResponseDto) => ({
@@ -125,49 +110,92 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
     useEffect(() => {
         if (edit && data) {
             setFormData({
-                dataCadastro: data.dataCadastro,
-                dataDesativacao: data.dataDesativacao,
-                desc: data.desc,
                 id: data.id,
-                prestadorId: data.prestadorId,
-                titulo: data.titulo,
-                usrCadastro: data.usrCadastro,
-                usrCadastroDesc: data.usrCadastroDesc,
-                usrDesativacao: data.usrDesativacao,
+                referencia: data.referencia,
+                status: data.status,
+                precoOrdem: data.precoOrdem,
+                precoDesconto: data.precoDesconto,
+                formaPagamento: data.formaPagamento,
+                clienteId: data.clienteId,
+                funcionarioId: data.funcionarioId,
+                dataPagamento: data.dataPagamento?.split("T")[0],
+                qtdSessaoTotal: data.qtdSessaoTotal,
+                qtdSessaoRealizada: data.qtdSessaoRealizada,
+                funcionario: data.funcionario,
+                cliente: data.cliente,
+                servicos: data.servicos,
+                sessoes: data.sessoes
             });
         }
     }, [edit, data]);
 
     const totalPrice = useMemo(() => {
-        return (
-            selectedServices.reduce((acc, cur) => acc + parseFloat(cur.preco), 0)
-            // extraServices.reduce((acc, cur) => acc + cur.valor, 0)
-        );
+        const selectedTotal = selectedServices.reduce((acc, cur) => acc + parseFloat(cur.preco || "0"), 0);
+        const extraTotal = 0;
+        return selectedTotal + extraTotal;
     }, [selectedServices]);
-    // const totalComDesconto = totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
-    // const totalComGanho = totalComDesconto * (1 + (formData.percentualGanho ?? 0) / 100);
+    const totalComDesconto = totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
+    const totalComGanho = totalComDesconto * (1 + (formData.percentualGanho ?? 0) / 100);
 
     useEffect(() => {
-        // if (totalPrice > 0 && formData.precoOrdem !== totalPrice) {
-        //     setFormData((prev) => ({
-        //         ...prev,
-        //         precoOrdem: totalPrice
-        //     }));
-        // }
-    }, [totalPrice]);
+        const precoFinalComGanho = totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100) * (1 + (formData.percentualGanho ?? 0) / 100);
 
-    const handleSave = async (e: React.FormEvent) => {
+        if (precoFinalComGanho > 0 && formData.precoOrdem !== precoFinalComGanho) {
+            setFormData((prev) => ({
+                ...prev,
+                precoOrdem: precoFinalComGanho,
+                precoDescontado: totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100)
+            }));
+        }
+    }, [totalPrice, formData.descontoPercentual, formData.percentualGanho]);
+
+    useEffect(() => {
+        const totalComDesconto = totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
+        const totalComGanho = totalComDesconto * (1 + (formData.percentualGanho ?? 0) / 100);
+
+        setFormData((prev) => ({
+            ...prev,
+            valorComDesconto: totalComDesconto,
+            valorComGanho: totalComGanho
+        }));
+    }, [formData.descontoPercentual, formData.percentualGanho, totalPrice]);
+
+
+    useEffect(() => {
+        const servicosMapeados = selectedServices.map((s) => ({
+            descricao: s.text,
+            valor: parseFloat(s.preco),
+            subServicoId: s.value,
+            prestacaoServico: undefined
+        }));
+
+        setFormData((prev) => ({
+            ...prev,
+            servicos: servicosMapeados as ServiceRequestDto[]
+        }));
+    }, [selectedServices]);
+
+    const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-        mutation.mutate(formData);
+        console.log("Payload a ser enviado:", formData);
+        const payload: OrderServiceRequestDto = {
+            ...formData,
+            funcionarioId: formData.funcionarioId?.trim() ? formData.funcionarioId : undefined,
+            clienteId: formData.clienteId?.trim() ? formData.clienteId : undefined,
+        };
+        mutation.mutate(payload);
     };
 
-    const handleSaveEdit = async (e: React.FormEvent) => {
+    const handleSaveEdit = (e: React.FormEvent) => {
         e.preventDefault();
         mutationEdit.mutate(formData);
     };
 
     const handleSelecCustomer = (value: string) => {
-        // formData.clienteId = value;
+        setFormData((prev) => ({
+            ...prev,
+            clienteId: value
+        }));
     };
 
     const handleChangeGanho = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -224,7 +252,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
 
                                     <div>
                                         <Label>Referência</Label>
-                                        {/* <Label>{formData.referencia}</Label> */}
+                                        <Label>{formData.referencia}</Label>
                                     </div>
                                 </div>
                             )}
@@ -244,7 +272,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
                                                 }))
                                             }
                                             className="dark:bg-dark-900"
-                                        // value={formData.status.toString()}
+                                            value={formData.status.toString()}
                                         />
 
                                     </div>
@@ -259,8 +287,9 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
                                         placeholder="Clientes"
                                         onChange={handleSelecCustomer}
                                         className="dark:bg-dark-900"
-                                        // value={formData.clienteId}
+                                        value={formData.clienteId}
                                         disabled={edit}
+                                        
                                     />
                                 </div>
                             </div>
@@ -276,13 +305,47 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
                             </div>
                             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                                 <div>
+                                    <Label>Qtd. Sessão Minma</Label>
+                                    <Input
+                                        type="number"
+                                        placeholder="1"
+                                        value={formData.qtdSessaoRealizada?.toString()}
+                                        min="1"
+                                        disabled={edit}
+                                        onChange={(e) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                qtdSessaoRealizada: parseInt(e.target.value) || 0,
+                                            }))
+                                        }
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Qtd. Sessão Máxima</Label>
+                                    <Input
+                                        type="number"
+                                        placeholder="10"
+                                        value={formData.qtdSessaoTotal?.toString()}
+                                        min="1"
+                                        disabled={edit}
+                                        onChange={(e) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                qtdSessaoTotal: parseInt(e.target.value) || 0,
+                                            }))
+                                        }
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                                <div>
                                     <Label>Percentual de ganho %</Label>
                                     <Input
                                         type="number"
                                         placeholder="Percentual de ganho %"
                                         onChange={handleChangeGanho}
-                                        // value={formData.percentualGanho?.toString()}
-                                        min="30"
+                                        value={formData.percentualGanho?.toString()}
+                                        min="1"
                                         disabled={edit}
                                     />
                                 </div>
@@ -292,7 +355,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
                                         type="text"
                                         placeholder="Percentual de Desconto %"
                                         onChange={handleChanceDescont}
-                                        // value={formData.descontoPercentual?.toString()}
+                                        value={formData.descontoPercentual?.toString()}
                                         disabled={edit}
                                     />
                                 </div>
@@ -316,10 +379,10 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
                                         type="text"
                                         placeholder="Valor Final com Ganho"
                                         disabled
-                                    // value={new Intl.NumberFormat("pt-BR", {
-                                    //     style: "currency",
-                                    //     currency: "BRL"
-                                    // }).format(totalComGanho)}
+                                        value={new Intl.NumberFormat("pt-BR", {
+                                            style: "currency",
+                                            currency: "BRL"
+                                        }).format(totalComGanho)}
                                     />
                                 </div>
                                 <div>
@@ -328,10 +391,10 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
                                         type="text"
                                         placeholder="Valor com Desconto"
                                         disabled
-                                        // value={new Intl.NumberFormat("pt-BR", {
-                                        //     style: "currency",
-                                        //     currency: "BRL"
-                                        // }).format(totalComDesconto)}
+                                        value={new Intl.NumberFormat("pt-BR", {
+                                            style: "currency",
+                                            currency: "BRL"
+                                        }).format(totalComDesconto)}
                                         className="text-black"
                                     />
                                 </div>
@@ -345,10 +408,10 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
                                         onChange={(selectedOption) =>
                                             setFormData((prev) => ({
                                                 ...prev,
-                                                formaPagamento: Number(selectedOption), // Converte string para número
+                                                formaPagamento: Number(selectedOption),
                                             }))
                                         }
-                                        // value={String(formData.formaPagamento)} // Garante que seja string
+                                        value={String(formData.formaPagamento)}
                                         className="dark:bg-dark-900"
                                         disabled={edit}
                                     />
@@ -357,7 +420,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormCategor
                                     <Label>Data pagamento</Label>
                                     <Input
                                         type="date"
-                                        // value={formData.dataPagamento?.slice(0, 10) || ""}
+                                        value={formData.dataPagamento?.slice(0, 10) || ""}
                                         onChange={(e) =>
                                             setFormData((prev) => ({
                                                 ...prev,

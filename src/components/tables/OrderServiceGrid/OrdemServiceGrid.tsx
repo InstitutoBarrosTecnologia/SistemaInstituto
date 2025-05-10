@@ -14,17 +14,68 @@ import { useModal } from "../../../hooks/useModal";
 import { useModal as useModelDelete } from "../../../hooks/useModal";
 import { useState } from "react";
 import Alert, { AlertProps } from "../../ui/alert/Alert";
-import FormCategoryService from "../../../pages/Forms/ServicesForms/FormCategoryService";
-import { CategoryServiceResponseDto } from "../../../services/model/Dto/Response/CategoryServiceResponseDto";
-import { getAllCategoriasAsync, desativarCategoriaAsync, getCategoriaByIdAsync } from "../../../services/service/ServiceCategoryService";
+import { desativarCategoriaAsync } from "../../../services/service/ServiceCategoryService";
+import { getAllOrderServicesAsync, getOrderServiceByIdAsync } from "../../../services/service/OrderServiceService";
+import FormOrderService from "../../../pages/Forms/OrderServiceForms/FormOrderService";
+import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/OrderServiceResponseDto";
 
 
 export default function OrdemServiceGrid() {
 
-    const [formDataResponse, setFormDataResponse] = useState<CategoryServiceResponseDto>({
+    const [formDataResponse, setFormDataResponse] = useState<OrderServiceResponseDto>({
         id: "",
-        titulo: "",
-        desc: "",
+        referencia: "",
+        status: 0,
+        precoOrdem: 0,
+        precoDesconto: 0,
+        precoDescontado: 0,
+        descontoPercentual: 0,
+        percentualGanho: 0,
+        formaPagamento: 0,
+        dataPagamento: "",
+        dataConclusaoServico: "",
+        clienteId: "",
+        funcionarioId: "",
+        qtdSessaoTotal: 0,
+        qtdSessaoRealizada: 0,
+        funcionario: {
+            id: "",
+            nome: "",
+            telefone: "",
+            email: "",
+            rg: "",
+            cpf: "",
+            endereco: "",
+            cargo: "",
+            filialId: ""
+        },
+        cliente: {
+            id: "",
+            nome: "",
+            rg: "",
+            dataNascimento: "",
+            imc: 0,
+            altura: 0,
+            peso: 0,
+            sexo: 0,
+            endereco: {
+                rua: "",
+                numero: "",
+                bairro: "",
+                cidade: "",
+                estado: "",
+                cep: ""
+            },
+            email: "",
+            nrTelefone: "",
+            patologia: "",
+            cpf: "",
+            redeSocial: "",
+            status: 0,
+            historico: []
+        },
+        servicos: [],
+        sessoes: []
     });
     const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
 
@@ -33,10 +84,11 @@ export default function OrdemServiceGrid() {
     // REACT QUERY ------------------------
     const queryClient = useQueryClient();
 
-    const { data: categorys, isLoading, isError } = useQuery({
-        queryKey: ["getAllCategory"],
-        queryFn: () => getAllCategoriasAsync(),
+    const { data: ordens, isLoading, isError } = useQuery({
+        queryKey: ["getAllOrderService"],
+        queryFn: () => getAllOrderServicesAsync(),
     });
+
     const mutationDelete = useMutation({
         mutationFn: desativarCategoriaAsync,
         onSuccess: () => {
@@ -53,19 +105,17 @@ export default function OrdemServiceGrid() {
 
     // LOADING/ERROR ----------------------
     if (isLoading) return <p className="text-black dark:text-white">Carregando...</p>;
-    const filteredLeads =
-        Array.isArray(categorys) && categorys.length > 0
-            ? categorys.filter((category) =>
-                category.titulo.toLowerCase().includes("")
-            )
+    const filteredOrdens =
+        Array.isArray(ordens) && ordens.length > 0
+            ? ordens // você pode adicionar um filtro por status ou cliente, se quiser
             : [];
 
-    const paginatedLeads = filteredLeads.slice(
+    const paginatedOrdens = filteredOrdens.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
 
-    const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredOrdens.length / itemsPerPage);
     if (isError) return <p className="text-dark dark:text-white">Erro ao carregar dados.</p>;
     // FUNÇÕES AUXILIARES -----------------
     const handleOpenModal = (id: string) => {
@@ -88,10 +138,10 @@ export default function OrdemServiceGrid() {
 
     const loadCategoryData = async (id: string) => {
         try {
-            const category = await getCategoriaByIdAsync(id);
-            if (typeof category !== "string")
-                setFormDataResponse(category);
-            else console.log(category);
+            const orderService = await getOrderServiceByIdAsync(id);
+            if (typeof orderService !== "string")
+                setFormDataResponse(orderService);
+            else console.log(orderService);
         } catch (error) {
             console.error("Erro ao buscar o lead:", error);
         }
@@ -146,41 +196,66 @@ export default function OrdemServiceGrid() {
                             </TableRow>
                         </TableHeader>
                         <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                            {paginatedLeads instanceof Array ? paginatedLeads?.map((category, index) => (
+                            {paginatedOrdens instanceof Array ? paginatedOrdens?.map((ordem, index) => (
                                 <TableRow key={index}>
                                     <TableCell className="px-5 py-4 sm:px-6 text-start">
                                         <div className="flex items-center gap-3">
-                                            <div>
-                                                <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                                    {category.titulo}
-                                                </span>
-                                            </div>
+                                            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                {ordem.cliente?.nome || "Sem nome"}
+                                            </span>
                                         </div>
                                     </TableCell>
+
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                        {category.desc}
+                                        {ordem.servicos?.map(s => s.descricao).join(", ") || "Nenhum"}
                                     </TableCell>
+
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                        {category.desc}
+                                        {ordem.qtdSessaoRealizada ?? 0} / {ordem.qtdSessaoTotal ?? 0}
                                     </TableCell>
+
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         <Badge
                                             size="sm"
                                             color={
-                                                category.dataDesativacao == null
-                                                    ? "success"
-                                                    : "error"
+                                                ordem.status === 0 // Aberto
+                                                    ? "primary"
+                                                    : ordem.status === 1 // Analise
+                                                        ? "info"
+                                                        : ordem.status === 2 // Aprovado
+                                                            ? "success"
+                                                            : ordem.status === 3 // Rejeitado
+                                                                ? "error"
+                                                                : ordem.status === 4 // Andamento
+                                                                    ? "warning"
+                                                                    : ordem.status === 5 // Teste
+                                                                        ? "light"
+                                                                        : ordem.status === 6 // Concluido
+                                                                            ? "success"
+                                                                            : "dark"
                                             }
                                         >
-                                            {category.dataDesativacao == null
-                                                ? "Ativo"
-                                                : "Desativado"}
+                                            {ordem.status === 0
+                                                ? "Aberto"
+                                                : ordem.status === 1
+                                                    ? "Em Análise"
+                                                    : ordem.status === 2
+                                                        ? "Aprovado"
+                                                        : ordem.status === 3
+                                                            ? "Rejeitado"
+                                                            : ordem.status === 4
+                                                                ? "Em Andamento"
+                                                                : ordem.status === 5
+                                                                    ? "Teste"
+                                                                    : ordem.status === 6
+                                                                        ? "Concluído"
+                                                                        : "Desconhecido"}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             <button
-                                                onClick={() => handleOpenModal(category.id!.toString())}
+                                                onClick={() => handleOpenModal(ordem.id!.toString())}
                                                 rel="noopener"
                                                 className="p-3 flex h-11 w-11 items-center justify-center rounded-full border border-yellow-300 bg-white text-sm font-medium text-yellow-700 shadow-theme-xs hover:bg-yellow-50 hover:text-yellow-800 dark:border-yellow-700 dark:bg-yellow-800 dark:text-yellow-400 dark:hover:bg-white/[0.03] dark:hover:text-yellow-200"
                                             >
@@ -200,7 +275,7 @@ export default function OrdemServiceGrid() {
                                                 </svg>
                                             </button>
                                             <button
-                                                onClick={() => handleOpenModalDelete(category.id!.toString())}
+                                                onClick={() => handleOpenModalDelete(ordem.id!.toString())}
                                                 rel="noopener"
                                                 className="p-3 flex h-11 w-11 items-center justify-center rounded-full border border-red-300 bg-white text-sm font-medium text-red-700 shadow-theme-xs hover:bg-red-50 hover:text-red-800 dark:border-red-700 dark:bg-red-800 dark:text-red-400 dark:hover:bg-white/[0.03] dark:hover:text-red-200"
                                             >
@@ -223,7 +298,7 @@ export default function OrdemServiceGrid() {
                 </div>
 
                 <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
-                    <FormCategoryService data={formDataResponse} edit={!!formDataResponse?.id} closeModal={closeModal} />
+                    <FormOrderService data={formDataResponse} edit={!!formDataResponse?.id} closeModal={closeModal} />
                 </Modal>
 
                 <Modal isOpen={isOpenDelete} onClose={closeModalDelete} className="max-w-[700px] m-4">
