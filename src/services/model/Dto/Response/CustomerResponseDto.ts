@@ -1,4 +1,5 @@
 import { BaseResponseDto } from "./BaseResponseDto";
+import { OrderServiceResponseDto } from "./OrderServiceResponseDto";
 
 export interface AndressResponseDto {
     rua?: string;
@@ -35,4 +36,5 @@ export interface AndressResponseDto {
     redeSocial?: string;
     status: number;
     historico?: HistoryCustomerResponseDto[]; 
+    servicos?: OrderServiceResponseDto[];
   }

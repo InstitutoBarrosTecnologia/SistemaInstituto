@@ -28,7 +28,8 @@ interface TableRowProps {
 interface TableCellProps {
   children: ReactNode; // Cell content
   isHeader?: boolean; // If true, renders as <th>, otherwise <td>
-  className?: string; // Optional className for styling
+  className?: string;
+  onClick?: () => void; // Optional className for styling
 }
 
 
@@ -65,9 +66,10 @@ const TableCell: React.FC<TableCellProps> = ({
   children,
   isHeader = false,
   className,
+  onClick
 }) => {
   const CellTag = isHeader ? "th" : "td";
-  return <CellTag className={` ${className}`}>{children}</CellTag>;
+  return <CellTag className={` ${className}`} onClick={onClick}>{children}</CellTag>;
 };
 
 //Pagination Component

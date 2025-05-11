@@ -1,9 +1,10 @@
+import { BaseResponseDto } from "../Response/BaseResponseDto";
 import { CustomerRequestDto } from "./CustomerRequestDto";
 import { EmployeeRequestDto } from "./EmployeeRequestDto";
 import { OrderServiceSessionRequestDto } from "./OrderServiceSessionRequestDto";
 import { ServiceRequestDto } from "./ServiceRequestDto";
 
-export interface OrderServiceRequestDto {
+export interface OrderServiceRequestDto extends BaseResponseDto {
   id?: string;
   referencia?: string;
   status: number;

@@ -41,8 +41,8 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Clientes", path: "/customer", pro: false },
       { name: "Cat. Serviço", path: "/form-cat-servico", pro: false },
+      { name: "Sub. Serviço", path: "/form-sub-cat-servico", pro: false },
       { name: "Ordem Serviço", path: "/ordem-servico", pro: false },
-      { name: "Sub. Serviço", path: "/form-sub-cat-servico", pro: false }
     ],
   },
   {

@@ -1,3 +1,6 @@
+import { OrderServiceResponseDto } from "../Response/OrderServiceResponseDto";
+import { OrderServiceRequestDto } from "./OrderServiceRequestDto";
+
 export interface AndressRequestDto {
     rua?: string;
     numero?: string;
@@ -33,4 +36,5 @@ export interface AndressRequestDto {
     redeSocial?: string;
     status: number;
     historico?: HistoryCustomerRequestDto[]; // Adicionado conforme o DTO C#
+    servicos?: OrderServiceRequestDto[]; // Adicionado conforme o DTO C#
   }

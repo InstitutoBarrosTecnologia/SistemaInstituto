@@ -10,6 +10,7 @@ import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
 import { useModal as useModelEmail } from "../../../hooks/useModal";
 import { useModal as useModelDelete } from "../../../hooks/useModal";
+import { useModal as useModalInfo } from "../../../hooks/useModal";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
 import Label from "../../form/Label";
 import Input from "../../form/input/InputField";
@@ -23,12 +24,15 @@ import { CustomerRequestDto } from "../../../services/model/Dto/Request/Customer
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { formatPhone, formatCPF } from "../../helper/formatUtils";
+import FormeMetaDataCustomer from "../../../pages/Forms/Customer/FormeMetaDataCustomer";
 
 export default function CustomerTableComponent() {
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerRequestDto | undefined>(undefined);
+    const [selectedCustomerData, setSelectedCustomerData] = useState<CustomerRequestDto | undefined>(undefined);
     const { isOpen, openModal, closeModal } = useModal();
     const { isOpen: isOpenEmail, openModal: openModalEmail, closeModal: closeModalEmail } = useModelEmail();
     const { isOpen: isOpenDelete, openModal: openModalDelete, closeModal: closeModalDelete } = useModelDelete();
+    const { isOpen: isOpenData, openModal: openModalData, closeModal: closeModalData } = useModalInfo();
     const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
 
 
@@ -88,11 +92,20 @@ export default function CustomerTableComponent() {
         closeModal(); // se você tiver definido esse `closeModal` via hook
     };
 
+    const handleCloseModalData = () => {
+        closeModalData(); // se você tiver definido esse `closeModal` via hook
+    };
+
     const handleOpenModalEmail = () => openModalEmail();
 
     const handleSelectChangeEmailEdit = () => {
 
     };
+
+    const MetaData = (customer: CustomerRequestDto) => {
+        setSelectedCustomerData(customer);
+        openModalData();
+    }
 
     if (isLoading)
         return <p className="p-4">Carregando pacientes...</p>;
@@ -145,7 +158,8 @@ export default function CustomerTableComponent() {
                         <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                             {clientes instanceof Array ? clientes.map((customer: CustomerResponseDto) => (
                                 <TableRow key={customer.id}>
-                                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400t">
+                                    <TableCell onClick={() => MetaData(customer)}
+                                        className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 cursor-pointer hover:text-blue-600">
                                         {customer.nome}
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
@@ -221,7 +235,18 @@ export default function CustomerTableComponent() {
 
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                        1/2
+                                        {(() => {
+                                            const ultimaOrdem = customer.servicos?.reduce((maisRecente, atual) => {
+                                                if (!maisRecente || new Date(atual.dataCadastro!) > new Date(maisRecente.dataCadastro!)) {
+                                                    return atual;
+                                                }
+                                                return maisRecente;
+                                            });
+
+                                            return ultimaOrdem
+                                                ? `${ultimaOrdem.qtdSessaoRealizada ?? 0}/${ultimaOrdem.qtdSessaoTotal ?? 0}`
+                                                : "—";
+                                        })()}
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                                         <div className="flex flex-col sm:flex-row gap-2">
@@ -288,6 +313,11 @@ export default function CustomerTableComponent() {
             <Modal isOpen={isOpen} onClose={handleCloseModal} className="max-w-[700px] m-4">
                 <FormCustomer data={selectedCustomer} edit={!!selectedCustomer?.id} closeModal={handleCloseModal} />
             </Modal>
+
+            <Modal isOpen={isOpenData} onClose={handleCloseModalData} className="max-w-[700px] m-4">
+                <FormeMetaDataCustomer data={selectedCustomerData} edit={!!selectedCustomerData?.id} closeModal={handleCloseModalData} />
+            </Modal>
+
             <Modal isOpen={isOpenEmail} onClose={closeModalEmail} className="max-w-[700px] m-4">
                 <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
                     <form>
