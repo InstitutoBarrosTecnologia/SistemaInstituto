@@ -46,7 +46,7 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
     status: data?.status ?? 0,
     historico: data?.historico ?? [],
   });
-
+  const [showHistorico, setShowHistorico] = useState(false);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -66,11 +66,21 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
         }, 3000);
       }
     },
-    onError: () => {
-      toast.error("Erro ao salvar o paciente. Verifique os dados e tente novamente.", {
-        duration: 4000,
-      });
-    },
+    onError: async (error: any) => {
+      const response = error.response?.data;
+
+      if (Array.isArray(response)) {
+        response.forEach((err: { errorMensagem: string }) => {
+          toast.error(err.errorMensagem, { duration: 4000 });
+        });
+      } else if (typeof response === "string") {
+        toast.error(response, { duration: 4000 });
+      } else {
+        toast.error("Erro ao salvar o paciente. Verifique os dados e tente novamente.", {
+          duration: 4000,
+        });
+      }
+    }
   });
 
   useEffect(() => {
@@ -168,21 +178,22 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
               <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">Informações</h5>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                 <div>
-                  <Label>Nome</Label>
-                  <Input type="text" placeholder="Nome completo" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
+                  <Label>Nome <span className="text-red-300">*</span></Label>
+                  <Input type="text" required={true} placeholder="Nome completo" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
                 </div>
                 <div>
-                  <Label>Sexo</Label>
+                  <Label>Sexo<span className="text-red-300">*</span></Label>
                   <Select
                     options={optionsSexo}
                     value={formData.sexo.toString()}
                     placeholder="Selecione um sexo"
                     onChange={(value) => setFormData(prev => ({ ...prev, sexo: parseInt(value) }))}
                     className="dark:bg-dark-900"
+                    required={true}
                   />
                 </div>
                 <div>
-                  <Label>CPF</Label>
+                  <Label>CPF<span className="text-red-300">*</span></Label>
                   <InputMask
                     mask="999.999.999-99"
                     maskChar=""
@@ -191,10 +202,11 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                     onChange={handleChange}
                     placeholder="000.000.000-00"
                     className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                    required={true}
                   />
                 </div>
                 <div>
-                  <Label>RG</Label>
+                  <Label>RG<span className="text-red-300">*</span></Label>
                   <InputMask
                     mask="99.999.999-9"
                     maskChar=""
@@ -203,15 +215,16 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                     onChange={handleChange}
                     placeholder="000.000.000-00"
                     className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                    required={true}
                   />
                 </div>
                 <div>
-                  <Label>Data de Nascimento</Label>
-                  <Input type="date" value={formData.dataNascimento} onChange={(e) => setFormData({ ...formData, dataNascimento: e.target.value })} />
+                  <Label>Data de Nascimento<span className="text-red-300">*</span></Label>
+                  <Input type="date" required={true} value={formData.dataNascimento} onChange={(e) => setFormData({ ...formData, dataNascimento: e.target.value })} />
                 </div>
                 <div>
-                  <Label>E-mail</Label>
-                  <Input type="email" placeholder="exemplo@email.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                  <Label>E-mail<span className="text-red-300">*</span></Label>
+                  <Input type="email" required={true} placeholder="exemplo@email.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                 </div>
                 <div>
                   <Label>Telefone</Label>
@@ -362,13 +375,14 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                 </div>
               </div>
               <div>
-                <Label>Status</Label>
+                <Label>Status<span className="text-red-300">*</span></Label>
                 <Select
                   options={options}
                   value={formData.status.toString()}
                   placeholder="Selecione um status"
                   onChange={(value) => setFormData(prev => ({ ...prev, status: parseInt(value) }))}
                   className="dark:bg-dark-900"
+                  required={true}
                 />
               </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
@@ -378,70 +392,88 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
-              <div>
-                <Label>Histórico</Label>
-                <Table>
-                  <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                    <TableRow>
-                      <TableCell
-                        isHeader
-                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                      >
-                        Assunto
-                      </TableCell>
-                      <TableCell
-                        isHeader
-                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                      >
-                        Informação
-                      </TableCell>
-                      <TableCell
-                        isHeader
-                        className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                      >
-                        Data do histórico
-                      </TableCell>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                    {formData?.historico && formData.historico.length > 0 ? (
-                      formData.historico.map((historico, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="px-5 py-4 sm:px-6 text-start">
-                            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                              {historico.assunto}
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-5 py-4 sm:px-6 text-start">
-                            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                              {historico.descricao}
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                              {new Date(historico.dataAtualizacao!).toLocaleString("pt-BR", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
-                          Nenhum histórico disponível para este paciente.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+            <div className="mb-2">
+              <button
+                onClick={() => setShowHistorico(!showHistorico)}
+                className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200"
+                type="button"
+              >
+                <span>Histórico</span>
+                <svg className={`w-4 h-4 transform transition-transform ${showHistorico ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showHistorico && (
+                <div className="mt-3">
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
+                    <div>
+                      <Label>Histórico</Label>
+                      <Table>
+                        <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                          <TableRow>
+                            <TableCell
+                              isHeader
+                              className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                            >
+                              Assunto
+                            </TableCell>
+                            <TableCell
+                              isHeader
+                              className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                            >
+                              Informação
+                            </TableCell>
+                            <TableCell
+                              isHeader
+                              className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                            >
+                              Data do histórico
+                            </TableCell>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                          {formData?.historico && formData.historico.length > 0 ? (
+                            formData.historico.map((historico, index) => (
+                              <TableRow key={index}>
+                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                  <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                    {historico.assunto}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                  <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                    {historico.descricao}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                  <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                    {new Date(historico.dataAtualizacao!).toLocaleString("pt-BR", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
+                                Nenhum histórico disponível para este paciente.
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+
           </div>
 
           <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">

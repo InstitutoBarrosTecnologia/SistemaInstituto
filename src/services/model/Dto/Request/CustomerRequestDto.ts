@@ -1,4 +1,3 @@
-import { OrderServiceResponseDto } from "../Response/OrderServiceResponseDto";
 import { OrderServiceRequestDto } from "./OrderServiceRequestDto";
 
 export interface AndressRequestDto {

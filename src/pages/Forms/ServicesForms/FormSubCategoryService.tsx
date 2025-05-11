@@ -56,11 +56,20 @@ export default function FormSubCategoryService({ data, edit, closeModal }: FormC
                 }, 3000);
             }
         },
-        onError: (error) => {
-            toast.error("Erro ao cadastrar! Sentimos muito pelo transtorno vamos investigar!", {
-                duration: 4000, // 4 segundos
-            });
-            console.error("Erro ao enviar dados:", error);
+        onError: async (error: any) => {
+            const response = error.response?.data;
+
+            if (Array.isArray(response)) {
+                response.forEach((err: { errorMensagem: string }) => {
+                    toast.error(err.errorMensagem, { duration: 4000 });
+                });
+            } else if (typeof response === "string") {
+                toast.error(response, { duration: 4000 });
+            } else {
+                toast.error("Erro ao salvar o paciente. Verifique os dados e tente novamente.", {
+                    duration: 4000,
+                });
+            }
         }
     });
 
@@ -83,11 +92,20 @@ export default function FormSubCategoryService({ data, edit, closeModal }: FormC
                 if (closeModal) closeModal();
             }, 3000);
         },
-        onError: (error) => {
-            toast.error("Erro ao cadastrar! Sentimos muito pelo transtorno vamos investigar!", {
-                duration: 4000, // 4 segundos
-            });
-            console.error("Erro ao enviar dados:", error);
+        onError: async (error: any) => {
+            const response = error.response?.data;
+
+            if (Array.isArray(response)) {
+                response.forEach((err: { errorMensagem: string }) => {
+                    toast.error(err.errorMensagem, { duration: 4000 });
+                });
+            } else if (typeof response === "string") {
+                toast.error(response, { duration: 4000 });
+            } else {
+                toast.error("Erro ao salvar o paciente. Verifique os dados e tente novamente.", {
+                    duration: 4000,
+                });
+            }
         }
     });
 
@@ -165,27 +183,29 @@ export default function FormSubCategoryService({ data, edit, closeModal }: FormC
 
                             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
                                 <div>
-                                    <Label>Nome Serviço</Label>
+                                    <Label>Nome Serviço<span className="text-red-300">*</span></Label>
                                     <Input
                                         type="text"
                                         placeholder="Nome da categoria"
                                         onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                                         value={formData?.titulo}
+                                        required={true}
                                     />
                                 </div>
                                 <div>
-                                    <Label>Descrição Serviço</Label>
+                                    <Label>Descrição Serviço<span className="text-red-300">*</span></Label>
                                     <Input
                                         type="text"
                                         placeholder="Descrição"
                                         onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
                                         value={formData?.desc}
+                                        required={true}
                                     />
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                                 <div>
-                                    <Label>Preço Serviço</Label>
+                                    <Label>Preço Serviço<span className="text-red-300">*</span></Label>
                                     <NumericFormat
                                         value={formData.valorServico}
                                         onValueChange={(values) => {
@@ -199,11 +219,12 @@ export default function FormSubCategoryService({ data, edit, closeModal }: FormC
                                         allowNegative={false}
                                         placeholder="Ex: 1.000,99"
                                         className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                                        required={true}
                                     />
 
                                 </div>
                                 <div>
-                                    <Label>Categoria do serviço</Label>
+                                    <Label>Categoria do serviço<span className="text-red-300">*</span></Label>
                                     <Select
                                         options={categoriaOptions}
                                         placeholder="Selecione uma categoria"

@@ -15,10 +15,10 @@ export default function CustomerTables() {
         <>
             <PageMeta
                 title="Instituto Barros - Sistema"
-                description="Sistema Instituto Barros - Página para gerenciamento de clientes"
+                description="Sistema Instituto Barros - Página para gerenciamento de pacientes"
             />
 
-            <PageBreadcrumb pageTitle="Clientes Instituto Barros" />
+            <PageBreadcrumb pageTitle="Pacientes Instituto Barros" />
 
             <div className="flex justify-between gap-6 mb-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center w-full">

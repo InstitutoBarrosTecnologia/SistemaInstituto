@@ -16,10 +16,10 @@ export default function OrdemServiceTables() {
         <>
               <PageMeta
                 title="Instituto Barros - Sistema"
-                description="Sistema Instituto Barros - Página para gerenciamento ordem de serviço"
+                description="Sistema Instituto Barros - Página para gerenciamento tratamento"
             />
 
-            <PageBreadcrumb pageTitle="Ordem de Serviço Instituto Barros" />
+            <PageBreadcrumb pageTitle="Tratamento & Sessão Instituto Barros" />
 
             <div className="flex justify-between gap-6 mb-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center w-full">
@@ -66,7 +66,7 @@ export default function OrdemServiceTables() {
                             ></path>
                         </svg>
                     </span>
-                    Cadastrar Ordem de Serviço
+                    Cadastrar Tratamento & Sessão
                 </button>
             </div>
 

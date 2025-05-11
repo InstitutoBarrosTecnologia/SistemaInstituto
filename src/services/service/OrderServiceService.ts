@@ -46,15 +46,24 @@ export const getAllOrderServicesAsync = async (
   queryObj?: Partial<OrderServiceRequestDto>
 ): Promise<OrderServiceResponseDto[] | string> => {
   const query = new URLSearchParams();
+  const keyMap: Record<string, string> = {
+    clienteId: "ClienteId",
+    funcionarioId: "FuncionarioId",
+    status: "Status",
+  };
+
   for (const key in queryObj) {
-    if (queryObj[key as keyof OrderServiceRequestDto] !== undefined) {
-      query.append(key, queryObj[key as keyof OrderServiceRequestDto]!.toString());
+    const backendKey = keyMap[key] ?? key;
+    const value = queryObj[key as keyof OrderServiceRequestDto];
+    if (value !== undefined && value !== null && value !== "") {
+      query.append(backendKey, value.toString());
     }
   }
 
   const response = await instanceApi.get<OrderServiceResponseDto[] | string>(
-    `/OrderService?${query.toString()}`
+    `/OrderService${query.toString() ? "?" + query.toString() : ""}`
   );
+
   return response.data;
 };
 

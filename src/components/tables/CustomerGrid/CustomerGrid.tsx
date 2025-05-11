@@ -11,6 +11,7 @@ import { useModal } from "../../../hooks/useModal";
 import { useModal as useModelEmail } from "../../../hooks/useModal";
 import { useModal as useModelDelete } from "../../../hooks/useModal";
 import { useModal as useModalInfo } from "../../../hooks/useModal";
+import { useModal as useModalSession } from "../../../hooks/useModal";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
 import Label from "../../form/Label";
 import Input from "../../form/input/InputField";
@@ -24,7 +25,8 @@ import { CustomerRequestDto } from "../../../services/model/Dto/Request/Customer
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { formatPhone, formatCPF } from "../../helper/formatUtils";
-import FormeMetaDataCustomer from "../../../pages/Forms/Customer/FormeMetaDataCustomer";
+import FormMetaDataCustomer from "../../../pages/Forms/Customer/FormMetaDataCustomer";
+import FormSession from "../../../pages/Forms/OrderServiceForms/FormSession";
 
 export default function CustomerTableComponent() {
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerRequestDto | undefined>(undefined);
@@ -33,7 +35,9 @@ export default function CustomerTableComponent() {
     const { isOpen: isOpenEmail, openModal: openModalEmail, closeModal: closeModalEmail } = useModelEmail();
     const { isOpen: isOpenDelete, openModal: openModalDelete, closeModal: closeModalDelete } = useModelDelete();
     const { isOpen: isOpenData, openModal: openModalData, closeModal: closeModalData } = useModalInfo();
+    const { isOpen: isOpenSession, openModal: openModalSession, closeModal: closeModalSession } = useModalSession();
     const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
+    const [idSessionRegister, setIdSessionRegister] = useState<string>("");
 
 
     const queryClient = useQueryClient();
@@ -63,12 +67,21 @@ export default function CustomerTableComponent() {
                 toast.error("Não foi possível desativar o cliente.");
             }
         },
-        onError: (error) => {
-            toast.error("Erro ao desativar o cliente!", {
-                duration: 4000,
-            });
-            console.error("Erro ao desativar:", error);
-        },
+        onError: async (error: any) => {
+            const response = error.response?.data;
+
+            if (Array.isArray(response)) {
+                response.forEach((err: { errorMensagem: string }) => {
+                    toast.error(err.errorMensagem, { duration: 4000 });
+                });
+            } else if (typeof response === "string") {
+                toast.error(response, { duration: 4000 });
+            } else {
+                toast.error("Erro ao desativar o paciente. Verifique os dados e tente novamente.", {
+                    duration: 4000,
+                });
+            }
+        }
     });
 
     const handleOpenModal = (customer: CustomerRequestDto) => {
@@ -81,6 +94,11 @@ export default function CustomerTableComponent() {
         openModalDelete();
     };
 
+    const handleOpenModalSession = (id: string) => {
+        setIdSessionRegister(id);
+        openModalSession();
+    };
+
     const handlePostDelete = async (e: React.FormEvent) => {
         e.preventDefault();
         mutationDelete.mutate(idDeleteRegister);
@@ -89,11 +107,15 @@ export default function CustomerTableComponent() {
 
     const handleCloseModal = () => {
         setSelectedCustomer(undefined);
-        closeModal(); // se você tiver definido esse `closeModal` via hook
+        closeModal();
     };
 
     const handleCloseModalData = () => {
-        closeModalData(); // se você tiver definido esse `closeModal` via hook
+        closeModalData();
+    };
+
+    const handleCloseModalSession = () => {
+        closeModalSession();
     };
 
     const handleOpenModalEmail = () => openModalEmail();
@@ -163,7 +185,12 @@ export default function CustomerTableComponent() {
                                         {customer.nome}
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                        {formatPhone(customer.nrTelefone)}
+                                        <a
+                                            href={`https://wa.me/+55${customer.nrTelefone?.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')}?text=Ol%C3%A1%20tudo%20bem%3F%20Somos%20a%20equipe%20do%20Instituto%20Barros%20%F0%9F%98%80`}
+                                            target="_blank"
+                                            rel="noopener"
+                                        >{formatPhone(customer.nrTelefone)}
+                                        </a>
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         {formatCPF(customer.cpf)}
@@ -281,16 +308,26 @@ export default function CustomerTableComponent() {
                                                 </svg>
                                             </button>
 
-                                            <a
-                                                href={`https://wa.me/+55${customer.nrTelefone?.replace('(', '').replace(')', '').replace('-', '').replace(' ', '')}?text=Ol%C3%A1%20tudo%20bem%3F%20Somos%20a%20equipe%20do%20Instituto%20Barros%20%F0%9F%98%80`}
-                                                target="_blank"
+                                            <button
+                                                onClick={() => handleOpenModalSession(customer.id!)}
                                                 rel="noopener"
                                                 className="p-3 flex h-11 w-11 items-center justify-center rounded-full border border-green-300 bg-white text-sm font-medium text-green-700 shadow-theme-xs hover:bg-green-50 hover:text-green-800 dark:border-green-700 dark:bg-green-800 dark:text-green-400 dark:hover:bg-white/[0.03] dark:hover:text-green-200"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    strokeWidth={2}
+                                                    stroke="currentColor"
+                                                    className="w-6 h-6"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        d="M4.5 12.75l6 6 9-13.5"
+                                                    />
                                                 </svg>
-                                            </a>
+                                            </button>
 
                                             <button
                                                 onClick={() => handleOpenModalEmail()}
@@ -315,7 +352,11 @@ export default function CustomerTableComponent() {
             </Modal>
 
             <Modal isOpen={isOpenData} onClose={handleCloseModalData} className="max-w-[700px] m-4">
-                <FormeMetaDataCustomer data={selectedCustomerData} edit={!!selectedCustomerData?.id} closeModal={handleCloseModalData} />
+                <FormMetaDataCustomer data={selectedCustomerData} edit={!!selectedCustomerData?.id} closeModal={handleCloseModalData} />
+            </Modal>
+
+            <Modal isOpen={isOpenSession} onClose={handleCloseModalSession} className="max-w-[700px] m-4">
+                <FormSession clienteId={idSessionRegister} closeModal={handleCloseModalSession} />
             </Modal>
 
             <Modal isOpen={isOpenEmail} onClose={closeModalEmail} className="max-w-[700px] m-4">

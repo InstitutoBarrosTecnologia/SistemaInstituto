@@ -60,7 +60,21 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                 }, 2000);
             }
         },
-        onError: () => toast.error("Erro ao cadastrar ordem de serviço."),
+        onError: async (error: any) => {
+            const response = error.response?.data;
+
+            if (Array.isArray(response)) {
+                response.forEach((err: { errorMensagem: string }) => {
+                    toast.error(err.errorMensagem, { duration: 4000 });
+                });
+            } else if (typeof response === "string") {
+                toast.error(response, { duration: 4000 });
+            } else {
+                toast.error("Erro ao salvar a ordem de serviço. Verifique os dados e tente novamente.", {
+                    duration: 4000,
+                });
+            }
+        }
     });
 
     const mutationEdit = useMutation({
@@ -74,7 +88,21 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                 }, 2000);
             }
         },
-        onError: () => toast.error("Erro ao atualizar ordem."),
+        onError: async (error: any) => {
+            const response = error.response?.data;
+
+            if (Array.isArray(response)) {
+                response.forEach((err: { errorMensagem: string }) => {
+                    toast.error(err.errorMensagem, { duration: 4000 });
+                });
+            } else if (typeof response === "string") {
+                toast.error(response, { duration: 4000 });
+            } else {
+                toast.error("Erro ao atualizar a ordem de serviço. Verifique os dados e tente novamente.", {
+                    duration: 4000,
+                });
+            }
+        }
     });
 
     useEffect(() => {
@@ -177,7 +205,6 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Payload a ser enviado:", formData);
         const payload: OrderServiceRequestDto = {
             ...formData,
             funcionarioId: formData.funcionarioId?.trim() ? formData.funcionarioId : undefined,
@@ -233,10 +260,10 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
             <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
                 <div className="px-2 pr-14">
                     <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-                        {edit ? "Editando ordem de serviço" : "Cadastrar uma ordem de serviço"}
+                        {edit ? "Editando tratamento" : "Cadastrar um tratamento"}
                     </h4>
                     <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-                        Adicione as informações para {edit ? "editar" : "cadastrar"} uma ordem de serviço
+                        Adicione as informações para {edit ? "editar" : "cadastrar"} um tratamento
                     </p>
                 </div>
 
@@ -281,7 +308,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
 
                             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
                                 <div>
-                                    <Label>Cliente</Label>
+                                    <Label>Cliente<span className="text-red-300">*</span></Label>
                                     <Select
                                         options={customersOptions}
                                         placeholder="Clientes"
@@ -289,7 +316,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                                         className="dark:bg-dark-900"
                                         value={formData.clienteId}
                                         disabled={edit}
-                                        
+                                        required={true}
                                     />
                                 </div>
                             </div>
@@ -300,12 +327,13 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                                         options={servicesOptions}
                                         onChangeFull={setSelectedServices}
                                         disabled={edit}
+
                                     />
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                                 <div>
-                                    <Label>Qtd. Sessão Minma</Label>
+                                    <Label>Qtd. Sessão Mínima<span className="text-red-300">*</span></Label>
                                     <Input
                                         type="number"
                                         placeholder="1"
@@ -318,10 +346,11 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                                                 qtdSessaoRealizada: parseInt(e.target.value) || 0,
                                             }))
                                         }
+                                        required={true}
                                     />
                                 </div>
                                 <div>
-                                    <Label>Qtd. Sessão Máxima</Label>
+                                    <Label>Qtd. Sessão Máxima<span className="text-red-300">*</span></Label>
                                     <Input
                                         type="number"
                                         placeholder="10"
@@ -334,12 +363,13 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                                                 qtdSessaoTotal: parseInt(e.target.value) || 0,
                                             }))
                                         }
+                                        required={true}
                                     />
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                                 <div>
-                                    <Label>Percentual de ganho %</Label>
+                                    <Label>Percentual de ganho %<span className="text-red-300">*</span></Label>
                                     <Input
                                         type="number"
                                         placeholder="Percentual de ganho %"
@@ -347,6 +377,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                                         value={formData.percentualGanho?.toString()}
                                         min="1"
                                         disabled={edit}
+                                        required={true}
                                     />
                                 </div>
                                 <div>
@@ -401,7 +432,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                             </div>
                             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                                 <div>
-                                    <Label>Forma de pagamento</Label>
+                                    <Label>Forma de pagamento<span className="text-red-300">*</span></Label>
                                     <Select
                                         options={optionsPayment}
                                         placeholder="Tipo de Pagamento"
@@ -414,10 +445,11 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                                         value={String(formData.formaPagamento)}
                                         className="dark:bg-dark-900"
                                         disabled={edit}
+                                        required={true}
                                     />
                                 </div>
                                 <div>
-                                    <Label>Data pagamento</Label>
+                                    <Label>Data pagamento<span className="text-red-300">*</span></Label>
                                     <Input
                                         type="date"
                                         value={formData.dataPagamento?.slice(0, 10) || ""}
@@ -428,6 +460,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                                             }))
                                         }
                                         className="text-black"
+                                        required={true}
                                     />
                                 </div>
                             </div>

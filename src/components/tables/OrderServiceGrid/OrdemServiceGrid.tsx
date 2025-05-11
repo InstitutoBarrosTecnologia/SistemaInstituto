@@ -19,7 +19,7 @@ import { desativarCategoriaAsync } from "../../../services/service/ServiceCatego
 import { getAllOrderServicesAsync, getOrderServiceByIdAsync } from "../../../services/service/OrderServiceService";
 import FormOrderService from "../../../pages/Forms/OrderServiceForms/FormOrderService";
 import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/OrderServiceResponseDto";
-import FormeMetaDataOrderService from "../../../pages/Forms/OrderServiceForms/FormeMetaDataOrderService";
+import FormMetaDataOrderService from "../../../pages/Forms/OrderServiceForms/FormMetaDataOrderService";
 
 
 export default function OrdemServiceGrid() {
@@ -327,7 +327,7 @@ export default function OrdemServiceGrid() {
                 </Modal>
 
                 <Modal isOpen={isOpenData} onClose={handleCloseModalData} className="max-w-[700px] m-4">
-                    <FormeMetaDataOrderService data={selectedOrderData} edit={!!selectedOrderData?.id} closeModal={handleCloseModalData} />
+                    <FormMetaDataOrderService data={selectedOrderData} edit={!!selectedOrderData?.id} />
                 </Modal>
 
                 <Modal isOpen={isOpenDelete} onClose={closeModalDelete} className="max-w-[700px] m-4">

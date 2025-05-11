@@ -71,11 +71,20 @@ export default function FormCategoryService({ data, edit, closeModal }: FormCate
                 }, 3000);
             }
         },
-        onError: (error) => {
-            toast.error("Erro ao cadastrar! Sentimos muito pelo transtorno vamos investigar!", {
-                duration: 4000, // 4 segundos
-            });
-            console.error("Erro ao enviar dados:", error);
+        onError: async (error: any) => {
+            const response = error.response?.data;
+
+            if (Array.isArray(response)) {
+                response.forEach((err: { errorMensagem: string }) => {
+                    toast.error(err.errorMensagem, { duration: 4000 });
+                });
+            } else if (typeof response === "string") {
+                toast.error(response, { duration: 4000 });
+            } else {
+                toast.error("Erro ao salvar o paciente. Verifique os dados e tente novamente.", {
+                    duration: 4000,
+                });
+            }
         }
     });
 
@@ -126,22 +135,23 @@ export default function FormCategoryService({ data, edit, closeModal }: FormCate
 
                             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
                                 <div>
-                                    <Label>Nome categoria</Label>
+                                    <Label>Nome categoria<span className="text-red-300">*</span></Label>
                                     <Input
                                         type="text"
                                         placeholder="Nome da categoria"
                                         onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                                         value={formData?.titulo}
+                                        required={true}
                                     />
                                 </div>
                                 <div>
-                                    <Label>Descrição categoria</Label>
+                                    <Label>Descrição categoria<span className="text-red-300">*</span></Label>
                                     <Input
                                         type="text"
                                         placeholder="Descrição"
                                         onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
                                         value={formData?.desc}
-
+                                        required={true}
                                     />
                                 </div>
                             </div>

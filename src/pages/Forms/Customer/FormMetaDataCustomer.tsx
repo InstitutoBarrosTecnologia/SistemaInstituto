@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
-import TextArea from "../../../components/form/input/TextArea";
 import Label from "../../../components/form/Label";
-import { CustomerRequestDto, HistoryCustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import toast, { Toaster } from "react-hot-toast";
+import { CustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/ui/table";
 import Badge from "../../../components/ui/badge/Badge";
 import { formatCPF, formatDate, formatPhone, formatRG } from "../../../components/helper/formatUtils";
@@ -14,8 +11,7 @@ interface FormCustomerProps {
     closeModal?: () => void;
 }
 
-export default function FormeMetaDataCustomer({ data, edit, closeModal }: FormCustomerProps) {
-    const [historicoTemp, setHistoricoTemp] = useState("");
+export default function FormMetaDataCustomer({ data, edit }: FormCustomerProps) {
     const [showHistorico, setShowHistorico] = useState(false);
     const [showServicos, setShowServicos] = useState(false);
 
@@ -45,22 +41,6 @@ export default function FormeMetaDataCustomer({ data, edit, closeModal }: FormCu
         historico: data?.historico ?? [],
         servicos: data?.servicos ?? []
     });
-
-    const queryClient = useQueryClient();
-
-    const options = [
-        { value: "0", label: "Novo Paciente" },
-        { value: "1", label: "Aguardando Avaliação" },
-        { value: "2", label: "Em Avaliação" },
-        { value: "3", label: "Plano de Tratamento" },
-        { value: "4", label: "Em Atendimento" },
-        { value: "5", label: "Faltou Atendimento" },
-        { value: "6", label: "Tratamento Concluído" },
-        { value: "7", label: "Alta" },
-        { value: "8", label: "Cancelado" },
-        { value: "9", label: "Inativo" }
-    ];
-
 
     useEffect(() => {
         if (
@@ -442,7 +422,6 @@ export default function FormeMetaDataCustomer({ data, edit, closeModal }: FormCu
                     </div>
                 </div>
             </div >
-            <Toaster position="bottom-right" />
         </>
     );
 }

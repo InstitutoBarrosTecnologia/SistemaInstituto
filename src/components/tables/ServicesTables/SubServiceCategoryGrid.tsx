@@ -81,8 +81,6 @@ export default function SubServiceCategoryGrid() {
         openModalDelete();
     };
 
-
-
     const handlePostDelete = async (e: React.FormEvent) => {
         e.preventDefault();
         mutationDelete.mutate(idDeleteRegister);
