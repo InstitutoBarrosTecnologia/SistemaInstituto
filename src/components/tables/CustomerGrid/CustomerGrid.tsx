@@ -263,14 +263,15 @@ export default function CustomerTableComponent() {
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         {(() => {
-                                            const ultimaOrdem = customer.servicos?.reduce((maisRecente, atual) => {
-                                                if (!maisRecente || new Date(atual.dataCadastro!) > new Date(maisRecente.dataCadastro!)) {
-                                                    return atual;
-                                                }
-                                                return maisRecente;
-                                            });
+                                            const ultimaOrdem = (customer.servicos ?? []).filter(s => s !== null)
+                                                .filter((s) => s && s.dataCadastro)
+                                                .reduce((maisRecente, atual) => {
+                                                    return new Date(atual.dataCadastro!) > new Date(maisRecente.dataCadastro!)
+                                                        ? atual
+                                                        : maisRecente;
+                                                }, { dataCadastro: "0001-01-01T00:00:00" } as any);
 
-                                            return ultimaOrdem
+                                            return ultimaOrdem && ultimaOrdem.qtdSessaoTotal
                                                 ? `${ultimaOrdem.qtdSessaoRealizada ?? 0}/${ultimaOrdem.qtdSessaoTotal ?? 0}`
                                                 : "—";
                                         })()}
