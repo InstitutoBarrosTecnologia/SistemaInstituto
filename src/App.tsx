@@ -22,6 +22,8 @@ import CustomerTables from "./pages/Tables/CustomerTable/CustomerTables";
 import ServiceCategoryTables from "./pages/Tables/ServicesTable/ServiceCategoryTables";
 import SubServiceCategoryTable from "./pages/Tables/ServicesTable/SubServiceCategoryTable";
 import OrdemServiceTables from "./pages/Tables/OrderServiceTable/OrderServiceTables";
+import EmployeeTables from "./pages/Tables/EmployeeTable/EmployeeTables";
+import BranchOfficeTables from "./pages/Tables/BranchOfficeTable/BranchOfficeTables";
 
 export default function App() {
   return (
@@ -46,10 +48,13 @@ export default function App() {
 
           {/* Forms */}
           <Route path="/customer" element={<CustomerTables />} />
+          
 
 
           {/* Tables */}
           <Route path="/basic-tables" element={<BasicTables />} />
+          <Route path="/form-employee" element={<EmployeeTables />} />
+          <Route path="/form-branch" element={<BranchOfficeTables />} />
           <Route path="/form-cat-servico" element={<ServiceCategoryTables />} />
           <Route path="/form-sub-cat-servico" element={<SubServiceCategoryTable />} />
           <Route path="/ordem-servico" element={<OrdemServiceTables />} />

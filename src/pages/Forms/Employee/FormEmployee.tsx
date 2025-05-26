@@ -1,0 +1,243 @@
+import { useEffect, useState } from "react";
+import Input from "../../../components/form/input/InputField";
+import Label from "../../../components/form/Label";
+import Button from "../../../components/ui/button/Button";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast, { Toaster } from "react-hot-toast";
+import EmployeeService from "../../../services/service/EmployeeService";
+import { EmployeeRequestDto } from "../../../services/model/Dto/Request/EmployeeRequestDto";
+import { EmployeeResponseDto } from "../../../services/model/Dto/Response/EmployeeResponseDto";
+import InputMask from "react-input-mask";
+import Select from "../../../components/form/Select";
+import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
+
+interface FormEmployeeProps {
+    data?: EmployeeResponseDto;
+    edit?: boolean;
+    closeModal?: () => void;
+}
+
+
+export default function FormEmployee({ data, edit, closeModal }: FormEmployeeProps) {
+    const [formData, setFormData] = useState<EmployeeRequestDto>({
+        id: edit && data?.id ? data.id : undefined,
+        nome: data?.nome ?? "",
+        cpf: data?.cpf ?? "",
+        rg: data?.rg ?? "",
+        endereco: data?.endereco ?? "",
+        email: data?.email ?? "",
+        telefone: data?.telefone ?? "",
+        cargo: data?.cargo ?? "",
+        filialId: data?.filialId ?? "",
+        crefito: data?.crefito ?? "",
+        dataCadastro: data?.dataCadastro ?? new Date().toISOString(),
+    });
+    console.log("Dados recebidos no form:", data);
+    console.log('estado do edit: ' + edit)
+    const [optionsFilial, setOptionsFilial] = useState<{ label: string, value: string }[]>([]);
+
+    const queryClient = useQueryClient();
+
+    const mutation = useMutation<EmployeeResponseDto, any, EmployeeRequestDto>(
+        async (data) => {
+            try {
+                const response = edit && data.id
+                    ? await EmployeeService.update(data)
+                    : await EmployeeService.create(data);
+
+                return response.data; 
+            } catch (error: any) {
+                throw error.response ?? error;
+            }
+        },
+        {
+            onSuccess: () => {
+                toast.success(
+                    edit ? "Funcionário atualizado com sucesso!" : "Funcionário cadastrado com sucesso!",
+                    { duration: 3000 }
+                );
+
+                queryClient.invalidateQueries(["allEmployee"]);
+
+                setTimeout(() => {
+                    if (closeModal) closeModal();
+                }, 3000);
+            },
+            onError: (error: any) => {
+                const errorData = error?.data;
+
+                let errorMessage = "Erro ao salvar funcionário";
+
+                if (Array.isArray(errorData)) {
+                    errorMessage = errorData.map((e: any) => e.errorMensagem).join("\n");
+                } else if (typeof errorData === "string") {
+                    errorMessage = errorData;
+                } else if (typeof errorData === "object") {
+                    errorMessage =
+                        errorData?.title ||
+                        errorData?.message ||
+                        JSON.stringify(errorData);
+                }
+
+                toast.error(errorMessage, {
+                    duration: 5000,
+                });
+            }
+        }
+    );
+
+    useEffect(() => {
+        if (data) {
+            setFormData({
+                id: data.id ?? undefined,
+                nome: data.nome ?? "",
+                cpf: data.cpf ?? "",
+                rg: data.rg ?? "",
+                endereco: data.endereco ?? "",
+                email: data.email ?? "",
+                telefone: data.telefone ?? "",
+                cargo: data.cargo ?? "",
+                filialId: data.filialId ?? "",
+                crefito: data.crefito ?? "",
+                dataCadastro: data?.dataCadastro ?? new Date().toISOString(),
+            });
+        }
+    }, [data]);
+
+    useEffect(() => {
+        const fetchFiliais = async () => {
+            try {
+                const response = await BranchOfficeService.getAll();
+                const options = response
+                    .filter(item => item.id !== undefined)
+                    .map((item) => ({
+                        label: item.nomeFilial,
+                        value: item.id as string,
+                    }));
+                setOptionsFilial(options);
+            } catch (error) {
+                console.error("Erro ao buscar filiais", error);
+            }
+        };
+
+        fetchFiliais();
+    }, []);
+
+    const handleSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        mutation.mutate(formData);
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    return (
+        <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+            <div className="px-2 pr-14">
+                <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+                    {edit ? "Editar um funcionário" : "Cadastrar um funcionário"}
+                </h4>
+                <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+                    {edit ? "Atualize os dados do funcionário ." : "Adicione as informações para registrar um funcionário."}
+                </p>
+            </div>
+            <form className="flex flex-col" onSubmit={handleSave}>
+                <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
+                    <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                            <div>
+                                <Label>Nome<span className="text-red-300">*</span></Label>
+                                <Input name="nome" value={formData.nome} onChange={handleChange} required />
+                            </div>
+                            <div>
+                                <Label>CPF<span className="text-red-300">*</span></Label>
+                                <InputMask
+                                    mask="999.999.999-99"
+                                    maskChar=""
+                                    name="cpf"
+                                    value={formData.cpf}
+                                    onChange={handleChange}
+                                    placeholder="000.000.000-00"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                                    required={true}
+                                />
+                            </div>
+                            <div>
+                                <Label>RG</Label>
+                                <InputMask
+                                    mask="99.999.999-9"
+                                    maskChar=""
+                                    name="rg"
+                                    value={formData.rg}
+                                    onChange={handleChange}
+                                    placeholder="000.000.000-00"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                                />
+                            </div>
+                            <div>
+                                <Label>Email<span className="text-red-300">*</span></Label>
+                                <Input type="email" name="email" value={formData.email} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <Label>Telefone</Label>
+                                <InputMask
+                                    mask="(99) 99999-9999"
+                                    maskChar=""
+                                    name="telefone"
+                                    value={formData.telefone ?? ""}
+                                    onChange={handleChange}
+                                    placeholder="(00) 00000-0000"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                                />
+                            </div>
+                            <div>
+                                <Label>Endereço</Label>
+                                <Input name="endereco" value={formData.endereco} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <Label>Cargo</Label>
+                                <Input name="cargo" value={formData.cargo} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <Label>Crefito</Label>
+                                <Input type="text" name="crefito" value={formData.crefito} onChange={handleChange} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 ">
+                            <div>
+                                <div>
+                                    <Label>Filial<span className="text-red-300">*</span></Label>
+                                    <Select
+                                        options={optionsFilial}
+                                        value={formData.filialId}
+                                        placeholder="Selecione uma filial"
+                                        onChange={(value) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                filialId: value === '' ? undefined : value,
+                                            }))
+                                        }
+                                        className="dark:bg-dark-900"
+                                        required={true}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
+                        <Button size="sm" variant="outline" onClick={closeModal}>Cancelar</Button>
+                        <button
+                            className="bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+                            type="submit"
+                        >
+                            Salvar
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <Toaster position="bottom-right" />
+        </div>
+    );
+}

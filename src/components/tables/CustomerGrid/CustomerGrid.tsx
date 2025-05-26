@@ -130,9 +130,9 @@ export default function CustomerTableComponent() {
     }
 
     if (isLoading)
-        return <p className="p-4">Carregando pacientes...</p>;
+        return <p className="text-dark dark:text-white">Carregando pacientes...</p>;
     if (isError)
-        return <p className="p-4 text-red-500">Erro ao carregar pacientes!</p>;
+        return <p className="text-dark dark:text-white">Erro ao carregar pacientes!</p>;
 
 
     const optionsEmailEdit = [
@@ -258,8 +258,6 @@ export default function CustomerTableComponent() {
                                                                                             : "Desconhecido"
                                             }
                                         </Badge>
-
-
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         {(() => {

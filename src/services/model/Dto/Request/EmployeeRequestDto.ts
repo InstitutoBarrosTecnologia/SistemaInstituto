@@ -1,5 +1,6 @@
-export interface EmployeeRequestDto {
-    id?: string;
+import { BaseRequestDto } from "./BaseRequestDto";
+
+export interface EmployeeRequestDto extends BaseRequestDto {
     nome?: string;
     telefone?: string;
     email?: string;
@@ -8,4 +9,5 @@ export interface EmployeeRequestDto {
     endereco?: string;
     cargo?: string;
     filialId?: string;
+    crefito?: string;
   }

@@ -40,6 +40,8 @@ const navItems: NavItem[] = [
     icon: <ListIcon />,
     subItems: [
       { name: "Pacientes", path: "/customer", pro: false },
+      { name: "Funcionários", path: "/form-employee", pro: false },
+      { name: "Unidades", path: "/form-branch", pro: false },
       { name: "Cat. Serviço", path: "/form-cat-servico", pro: false },
       { name: "Sub. Serviço", path: "/form-sub-cat-servico", pro: false },
       { name: "Tratamento e Sessão", path: "/ordem-servico", pro: false },
