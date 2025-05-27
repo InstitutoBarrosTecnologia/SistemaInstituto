@@ -41,13 +41,6 @@ const Calendar: React.FC = () => {
   const [optionsCliente, setOptionsCliente] = useState<{ label: string; value: string }[]>([]);
   const [optionsFuncionario, setOptionsFuncionario] = useState<{ label: string; value: string }[]>([]);
 
-  const calendarsEvents = {
-    Danger: "danger",
-    Success: "success",
-    Primary: "primary",
-    Warning: "warning",
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
