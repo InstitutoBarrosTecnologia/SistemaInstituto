@@ -134,6 +134,8 @@ const Calendar: React.FC = () => {
     }
   })
 
+  console.log(eventLevel)
+
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     resetModalFields();
     setEventStartDate(selectInfo.startStr);
@@ -164,7 +166,7 @@ const Calendar: React.FC = () => {
 
   const handleAddOrUpdateEvent = () => {
     if (selectedEvent) {
-     mutateUpdateEvent({
+      mutateUpdateEvent({
         id: selectedEvent.id,
         titulo: eventTitle,
         descricao: eventDescription,

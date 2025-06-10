@@ -1,5 +1,5 @@
-import { CustomerRequestDto } from "../model/Dto/Request/CustomerRequestDto";
-import { CustomerResponseDto } from "../model/Dto/Response/CustomerResponseDto";
+import { CustomerRequestDto, HistoryCustomerRequestDto } from "../model/Dto/Request/CustomerRequestDto";
+import { CustomerResponseDto, HistoryCustomerResponseDto } from "../model/Dto/Response/CustomerResponseDto";
 import { instanceApi } from "./AxioService";
 
 
@@ -68,4 +68,21 @@ export const postCustomerFromExcelAsync = async (file: File): Promise<{ status: 
     });
 
     return { status: response.status };
+};
+
+// POST - Adicionar histórico para cliente
+export const postCustomerHistoryAsync = async (
+    request: HistoryCustomerRequestDto
+): Promise<{ status: number }> => {
+    const response = await instanceApi.post(`/Customer/AddHistoryCustomer`, request);
+    return { status: response.status };
+};
+
+export const getCustomerHistoryAsync = async (
+    clienteId: string
+): Promise<HistoryCustomerResponseDto[] | null> => {
+    const response = await instanceApi.get<HistoryCustomerResponseDto[] | null>(
+        `/Customer/GetCustomerHistory?clienteId=${clienteId}`
+    );
+    return response.data;
 };

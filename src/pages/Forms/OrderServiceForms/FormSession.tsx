@@ -13,6 +13,10 @@ import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/Or
 import { createSessionAsync, getAllSessionsAsync } from "../../../services/service/SessionService";
 import { ESessionStatus } from "../../../services/model/Enum/ESessionStatus";
 import { OrderServiceSessionResponseDto } from "../../../services/model/Dto/Response/OrderServiceSessionResponseDto";
+import TextArea from "../../../components/form/input/TextArea";
+import { HistoryCustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
+import { getCustomerHistoryAsync, postCustomerHistoryAsync } from "../../../services/service/CustomerService";
+import { HistoryCustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
 
 interface FormSessionProps {
     clienteId?: string;
@@ -20,6 +24,7 @@ interface FormSessionProps {
 }
 
 export default function FormSession({ clienteId, closeModal }: FormSessionProps) {
+    const [historicoTemp, setHistoricoTemp] = useState("");
 
     const getCurrentTime = () => {
         const now = new Date();
@@ -35,6 +40,9 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
         statusSessao: ESessionStatus.Realizada
     });
     const [showHistorico, setShowHistorico] = useState(false);
+    const [showSessaoHistorico, setShowSessao] = useState(false);
+    const [historicos, setHistoricos] = useState<HistoryCustomerResponseDto[]>([]);
+
     const queryClient = useQueryClient();
     const [sessions, setSessions] = useState<OrderServiceSessionResponseDto[]>([]);
     const [ordensServico, setOrdensServico] = useState<OrderServiceResponseDto[]>([]);
@@ -85,8 +93,30 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
         }
     }, [clienteId]);
 
+    useEffect(() => {
+        if (clienteId && clienteId !== "") {
+            getAllSessionsAsync(clienteId).then((res) => {
+                if (Array.isArray(res)) setSessions(res);
+            });
 
-    const handleSubmit = (e: React.FormEvent) => {
+            getAllOrderServicesAsync({ clienteId }).then((res) => {
+                if (Array.isArray(res)) {
+                    setOrdensServico(res);
+                }
+            }).catch(err => {
+                console.error("Erro ao carregar ordens de serviço:", err);
+            });
+
+            getCustomerHistoryAsync(clienteId).then((res) => {
+                if (Array.isArray(res)) setHistoricos(res);
+            }).catch(err => {
+                console.error("Erro ao buscar históricos do cliente:", err);
+            });
+        }
+    }, [clienteId]);
+
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const payload = {
@@ -95,6 +125,33 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
             horaSessao: getCurrentTime()
         };
         mutation.mutate(payload);
+
+        if (historicoTemp && historicoTemp.trim() !== "") {
+            const novoHistorico: HistoryCustomerRequestDto = {
+                assunto: "Atualização histórico do paciente",
+                descricao: historicoTemp,
+                dataAtualizacao: new Date().toISOString(),
+                clienteId: clienteId
+            };
+
+            try {
+                const response = await postCustomerHistoryAsync(novoHistorico);
+                if (response.status === 200) {
+                    toast.success("Histórico adicionado com sucesso!");
+                } else {
+                    toast.error("Erro ao registrar o histórico.");
+                }
+            } catch (error: any) {
+                const response = error.response?.data;
+                if (typeof response === "string") {
+                    toast.error(response);
+                } else {
+                    toast.error("Erro inesperado ao adicionar histórico.");
+                }
+            }
+        }
+
+        setHistoricoTemp("");
     };
 
     const sessionStatusOptions: { value: string; label: string }[] = [
@@ -168,22 +225,28 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
                                         value={formData?.observacaoSessao}
                                     />
                                 </div>
+                                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
+                                    <div>
+                                        <Label>Histórico</Label>
+                                        <TextArea placeholder="Escreva o histórico que desejar" value={historicoTemp} onChange={(value) => setHistoricoTemp(value)} />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <br></br>
                         <div className="mb-2">
                             <button
-                                onClick={() => setShowHistorico(!showHistorico)}
+                                onClick={() => setShowSessao(!showHistorico)}
                                 className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200"
                                 type="button"
                             >
                                 <span>Sessão</span>
-                                <svg className={`w-4 h-4 transform transition-transform ${showHistorico ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className={`w-4 h-4 transform transition-transform ${showSessaoHistorico ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
 
-                            {showHistorico && (
+                            {showSessaoHistorico && (
                                 <div className="mt-3">
                                     <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
                                         <div>
@@ -253,6 +316,88 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
                                                         <TableRow>
                                                             <TableCell className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
                                                                 Nenhuma sessão registrada para este paciente.
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mb-2">
+                            <button
+                                onClick={() => setShowHistorico(!showHistorico)}
+                                className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200"
+                                type="button"
+                            >
+                                <span>Histórico</span>
+                                <svg className={`w-4 h-4 transform transition-transform ${showHistorico ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            {showHistorico && (
+                                <div className="mt-3">
+                                    <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
+                                        <div>
+                                            <Label>Histórico</Label>
+                                            <Table>
+                                                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                                                    <TableRow>
+                                                        <TableCell
+                                                            isHeader
+                                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                                        >
+                                                            Assunto
+                                                        </TableCell>
+                                                        <TableCell
+                                                            isHeader
+                                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                                        >
+                                                            Informação
+                                                        </TableCell>
+                                                        <TableCell
+                                                            isHeader
+                                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                                        >
+                                                            Data do histórico
+                                                        </TableCell>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                                                    {historicos && historicos.length > 0 ? (
+                                                        historicos.map((historico, index) => (
+                                                            <TableRow key={index}>
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {historico.assunto}
+                                                                    </span>
+                                                                </TableCell>
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {historico.descricao}
+                                                                    </span>
+                                                                </TableCell>
+                                                                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {new Date(historico.dataAtualizacao!).toLocaleString("pt-BR", {
+                                                                            day: "2-digit",
+                                                                            month: "2-digit",
+                                                                            year: "numeric",
+                                                                            hour: "2-digit",
+                                                                            minute: "2-digit",
+                                                                        })}
+                                                                    </span>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                    ) : (
+                                                        <TableRow>
+                                                            <TableCell className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
+                                                                Nenhum histórico disponível para este paciente.
                                                             </TableCell>
                                                         </TableRow>
                                                     )}
