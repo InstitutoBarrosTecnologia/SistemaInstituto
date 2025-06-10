@@ -15,8 +15,8 @@ import { getAllCustomersAsync } from "../services/service/CustomerService";
 import Label from "../components/form/Label";
 import Select from "../components/form/Select";
 import Checkbox from "../components/form/input/Checkbox";
-import { useMutation } from "@tanstack/react-query";
-import { postScheduleAsync } from "../services/service/scheduleService";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Filter, getAllSchedulesAsync, postScheduleAsync, putScheduleAsync } from "../services/service/ScheduleService";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -29,6 +29,8 @@ const Calendar: React.FC = () => {
     null
   );
   const [eventTitle, setEventTitle] = useState("");
+  const [eventDescription, setEventDescription] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
   const [eventStartDate, setEventStartDate] = useState("");
   const [eventEndDate, setEventEndDate] = useState("");
   const [eventLevel, setEventLevel] = useState("");
@@ -42,94 +44,95 @@ const Calendar: React.FC = () => {
   const [optionsFilial, setOptionsFilial] = useState<{ label: string; value: string }[]>([]);
   const [optionsCliente, setOptionsCliente] = useState<{ label: string; value: string }[]>([]);
   const [optionsFuncionario, setOptionsFuncionario] = useState<{ label: string; value: string }[]>([]);
+  const [filter, _] = useState<Filter>({});
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [filiais, clientes, funcionarios] = await Promise.all([
-          BranchOfficeService.getAll(),
-          getAllCustomersAsync(),
-          EmployeeService.getAll(),
-        ]);
 
-        setOptionsFilial(
-          filiais.map((item: any) => ({
-            label: item.nomeFilial,
-            value: item.id,
-          }))
-        );
-
-        if (clientes) {
-          setOptionsCliente(
-            clientes.map((item: any) => ({
-              label: item.nome,
-              value: item.id,
-            }))
-          );
-        }
-
-        setOptionsFuncionario(
-          funcionarios.map((item: any) => ({
-            label: item.nome,
-            value: item.id,
-          }))
-        );
-      } catch (error) {
-        console.error("Erro ao buscar dados dos selects:", error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const { mutateAsync: mutateAddEvent} = useMutation({
-    mutationFn: postScheduleAsync,
-    onSuccess:() => {
-      alert("Pedaginha do malandro eíe")
-    }
+  const { isLoading, data: schedules, refetch: refetchCalendar } = useQuery({
+    queryKey: ["schedules", filter],
+    queryFn: () => getAllSchedulesAsync(filter)
   })
 
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
+    if (schedules) {
+      const formattedEvents = schedules.map((schedule) => ({
+        id: schedule.id,
+        title: schedule.titulo,
+        start: schedule.dataInicio,
+        end: schedule.dataFim,
+        allDay: schedule.diaTodo,
+        extendedProps: {
+          calendar: "Primary", // You can set this based on your logic
+        },
+      }));
+      setEvents(formattedEvents);
+    }
+  }, [schedules]);
 
-    setEvents([
-      {
-        id: "1",
-        title: "Event Conf.",
-        start: `${today}T10:00:00`,
-        end: `${today}T11:00:00`,
-        extendedProps: { calendar: "Danger" },
-      },
-      {
-        id: "4",
-        title: "Event Conf. 2",
-        start: `${today}T10:00:00`,
-        end: `${today}T11:00:00`,
-        extendedProps: { calendar: "Success" },
-      },
-      {
-        id: "5",
-        title: "Event",
-        start: `${today}T11:00:00`,
-        end: `${today}T11:10:00`,
-        extendedProps: { calendar: "Success" },
-      },
-      {
-        id: "2",
-        title: "Meeting",
-        start: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-        extendedProps: { calendar: "Success" },
-      },
-      {
-        id: "3",
-        title: "Workshop",
-        start: new Date(Date.now() + 172800000).toISOString().split("T")[0],
-        end: new Date(Date.now() + 259200000).toISOString().split("T")[0],
-        extendedProps: { calendar: "Primary" },
-      },
-    ]);
-  }, []);
+  const { data: filiaisData } = useQuery({
+    queryKey: ["filiais"],
+    queryFn: () => BranchOfficeService.getAll(),
+  });
 
+  const { data: clientesData } = useQuery({
+    queryKey: ["clientes"],
+    queryFn: () => getAllCustomersAsync(),
+  });
+
+  const { data: funcionariosData } = useQuery({
+    queryKey: ["funcionarios"],
+    queryFn: () => EmployeeService.getAll(),
+  });
+
+  useEffect(() => {
+    if (filiaisData) {
+      setOptionsFilial(
+        filiaisData.map((item: any) => ({
+          label: item.nomeFilial,
+          value: item.id,
+        }))
+      );
+    }
+    if (clientesData) {
+      setOptionsCliente(
+        clientesData.map((item: any) => ({
+          label: item.nome,
+          value: item.id,
+        }))
+      );
+    }
+    if (funcionariosData) {
+      setOptionsFuncionario(
+        funcionariosData.map((item: any) => ({
+          label: item.nome,
+          value: item.id,
+        }))
+      );
+    }
+  }, [filiaisData, clientesData, funcionariosData]);
+
+  const { mutateAsync: mutateAddEvent } = useMutation({
+    mutationFn: postScheduleAsync,
+    onSuccess: () => {
+      closeModal();
+      resetModalFields();
+      refetchCalendar();
+    },
+    onError: (error) => {
+      console.error("Erro ao adicionar evento:", error);
+    },
+  });
+
+  const { mutateAsync: mutateUpdateEvent } = useMutation({
+    mutationFn: putScheduleAsync,
+    onSuccess: () => {
+      closeModal();
+      resetModalFields();
+      refetchCalendar();
+    },
+    onError: (error) => {
+      console.error("Erro ao atualizar evento:", error);
+    }
+  })
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     resetModalFields();
@@ -140,49 +143,50 @@ const Calendar: React.FC = () => {
 
   const handleEventClick = (clickInfo: EventClickArg) => {
     const event = clickInfo.event;
+    const publicId = clickInfo.event._def.publicId
+    const schedule = schedules?.find((schedule) => schedule.id === publicId)
     setSelectedEvent(event as unknown as CalendarEvent);
-    setEventTitle(event.title);
-    setEventStartDate(event.start?.toISOString().split("T")[0] || "");
-    setEventEndDate(event.end?.toISOString().split("T")[0] || "");
-    setEventLevel(event.extendedProps.calendar);
+
+    if (schedule) {
+      setEventTitle(schedule.titulo || "");
+      setEventDescription(schedule.descricao || "");
+      setEventLocation(schedule.localizacao || "");
+      setEventStartDate(schedule.dataInicio ? schedule.dataInicio.slice(0, 16) : "");
+      setEventEndDate(schedule.dataFim ? schedule.dataFim.slice(0, 16) : "");
+      setEventLevel("Primary");
+      setSelectedCliente(schedule.idCliente?.toString() || undefined);
+      setSelectedFuncionario(schedule.idFuncionario?.toString() || undefined);
+      setSelectedFilial(schedule.filialId?.toString() || undefined);
+      setIsChecked(!!schedule.diaTodo);
+    }
     openModal();
   };
 
   const handleAddOrUpdateEvent = () => {
     if (selectedEvent) {
-      // Update existing event
-      setEvents((prevEvents) =>
-        prevEvents.map((event) =>
-          event.id === selectedEvent.id
-            ? {
-              ...event,
-              title: eventTitle,
-              start: eventStartDate,
-              end: eventEndDate,
-              extendedProps: { calendar: eventLevel },
-            }
-            : event
-        )
-      );
+     mutateUpdateEvent({
+        id: selectedEvent.id,
+        titulo: eventTitle,
+        descricao: eventDescription,
+        localizacao: eventLocation,
+        dataInicio: eventStartDate,
+        dataFim: eventEndDate,
+        diaTodo: isChecked,
+        observacao: eventTitle, // Assuming observation is the same as title for now
+        notificar: false, // Assuming no notification for now
+        status: 1, // Assuming status is active
+        idCliente: selectedCliente,
+        idFuncionario: selectedFuncionario,
+        filialId: selectedFilial,
+      });
     } else {
-      // Add new event
-      const newEvent: CalendarEvent = {
-        id: Date.now().toString(),
-        title: eventTitle,
-        start: eventStartDate,
-        end: eventEndDate,
-        allDay: true,
-        extendedProps: { calendar: eventLevel },
-      };
-
-      ///To Do: Voltar aqui
       mutateAddEvent({
         idCliente: selectedCliente,
         idFuncionario: selectedFuncionario,
-        // IdFilial: selectedFilial,
+        filialId: selectedFilial,
         titulo: eventTitle,
-        descricao: eventTitle, // Assuming description is the same as title for now
-        localizacao: eventTitle, // Assuming location is the same as title for now
+        descricao: eventDescription, // Assuming description is the same as title for now
+        localizacao: eventLocation, // Assuming location is the same as title for now
         dataInicio: eventStartDate,
         dataFim: eventEndDate,
         diaTodo: isChecked,
@@ -190,11 +194,7 @@ const Calendar: React.FC = () => {
         notificar: false, // Assuming no notification for now
         status: 1, // Assuming status is active
       })
-
-      setEvents((prevEvents) => [...prevEvents, newEvent]);
     }
-    closeModal();
-    resetModalFields();
   };
 
   const resetModalFields = () => {
@@ -202,7 +202,14 @@ const Calendar: React.FC = () => {
     setEventStartDate("");
     setEventEndDate("");
     setEventLevel("");
+    setEventDescription("");
+    setEventLocation("");
     setSelectedEvent(null);
+  };
+
+  const handleOpenModal = () => {
+    resetModalFields();
+    openModal();
   };
 
   return (
@@ -216,6 +223,14 @@ const Calendar: React.FC = () => {
 
       <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="custom-calendar">
+          {isLoading && (
+            <div className="flex justify-center items-center py-8">
+              <svg className="animate-spin h-8 w-8 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+            </div>
+          )}
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -235,12 +250,9 @@ const Calendar: React.FC = () => {
             customButtons={{
               addEventButton: {
                 text: "Novo Evento",
-                click: openModal,
+                click: handleOpenModal,
               },
             }}
-            eventOverlap={true}
-            slotEventOverlap={true}
-            dayMaxEvents={false}
           />
         </div>
         <Modal
@@ -276,10 +288,10 @@ const Calendar: React.FC = () => {
                     Descrição
                   </Label>
                   <input
-                    id="event-title"
+                    id="event-description"
                     type="text"
-                    value={eventTitle}
-                    onChange={(e) => setEventTitle(e.target.value)}
+                    value={eventDescription}
+                    onChange={(e) => setEventDescription(e.target.value)}
                     className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                   />
                 </div>
@@ -288,10 +300,10 @@ const Calendar: React.FC = () => {
                     Localização
                   </Label>
                   <input
-                    id="event-title"
+                    id="event-location"
                     type="text"
-                    value={eventTitle}
-                    onChange={(e) => setEventTitle(e.target.value)}
+                    value={eventLocation}
+                    onChange={(e) => setEventLocation(e.target.value)}
                     className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                   />
                 </div>
@@ -305,7 +317,7 @@ const Calendar: React.FC = () => {
                   <div className="relative">
                     <input
                       id="event-start-date"
-                      type="date"
+                      type="datetime-local"
                       value={eventStartDate}
                       onChange={(e) => setEventStartDate(e.target.value)}
                       className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
@@ -319,7 +331,7 @@ const Calendar: React.FC = () => {
                   <div className="relative">
                     <input
                       id="event-end-date"
-                      type="date"
+                      type="datetime-local"
                       value={eventEndDate}
                       onChange={(e) => setEventEndDate(e.target.value)}
                       className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
