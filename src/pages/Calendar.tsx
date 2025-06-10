@@ -15,6 +15,8 @@ import { getAllCustomersAsync } from "../services/service/CustomerService";
 import Label from "../components/form/Label";
 import Select from "../components/form/Select";
 import Checkbox from "../components/form/input/Checkbox";
+import { useMutation } from "@tanstack/react-query";
+import { postScheduleAsync } from "../services/service/scheduleService";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -80,6 +82,12 @@ const Calendar: React.FC = () => {
     fetchData();
   }, []);
 
+  const { mutateAsync: mutateAddEvent} = useMutation({
+    mutationFn: postScheduleAsync,
+    onSuccess:() => {
+      alert("Pedaginha do malandro eíe")
+    }
+  })
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -166,6 +174,23 @@ const Calendar: React.FC = () => {
         allDay: true,
         extendedProps: { calendar: eventLevel },
       };
+
+      ///To Do: Voltar aqui
+      mutateAddEvent({
+        idCliente: selectedCliente,
+        idFuncionario: selectedFuncionario,
+        // IdFilial: selectedFilial,
+        titulo: eventTitle,
+        descricao: eventTitle, // Assuming description is the same as title for now
+        localizacao: eventTitle, // Assuming location is the same as title for now
+        dataInicio: eventStartDate,
+        dataFim: eventEndDate,
+        diaTodo: isChecked,
+        observacao: eventTitle, // Assuming observation is the same as title for now
+        notificar: false, // Assuming no notification for now
+        status: 1, // Assuming status is active
+      })
+
       setEvents((prevEvents) => [...prevEvents, newEvent]);
     }
     closeModal();
