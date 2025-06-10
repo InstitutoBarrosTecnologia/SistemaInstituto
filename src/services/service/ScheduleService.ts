@@ -18,18 +18,20 @@ export const putScheduleAsync = async (
   return { status: response.status, data: response.data };
 };
 
-// GET - Buscar todos os eventos com filtros
-export const getAllSchedulesAsync = async (filters: {
+export interface Filter {
   data?: string;
   titulo?: string;
   diaTodo?: boolean;
   idCliente?: string;
   idFuncionario?: string;
-}): Promise<ScheduleRequestDto[] | null> => {
+}
+
+// GET - Buscar todos os eventos com filtros
+export const getAllSchedulesAsync = async (filters: Filter): Promise<ScheduleRequestDto[]> => {
   const response = await instanceApi.get<ScheduleRequestDto[] | null>(`/Schedule`, {
     params: filters,
   });
-  return response.data;
+  return response.data || [];
 };
 
 // GET - Buscar evento por ID

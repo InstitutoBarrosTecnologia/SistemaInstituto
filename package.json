@@ -20,7 +20,7 @@
     "@react-jvectormap/core": "^1.0.4",
     "@react-jvectormap/world": "^1.1.2",
     "@tailwindcss/forms": "^0.5.10",
-    "@tanstack/react-query": "4",
+    "@tanstack/react-query": "^4.39.2",
     "@types/jwt-decode": "^3.1.0",
     "@types/react-input-mask": "^3.0.6",
     "apexcharts": "^4.1.0",
