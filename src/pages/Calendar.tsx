@@ -82,13 +82,29 @@ const Calendar: React.FC = () => {
 
 
   useEffect(() => {
-    // Initialize with some events
+    const today = new Date().toISOString().split("T")[0];
+
     setEvents([
       {
         id: "1",
         title: "Event Conf.",
-        start: new Date().toISOString().split("T")[0],
+        start: `${today}T10:00:00`,
+        end: `${today}T11:00:00`,
         extendedProps: { calendar: "Danger" },
+      },
+      {
+        id: "4",
+        title: "Event Conf. 2",
+        start: `${today}T10:00:00`,
+        end: `${today}T11:00:00`,
+        extendedProps: { calendar: "Success" },
+      },
+      {
+        id: "5",
+        title: "Event",
+        start: `${today}T11:00:00`,
+        end: `${today}T11:10:00`,
+        extendedProps: { calendar: "Success" },
       },
       {
         id: "2",
@@ -105,6 +121,7 @@ const Calendar: React.FC = () => {
       },
     ]);
   }, []);
+
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     resetModalFields();
@@ -196,6 +213,9 @@ const Calendar: React.FC = () => {
                 click: openModal,
               },
             }}
+            eventOverlap={true}
+            slotEventOverlap={true}
+            dayMaxEvents={false}
           />
         </div>
         <Modal
