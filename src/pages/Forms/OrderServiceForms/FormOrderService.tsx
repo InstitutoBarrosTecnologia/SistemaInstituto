@@ -225,15 +225,15 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
         }));
     };
 
-    const handleChangeGanho = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        const percentual = parseFloat(value) || 0;
+    // const handleChangeGanho = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //     const value = e.target.value;
+    //     const percentual = parseFloat(value) || 0;
 
-        setFormData((prev) => ({
-            ...prev,
-            percentualGanho: percentual
-        }));
-    };
+    //     setFormData((prev) => ({
+    //         ...prev,
+    //         percentualGanho: percentual
+    //     }));
+    // };
 
     const handleChanceDescont = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -367,8 +367,8 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                                     />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                                <div>
+                            <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-3">
+                                {/* <div>
                                     <Label>Percentual de ganho %<span className="text-red-300">*</span></Label>
                                     <Input
                                         type="number"
@@ -379,7 +379,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                                         disabled={edit}
                                         required={true}
                                     />
-                                </div>
+                                </div> */}
                                 <div>
                                     <Label>Desconto %</Label>
                                     <Input
@@ -391,7 +391,7 @@ export default function FormOrderService({ data, edit, closeModal }: FormOrderSe
                                     />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-3 p-2">
+                            <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-3">
                                 <div>
                                     <Label>Total da Ordem</Label>
                                     <Input

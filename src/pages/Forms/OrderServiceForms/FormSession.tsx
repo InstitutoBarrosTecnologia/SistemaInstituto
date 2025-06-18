@@ -16,7 +16,7 @@ import { OrderServiceSessionResponseDto } from "../../../services/model/Dto/Resp
 import TextArea from "../../../components/form/input/TextArea";
 import { HistoryCustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
 import { getCustomerHistoryAsync, postCustomerHistoryAsync } from "../../../services/service/CustomerService";
-import { HistoryCustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
+import { HistoryCustomerResponseDto, CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
 
 interface FormSessionProps {
     clienteId?: string;
@@ -53,7 +53,9 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
         onSuccess: (response) => {
             if (response.status === 200) {
                 toast.success("Sessão registrada com sucesso!");
-                queryClient.invalidateQueries(["getAllSessions"]);
+queryClient.invalidateQueries<CustomerResponseDto[]>({
+          queryKey: ["allCustomer"],
+        });
 
                 setTimeout(() => {
                     if (closeModal) closeModal();

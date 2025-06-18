@@ -10,6 +10,7 @@ import { EmployeeResponseDto } from "../../../services/model/Dto/Response/Employ
 import InputMask from "react-input-mask";
 import Select from "../../../components/form/Select";
 import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
+import Checkbox from "../../../components/form/input/Checkbox";
 
 interface FormEmployeeProps {
     data?: EmployeeResponseDto;
@@ -19,6 +20,7 @@ interface FormEmployeeProps {
 
 
 export default function FormEmployee({ data, edit, closeModal }: FormEmployeeProps) {
+    const [userConfig, setUserConfig] = useState<boolean>(false);
     const [formData, setFormData] = useState<EmployeeRequestDto>({
         id: edit && data?.id ? data.id : undefined,
         nome: data?.nome ?? "",
@@ -45,7 +47,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                     ? await EmployeeService.update(data)
                     : await EmployeeService.create(data);
 
-                return response.data; 
+                return response.data;
             } catch (error: any) {
                 throw error.response ?? error;
             }
@@ -128,9 +130,24 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
         mutation.mutate(formData);
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+    const handleChange = (
+        eventOrName: React.ChangeEvent<HTMLInputElement> | string,
+        manualValue?: string
+    ) => {
+        if (typeof eventOrName === "string") {
+            const name = eventOrName;
+            const value = manualValue ?? "";
+            setFormData((prev) => ({
+                ...prev,
+                [name]: value,
+            }));
+        } else {
+            const { name, value } = eventOrName.target;
+            setFormData((prev) => ({
+                ...prev,
+                [name]: value,
+            }));
+        }
     };
 
     return (
@@ -205,7 +222,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                                 <Input type="text" name="crefito" value={formData.crefito} onChange={handleChange} />
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 ">
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-3">
                             <div>
                                 <div>
                                     <Label>Filial<span className="text-red-300">*</span></Label>
@@ -225,6 +242,76 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                                 </div>
                             </div>
                         </div>
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
+                            <div>
+                                <Checkbox
+                                    checked={userConfig}
+                                    onChange={(checked) => {
+                                        setUserConfig(checked);
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            createUser: checked
+                                        }));
+                                    }}
+                                    className="dark:bg-dark-900"
+                                />
+
+                                <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
+                                    Configurar acesso ao sistema
+                                </span>
+                            </div>
+                        </div>
+                        {userConfig && (
+                            <>
+                                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
+                                    Configuração do usuário ao sistema
+                                </h5>
+                                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                                    <div>
+                                        <Label>Perfil<span className="text-red-300">*</span></Label>
+                                        <Select
+                                            options={[
+                                                { label: "Administrativo", value: "Administrativo" },
+                                                { label: "Comercial", value: "Comercial" },
+                                                { label: "Fisioterapeuta", value: "Fisioterapeuta" },
+                                            ]}
+                                            value={formData.role?.toString()}
+                                            onChange={(value) => handleChange("role", value)}
+                                            placeholder="Selecione o tipo"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Nome de usuário<span className="text-red-300">*</span></Label>
+                                        <Input
+                                            type="text"
+                                            placeholder="Username por favor coloque o nome de usuário sem espaço"
+                                            value={formData.userName}
+                                            onChange={(e) => handleChange("userName", e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Email empresa</Label>
+                                        <Input
+                                            type="email"
+                                            value={formData.emailUser}
+                                            onChange={(e) => handleChange("emailUser", e.target.value)}
+                                            placeholder="empresa@email.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Senha<span className="text-red-300">*</span></Label>
+                                        <Input
+                                            type="text"
+                                            placeholder="Senha"
+                                            value={formData.password}
+                                            onChange={(e) => handleChange("password", e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                     <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
                         <Button size="sm" variant="outline" onClick={closeModal}>Cancelar</Button>

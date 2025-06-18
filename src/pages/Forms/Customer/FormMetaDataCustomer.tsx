@@ -3,7 +3,7 @@ import Label from "../../../components/form/Label";
 import { CustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/ui/table";
 import Badge from "../../../components/ui/badge/Badge";
-import { formatCPF, formatDate, formatPhone, formatRG } from "../../../components/helper/formatUtils";
+import { formatCPF, formatDate, formatPhone, formatRG, formatCEP } from "../../../components/helper/formatUtils";
 
 interface FormCustomerProps {
     data?: CustomerRequestDto;
@@ -235,7 +235,7 @@ export default function FormMetaDataCustomer({ data, edit }: FormCustomerProps) 
 
                                 <div>
                                     <Label>CEP</Label>
-                                    <Label>{formData.endereco?.cep}</Label>
+                                    <Label>{formatCEP(formData.endereco?.cep)}</Label>
                                 </div>
                             </div>
                         </div>
@@ -373,9 +373,15 @@ export default function FormMetaDataCustomer({ data, edit }: FormCustomerProps) 
                                                             </TableCell>
 
                                                             <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                                                <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                                                    {`${servico.qtdSessaoRealizada ?? 0}/${servico.qtdSessaoTotal ?? 0}`}
-                                                                </span>
+                                                                {(() => {
+                                                                    const sessoesRealizadas = servico.sessoes?.filter(s => s.statusSessao === 0).length ?? 0;
+                                                                    const totalSessoes = servico.qtdSessaoTotal ?? 0;
+                                                                    return (
+                                                                        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                            {`${sessoesRealizadas}/${totalSessoes}`}
+                                                                        </span>
+                                                                    );
+                                                                })()}
                                                             </TableCell>
 
                                                             <TableCell className="px-5 py-4 sm:px-6 text-start">

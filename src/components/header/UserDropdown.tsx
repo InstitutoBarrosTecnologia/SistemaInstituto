@@ -1,10 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link } from "react-router";
+import { parseJwt } from "../../services/util/jwtUtils";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const [userInfo, setUserInfo] = useState<{ email: string; name: string }>({
+    email: "",
+    name: "",
+  });
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const decoded = parseJwt(token);
+      if (decoded) {
+        setUserInfo({
+          email: decoded.Email || "",
+          name: decoded.UserName || "",
+        });
+      }
+    }
+  }, []);
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -23,11 +41,10 @@ export default function UserDropdown() {
           <img src="/images/user/owner.jpg" alt="User" />
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">Raphael Barros</span>
+        <span className="block mr-1 font-medium text-theme-sm">{userInfo.name}</span>
         <svg
-          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+            }`}
           width="18"
           height="20"
           viewBox="0 0 18 20"
@@ -51,10 +68,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            Raphael Barros
+            {userInfo.name}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            raphael.barros@institutobarros.com.br
+             {userInfo.email}
           </span>
         </div>
 

@@ -159,7 +159,7 @@ export default function OrdemServiceGrid() {
     const handleCloseModalData = () => {
         closeModalData(); // se você tiver definido esse `closeModal` via hook
     };
-    
+
     return (
         <>
 
@@ -223,8 +223,13 @@ export default function OrdemServiceGrid() {
                                     </TableCell>
 
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                        {ordem.qtdSessaoRealizada ?? 0} / {ordem.qtdSessaoTotal ?? 0}
+                                        {(() => {
+                                            const totalRealizadas = (ordem.sessoes ?? []).filter(sessao => sessao.statusSessao === 0).length;
+                                            const totalPrevistas = ordem.qtdSessaoTotal ?? 0;
+                                            return `${totalRealizadas}/${totalPrevistas}`;
+                                        })()}
                                     </TableCell>
+
 
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         <Badge

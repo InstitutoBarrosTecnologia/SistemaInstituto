@@ -261,19 +261,24 @@ export default function CustomerTableComponent() {
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         {(() => {
-                                            const ultimaOrdem = (customer.servicos ?? []).filter(s => s !== null)
-                                                .filter((s) => s && s.dataCadastro)
-                                                .reduce((maisRecente, atual) => {
-                                                    return new Date(atual.dataCadastro!) > new Date(maisRecente.dataCadastro!)
-                                                        ? atual
-                                                        : maisRecente;
-                                                }, { dataCadastro: "0001-01-01T00:00:00" } as any);
+                                            const ultimaOrdemComSessao = (customer.servicos ?? [])
+                                                .filter((s) => s && (s.qtdSessaoTotal ?? 0) > 0)
+                                                .sort((a, b) => new Date(b.dataCadastro ?? "").getTime() - new Date(a.dataCadastro ?? "").getTime())[0];
 
-                                            return ultimaOrdem && ultimaOrdem.qtdSessaoTotal
-                                                ? `${ultimaOrdem.qtdSessaoRealizada ?? 0}/${ultimaOrdem.qtdSessaoTotal ?? 0}`
-                                                : "—";
+                                            if (ultimaOrdemComSessao) {
+                                                const totalRealizadas = (ultimaOrdemComSessao.sessoes ?? [])
+                                                    .filter(sessao => sessao.statusSessao === 0) // Filtra apenas status 0 (realizado)
+                                                    .length;
+
+                                                const totalPrevistas = ultimaOrdemComSessao.qtdSessaoTotal ?? 0;
+
+                                                return `${totalRealizadas}/${totalPrevistas}`;
+                                            }
+
+                                            return "—";
                                         })()}
                                     </TableCell>
+
                                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             <button
