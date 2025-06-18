@@ -20,20 +20,15 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    subItems: [{ name: "Financeiro", path: "/", pro: false }],
-  },
-  {
+ {
     icon: <CalenderIcon />,
     name: "Agenda",
     path: "/calendar",
   },
   {
-    icon: <UserCircleIcon />,
-    name: "Funcionários",
-    path: "/profile",
+    name: "Whatsapp",
+    icon: <GridIcon />,
+    subItems: [{ name: "Atendimento", path: "/basic-tables", pro: false }],
   },
   {
     name: "Gestão",
@@ -48,10 +43,16 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    name: "Whatsapp",
+    icon: <UserCircleIcon />,
+    name: "Funcionários",
+    path: "/profile",
+  },
+  {
     icon: <GridIcon />,
-    subItems: [{ name: "Leads", path: "/basic-tables", pro: false }],
-  }
+    name: "Dashboard",
+    subItems: [{ name: "Financeiro", path: "/", pro: false }],
+  },
+ 
 ];
 
 
