@@ -42,7 +42,6 @@ export default function EmployeeGrid() {
     });
 
     const handleOpenModal = (employee: EmployeeResponseDto) => {
-        console.log(employee.id)
         setSelectedEmployee(employee);
         openModal();
     };

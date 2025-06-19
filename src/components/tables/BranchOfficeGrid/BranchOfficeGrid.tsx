@@ -43,7 +43,6 @@ export default function BranchOfficeGrid() {
     });
 
     const handleOpenModal = (branch: BranchOfficeResponseDto) => {
-        console.log(branch.id)
         setSelectedBranch(branch);
         openModal();
     };

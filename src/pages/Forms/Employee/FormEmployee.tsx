@@ -34,8 +34,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
         crefito: data?.crefito ?? "",
         dataCadastro: data?.dataCadastro ?? new Date().toISOString(),
     });
-    console.log("Dados recebidos no form:", data);
-    console.log('estado do edit: ' + edit)
+    
     const [optionsFilial, setOptionsFilial] = useState<{ label: string, value: string }[]>([]);
 
     const queryClient = useQueryClient();
