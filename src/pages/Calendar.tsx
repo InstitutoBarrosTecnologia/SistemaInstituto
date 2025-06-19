@@ -44,7 +44,7 @@ const Calendar: React.FC = () => {
   const [optionsFilial, setOptionsFilial] = useState<{ label: string; value: string }[]>([]);
   const [optionsCliente, setOptionsCliente] = useState<{ label: string; value: string }[]>([]);
   const [optionsFuncionario, setOptionsFuncionario] = useState<{ label: string; value: string }[]>([]);
-  const [filter, _] = useState<Filter>({});
+  const [filter, setFilter] = useState<Filter>({});
 
 
   const { isLoading, data: schedules, refetch: refetchCalendar } = useQuery({
@@ -134,8 +134,6 @@ const Calendar: React.FC = () => {
     }
   })
 
-  console.log(eventLevel)
-
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     resetModalFields();
     setEventStartDate(selectInfo.startStr);
@@ -214,25 +212,35 @@ const Calendar: React.FC = () => {
     openModal();
   };
 
+  // Atualize o filtro quando a filial for selecionada
+  useEffect(() => {
+    setFilter((prev) => ({
+      ...prev,
+      filialId: selectedFilial || undefined,
+    }));
+  }, [selectedFilial]);
+
   return (
     <>
       <PageMeta
         title="Instituto Barros - Sistema"
         description="Sistema Instituto Barros - Página para gerenciamento de Agenda"
       />
-
-      <PageBreadcrumb pageTitle="Agenda Instituto Barros" />
-
-      <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <PageBreadcrumb pageTitle="Agenda Instituto Barros" />
+        <div className="flex items-center">
+          <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Filial:</Label>
+          <Select
+            options={[{ label: "Todas", value: "" }, ...optionsFilial]}
+            value={selectedFilial || ""}
+            placeholder="Filial"
+            onChange={(value) => setSelectedFilial(value === "" ? undefined : value)}
+            className="w-28 text-xs h-8 px-2 py-1"
+          />
+        </div>
+      </div>
+      <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="custom-calendar">
-          {isLoading && (
-            <div className="flex justify-center items-center py-8">
-              <svg className="animate-spin h-8 w-8 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-              </svg>
-            </div>
-          )}
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -244,17 +252,17 @@ const Calendar: React.FC = () => {
               center: "title",
               right: "dayGridMonth,timeGridWeek,timeGridDay",
             }}
-            events={events}
-            selectable={true}
-            select={handleDateSelect}
-            eventClick={handleEventClick}
-            eventContent={renderEventContent}
             customButtons={{
               addEventButton: {
                 text: "Novo Evento",
                 click: handleOpenModal,
               },
             }}
+            events={events}
+            selectable={true}
+            select={handleDateSelect}
+            eventClick={handleEventClick}
+            eventContent={renderEventContent}
           />
         </div>
         <Modal
@@ -410,6 +418,14 @@ const Calendar: React.FC = () => {
             </div>
           </div>
         </Modal >
+        {isLoading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 dark:bg-gray-900/60">
+            <svg className="animate-spin h-12 w-12 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+          </div>
+        )}
       </div >
     </>
   );
