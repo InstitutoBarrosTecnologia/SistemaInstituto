@@ -15,27 +15,39 @@ export default function SignInForm() {
     password: "",
     userName: ""
   });
+  const [errorMsg, setErrorMsg] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const mutation = useMutation({
     mutationFn: postLoginUserAsync,
     onSuccess: (response) => {
+      setIsLoading(false);
+      setErrorMsg("");
       const { status, data } = response;
-
       if (status === 200 && data) {
         localStorage.setItem("token", data.accessToken ?? "");
         localStorage.setItem("role", data.roles[0]);
         localStorage.setItem("username", data.userName);
-
         navigate("/", { replace: true });
+      } else {
+        setErrorMsg("Erro ao fazer login. Verifique suas credenciais e tente novamente.");
       }
     },
     onError: (error) => {
+      setIsLoading(false);
+      setErrorMsg("Erro ao fazer login. Verifique suas credenciais e tente novamente.");
       console.error("Erro ao enviar dados:", error);
     }
   });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg("");
+    if (!formData.email || !formData.password) {
+      setErrorMsg("Por favor, preencha o e-mail e a senha.");
+      return;
+    }
+    setIsLoading(true);
     mutation.mutate(formData);
   };
 
@@ -51,6 +63,11 @@ export default function SignInForm() {
               Entre com seu e-mail e senha para entrar no sistema!
             </p>
           </div>
+          {errorMsg && (
+            <div className="mb-4 p-3 rounded bg-red-100 text-red-700 border border-red-300 text-sm">
+              {errorMsg}
+            </div>
+          )}
           <div>
             <form onSubmit={handleLogin}>
               <div className="space-y-6">
@@ -90,8 +107,18 @@ export default function SignInForm() {
                 </div>
 
                 <div>
-                  <Button className="w-full" size="sm">
-                    Logar
+                  <Button className="w-full" size="sm" disabled={isLoading}>
+                    {isLoading ? (
+                      <span className="flex items-center justify-center">
+                        <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                        </svg>
+                        Logando...
+                      </span>
+                    ) : (
+                      "Logar"
+                    )}
                   </Button>
                 </div>
               </div>
