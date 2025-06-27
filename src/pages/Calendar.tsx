@@ -220,6 +220,14 @@ const Calendar: React.FC = () => {
     }));
   }, [selectedFilial]);
 
+  // Atualize o filtro quando o funcionário for selecionado
+  useEffect(() => {
+    setFilter((prev) => ({
+      ...prev,
+      idFuncionario: selectedFuncionario || undefined,
+    }));
+  }, [selectedFuncionario]);
+
   return (
     <>
       <PageMeta
@@ -228,15 +236,27 @@ const Calendar: React.FC = () => {
       />
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <PageBreadcrumb pageTitle="Agenda Instituto Barros" />
-        <div className="flex items-center">
-          <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Filial:</Label>
-          <Select
-            options={[{ label: "Todas", value: "" }, ...optionsFilial]}
-            value={selectedFilial || ""}
-            placeholder="Filial"
-            onChange={(value) => setSelectedFilial(value === "" ? undefined : value)}
-            className="w-28 text-xs h-8 px-2 py-1"
-          />
+        <div className="flex items-center gap-4">
+          <div className="flex items-center">
+            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Filial:</Label>
+            <Select
+              options={[{ label: "Todas", value: "" }, ...optionsFilial]}
+              value={selectedFilial || ""}
+              placeholder="Filial"
+              onChange={(value) => setSelectedFilial(value === "" ? undefined : value)}
+              className="w-28 text-xs h-8 px-2 py-1"
+            />
+          </div>
+          <div className="flex items-center">
+            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Fisioterapeuta:</Label>
+            <Select
+              options={[{ label: "Todos", value: "" }, ...optionsFuncionario]}
+              value={selectedFuncionario || ""}
+              placeholder="Fisioterapeuta"
+              onChange={(value) => setSelectedFuncionario(value === "" ? undefined : value)}
+              className="w-36 text-xs h-8 px-2 py-1"
+            />
+          </div>
         </div>
       </div>
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
@@ -365,12 +385,12 @@ const Calendar: React.FC = () => {
                 </div>
                 <div>
                   <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Funcionário
+                    Fisioterapeuta
                   </Label>
                   <Select
                     options={optionsFuncionario}
                     value={selectedFuncionario}
-                    placeholder="Selecione um funcionário"
+                    placeholder="Selecione um fisioterapeuta"
                     onChange={(value) =>
                       setSelectedFuncionario(value === "" ? undefined : value)
                     }

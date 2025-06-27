@@ -32,6 +32,8 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
         cargo: data?.cargo ?? "",
         filialId: data?.filialId ?? "",
         crefito: data?.crefito ?? "",
+        dataNascimento: data?.dataNascimento ?? "",
+        contatoEmergencial: data?.contatoEmergencial ?? "",
         dataCadastro: data?.dataCadastro ?? new Date().toISOString(),
     });
     
@@ -100,6 +102,8 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                 cargo: data.cargo ?? "",
                 filialId: data.filialId ?? "",
                 crefito: data.crefito ?? "",
+                dataNascimento: data.dataNascimento ?? "",
+                contatoEmergencial: data.contatoEmergencial ?? "",
                 dataCadastro: data?.dataCadastro ?? new Date().toISOString(),
             });
         }
@@ -126,6 +130,11 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (formData.dataNascimento && /^\d{2}\/\d{2}\/\d{4}$/.test(formData.dataNascimento)) {
+            const [day, month, year] = formData.dataNascimento.split("/");
+            formData.dataNascimento = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+        }
         mutation.mutate(formData);
     };
 
@@ -176,7 +185,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                                     value={formData.cpf}
                                     onChange={handleChange}
                                     placeholder="000.000.000-00"
-                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
                                     required={true}
                                 />
                             </div>
@@ -205,7 +214,31 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                                     value={formData.telefone ?? ""}
                                     onChange={handleChange}
                                     placeholder="(00) 00000-0000"
-                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-dark-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                                />
+                            </div>
+                            <div>
+                                <Label>Contato Emergencial</Label>
+                                <InputMask
+                                    mask="(99) 99999-9999"
+                                    maskChar=""
+                                    name="contatoEmergencial"
+                                    value={formData.contatoEmergencial ?? ""}
+                                    onChange={handleChange}
+                                    placeholder="Contato Emergencial"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-dark-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                                />
+                            </div>
+                            <div>
+                                <Label>Data de Nascimento</Label>
+                                <InputMask
+                                    mask="99/99/9999"
+                                    maskChar=""
+                                    name="dataNascimento"
+                                    value={formData.dataNascimento ?? ""}
+                                    onChange={handleChange}
+                                    placeholder="dd/mm/aaaa"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-dark-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
                                 />
                             </div>
                             <div>
