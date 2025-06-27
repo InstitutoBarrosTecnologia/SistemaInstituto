@@ -7,7 +7,7 @@ export interface ScheduleRequestDto {
     diaTodo: boolean;
     usuarioResponsavelId?: string;
     idCliente?: string;
-    funcionarioId?: string;
+    idfuncionario?: string;
     filialId?: string;
     localizacao: string;
     observacao: string;

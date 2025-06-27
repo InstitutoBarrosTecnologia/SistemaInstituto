@@ -22,7 +22,8 @@ export interface Filter {
   titulo?: string;
   diaTodo?: boolean;
   idCliente?: string;
-  funcionarioId?: string;
+  idFuncionario?: string;
+  filialId?: string;
 }
 
 // GET - Buscar todos os eventos com filtros
