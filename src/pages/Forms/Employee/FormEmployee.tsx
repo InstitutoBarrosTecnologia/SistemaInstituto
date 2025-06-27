@@ -11,13 +11,13 @@ import InputMask from "react-input-mask";
 import Select from "../../../components/form/Select";
 import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
 import Checkbox from "../../../components/form/input/Checkbox";
+import { ChromePicker } from "react-color";
 
 interface FormEmployeeProps {
     data?: EmployeeResponseDto;
     edit?: boolean;
     closeModal?: () => void;
 }
-
 
 export default function FormEmployee({ data, edit, closeModal }: FormEmployeeProps) {
     const [userConfig, setUserConfig] = useState<boolean>(false);
@@ -35,7 +35,10 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
         dataNascimento: data?.dataNascimento ?? "",
         contatoEmergencial: data?.contatoEmergencial ?? "",
         dataCadastro: data?.dataCadastro ?? new Date().toISOString(),
+        cor: data?.cor ?? "#000000",
     });
+    const [color, setColor] = useState<string>(data?.cor ?? "#000000");
+    const [showColorPicker, setShowColorPicker] = useState(false);
     
     const [optionsFilial, setOptionsFilial] = useState<{ label: string, value: string }[]>([]);
 
@@ -105,7 +108,9 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                 dataNascimento: data.dataNascimento ?? "",
                 contatoEmergencial: data.contatoEmergencial ?? "",
                 dataCadastro: data?.dataCadastro ?? new Date().toISOString(),
+                cor: data.cor ?? "#000000",
             });
+            setColor(data.cor ?? "#000000");
         }
     }, [data]);
 
@@ -167,6 +172,44 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                 <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
                     {edit ? "Atualize os dados do funcionário ." : "Adicione as informações para registrar um funcionário."}
                 </p>
+                <div className="mb-6">
+                    <Label>Cor do Funcionário</Label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <button
+                            type="button"
+                            className="px-3 py-1 rounded bg-brand-500 text-white text-xs hover:bg-brand-600"
+                            onClick={() => setShowColorPicker(true)}
+                        >
+                            Definir cor
+                        </button>
+                        <div style={{
+                            width: 32, height: 32, borderRadius: "50%", border: "1px solid #ccc",
+                            background: color
+                        }} />
+                    </div>
+                    {showColorPicker && (
+                        <div style={{ position: "relative", zIndex: 10 }}>
+                            <div style={{ position: "absolute" }}>
+                                <ChromePicker
+                                    color={color}
+                                    onChangeComplete={(colorResult: { hex: string }) => {
+                                        setColor(colorResult.hex);
+                                        setFormData((prev) => ({ ...prev, cor: colorResult.hex }));
+                                    }}
+                                    disableAlpha
+                                />
+                                <button
+                                    type="button"
+                                    style={{ marginTop: 8, width: '100%' }}
+                                    className="px-3 py-1 rounded bg-gray-200 text-gray-800 text-xs hover:bg-gray-300"
+                                    onClick={() => setShowColorPicker(false)}
+                                >
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
             <form className="flex flex-col" onSubmit={handleSave}>
                 <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">

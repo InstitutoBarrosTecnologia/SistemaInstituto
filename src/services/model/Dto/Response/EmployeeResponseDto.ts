@@ -12,4 +12,5 @@ export interface EmployeeResponseDto extends BaseResponseDto {
   crefito?: string;
   dataNascimento?: string;
   contatoEmergencial?: string;
+  cor?: string;
 }

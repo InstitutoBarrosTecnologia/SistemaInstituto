@@ -18,4 +18,5 @@ export interface ScheduleResponseDto {
   notificar: boolean;
   minutosAntesNotificacao?: number | null;
   status: number;
+  corFuncionario?: string;
 }

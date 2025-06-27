@@ -52,22 +52,6 @@ const Calendar: React.FC = () => {
     queryFn: () => getAllSchedulesAsync(filter)
   })
 
-  useEffect(() => {
-    if (schedules) {
-      const formattedEvents = schedules.map((schedule) => ({
-        id: schedule.id,
-        title: schedule.titulo,
-        start: schedule.dataInicio,
-        end: schedule.dataFim,
-        allDay: schedule.diaTodo,
-        extendedProps: {
-          calendar: "Primary", // You can set this based on your logic
-        },
-      }));
-      setEvents(formattedEvents);
-    }
-  }, [schedules]);
-
   const { data: filiaisData } = useQuery({
     queryKey: ["filiais"],
     queryFn: () => BranchOfficeService.getAll(),
@@ -82,6 +66,36 @@ const Calendar: React.FC = () => {
     queryKey: ["funcionarios"],
     queryFn: () => EmployeeService.getAll(),
   });
+
+  useEffect(() => {
+    // Cria o map de id do funcionário para cor
+    const funcionarioColorMap = (funcionariosData || []).reduce((acc: Record<string, string>, funcionario: any) => {
+      if (funcionario.id && funcionario.cor) {
+        acc[funcionario.id] = funcionario.cor;
+      }
+      return acc;
+    }, {});
+
+    if (schedules) {
+      const formattedEvents = schedules.map((schedule) => {
+        const corFuncionario = schedule.funcionarioId && funcionarioColorMap[schedule.funcionarioId]
+          ? funcionarioColorMap[schedule.funcionarioId]
+          : undefined;
+        return {
+          id: schedule.id,
+          title: schedule.titulo,
+          start: schedule.dataInicio,
+          end: schedule.dataFim,
+          allDay: schedule.diaTodo,
+          extendedProps: {
+            calendar: "Primary",
+            corFuncionario,
+          },
+        };
+      });
+      setEvents(formattedEvents);
+    }
+  }, [schedules, funcionariosData]);
 
   useEffect(() => {
     if (filiaisData) {
@@ -454,12 +468,14 @@ const Calendar: React.FC = () => {
 };
 
 const renderEventContent = (eventInfo: any) => {
-  const colorClass = `fc-bg-${eventInfo.event.extendedProps.calendar.toLowerCase()}`;
+  // Usa a cor do funcionário, se não houver, usa azul padrão
+  const cor = eventInfo.event.extendedProps.corFuncionario || '#2563eb'; // azul padrão
   return (
     <div
-      className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm`}
+      className="event-fc-color flex fc-event-main p-1 rounded-sm"
+      style={{ background: cor, borderColor: cor, color: '#fff' }}
     >
-      <div className="fc-daygrid-event-dot"></div>
+      <div className="fc-daygrid-event-dot" style={{ background: '#fff' }}></div>
       <div className="fc-event-time">{eventInfo.timeText}</div>
       <div className="fc-event-title">{eventInfo.event.title}</div>
     </div>

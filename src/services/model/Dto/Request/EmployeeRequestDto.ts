@@ -17,4 +17,5 @@ export interface EmployeeRequestDto extends BaseRequestDto {
   createUser?: boolean;
   dataNascimento?: string;
   contatoEmergencial?: string;
+  cor?: string;
 }
