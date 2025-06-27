@@ -1,4 +1,3 @@
-
 import { ScheduleRequestDto } from "../model/Dto/Request/ScheduleRequestDto";
 import { instanceApi } from "./AxioService";
 
@@ -23,7 +22,7 @@ export interface Filter {
   titulo?: string;
   diaTodo?: boolean;
   idCliente?: string;
-  idFuncionario?: string;
+  funcionarioId?: string;
 }
 
 // GET - Buscar todos os eventos com filtros

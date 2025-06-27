@@ -155,7 +155,7 @@ const Calendar: React.FC = () => {
       setEventEndDate(schedule.dataFim ? schedule.dataFim.slice(0, 16) : "");
       setEventLevel("Primary");
       setSelectedCliente(schedule.idCliente?.toString() || undefined);
-      setSelectedFuncionario(schedule.idFuncionario?.toString() || undefined);
+      setSelectedFuncionario(schedule.funcionarioId?.toString() || undefined);
       setSelectedFilial(schedule.filialId?.toString() || undefined);
       setIsChecked(!!schedule.diaTodo);
     }
@@ -176,13 +176,13 @@ const Calendar: React.FC = () => {
         notificar: false, // Assuming no notification for now
         status: 1, // Assuming status is active
         idCliente: selectedCliente,
-        idFuncionario: selectedFuncionario,
+        funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
       });
     } else {
       mutateAddEvent({
         idCliente: selectedCliente,
-        idFuncionario: selectedFuncionario,
+        funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
         titulo: eventTitle,
         descricao: eventDescription, // Assuming description is the same as title for now
@@ -220,11 +220,11 @@ const Calendar: React.FC = () => {
     }));
   }, [selectedFilial]);
 
-  // Atualize o filtro quando o funcionário for selecionado
+  // Atualize o filtro quando o fisioterapeuta for selecionado
   useEffect(() => {
     setFilter((prev) => ({
       ...prev,
-      idFuncionario: selectedFuncionario || undefined,
+      funcionarioId: selectedFuncionario || undefined,
     }));
   }, [selectedFuncionario]);
 
