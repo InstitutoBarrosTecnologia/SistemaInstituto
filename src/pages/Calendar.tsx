@@ -304,6 +304,7 @@ const Calendar: React.FC = () => {
                 <div>
                   <Label >
                     Título Evento
+                    <span className="text-red-300">*</span>
                   </Label>
                   <input
                     id="event-title"
@@ -343,6 +344,7 @@ const Calendar: React.FC = () => {
                 <div>
                   <Label >
                     Data & Hora Início
+                    <span className="text-red-300">*</span>
                   </Label>
                   <div className="relative">
                     <input
@@ -356,7 +358,7 @@ const Calendar: React.FC = () => {
                 </div>
                 <div>
                   <Label >
-                    Data & Fora Fim
+                    Data & Hora Fim
                   </Label>
                   <div className="relative">
                     <input
@@ -375,7 +377,7 @@ const Calendar: React.FC = () => {
                   <Select
                     options={optionsCliente}
                     value={selectedCliente}
-                    placeholder="Selecione uma filial"
+                    placeholder="Selecione um cliente"
                     onChange={(value) =>
                       setSelectedCliente(value === "" ? undefined : value)
                     }
