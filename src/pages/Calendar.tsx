@@ -17,6 +17,7 @@ import Select from "../components/form/Select";
 import Checkbox from "../components/form/input/Checkbox";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Filter, getAllSchedulesAsync, postScheduleAsync, putScheduleAsync } from "../services/service/ScheduleService";
+import toast, { Toaster } from "react-hot-toast";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -126,24 +127,64 @@ const Calendar: React.FC = () => {
 
   const { mutateAsync: mutateAddEvent } = useMutation({
     mutationFn: postScheduleAsync,
-    onSuccess: () => {
-      closeModal();
-      resetModalFields();
-      refetchCalendar();
+    onSuccess: (data: any) => {
+      if (data?.status === 200 || data?.success === true || data?.id) {
+        toast.success("Evento criado com sucesso!", {
+          duration: 3000,
+          position: "bottom-right"
+        });
+        setTimeout(() => {
+          closeModal();
+          resetModalFields();
+          refetchCalendar();
+        }, 3000); // Fecha a modal após o toast sumir
+      } else {
+        toast.error("Erro ao criar evento. Tente novamente.", {
+          duration: 3000,
+          position: "bottom-right"
+        });
+      }
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      let message = "Erro ao criar evento. Tente novamente.";
+      if (error?.response?.data?.message) message = error.response.data.message;
+      else if (error?.message) message = error.message;
+      toast.error(message, {
+        duration: 3000,
+        position: "bottom-right"
+      });
       console.error("Erro ao adicionar evento:", error);
     },
   });
 
   const { mutateAsync: mutateUpdateEvent } = useMutation({
     mutationFn: putScheduleAsync,
-    onSuccess: () => {
-      closeModal();
-      resetModalFields();
-      refetchCalendar();
+    onSuccess: (data: any) => {
+      if (data?.status === 200 || data?.success === true || data?.id) {
+        toast.success("Evento atualizado com sucesso!", {
+          duration: 3000,
+          position: "bottom-right"
+        });
+        setTimeout(() => {
+          closeModal();
+          resetModalFields();
+          refetchCalendar();
+        }, 3000); // Fecha a modal após o toast sumir
+      } else {
+        toast.error("Erro ao atualizar evento. Tente novamente.", {
+          duration: 3000,
+          position: "bottom-right"
+        });
+      }
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      let message = "Erro ao atualizar evento. Tente novamente.";
+      if (error?.response?.data?.message) message = error.response.data.message;
+      else if (error?.message) message = error.message;
+      toast.error(message, {
+        duration: 3000,
+        position: "bottom-right"
+      });
       console.error("Erro ao atualizar evento:", error);
     }
   })
@@ -244,6 +285,7 @@ const Calendar: React.FC = () => {
 
   return (
     <>
+      <Toaster position="bottom-right" reverseOrder={false} toastOptions={{ duration: 3000 }} />
       <PageMeta
         title="Instituto Barros - Sistema"
         description="Sistema Instituto Barros - Página para gerenciamento de Agenda"
@@ -373,6 +415,7 @@ const Calendar: React.FC = () => {
                 <div>
                   <Label >
                     Data & Hora Fim
+                    <span className="text-red-300">*</span>
                   </Label>
                   <div className="relative">
                     <input
