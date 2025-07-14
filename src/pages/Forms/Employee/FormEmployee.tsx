@@ -39,7 +39,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
     });
     const [color, setColor] = useState<string>(data?.cor ?? "#000000");
     const [showColorPicker, setShowColorPicker] = useState(false);
-    
+
     const [optionsFilial, setOptionsFilial] = useState<{ label: string, value: string }[]>([]);
 
     const queryClient = useQueryClient();
@@ -71,24 +71,57 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
             },
             onError: (error: any) => {
                 const errorData = error?.data;
-
+                const validationErrors = errorData?.errors;
                 let errorMessage = "Erro ao salvar funcionário";
 
-                if (Array.isArray(errorData)) {
-                    errorMessage = errorData.map((e: any) => e.errorMensagem).join("\n");
-                } else if (typeof errorData === "string") {
-                    errorMessage = errorData;
-                } else if (typeof errorData === "object") {
-                    errorMessage =
-                        errorData?.title ||
-                        errorData?.message ||
-                        JSON.stringify(errorData);
+                const mensagens: string[] = [];
+
+                // Caso seja um array de objetos com campo errorMensagem
+                if (Array.isArray(errorData) && errorData[0]?.errorMensagem) {
+                    errorData.forEach((e: any) => {
+                        mensagens.push(e.errorMensagem);
+                    });
                 }
+
+                // Validação de estrutura de erros por campo (estrutura antiga)
+                else if (validationErrors && typeof validationErrors === 'object') {
+                    for (const campo in validationErrors) {
+                        const errosCampo = validationErrors[campo];
+                        if (Array.isArray(errosCampo)) {
+                            if (campo.includes('dataNascimento') || errosCampo[0]?.includes('could not be converted')) {
+                                mensagens.push("Revise o campo Data de Nascimento. O valor está inválido ou em branco.");
+                            } else if (campo.toLowerCase().includes('nome')) {
+                                mensagens.push("O campo Nome é obrigatório.");
+                            } else if (campo.toLowerCase().includes('cpf')) {
+                                mensagens.push("O campo CPF é obrigatório.");
+                            } else if (campo.toLowerCase().includes('email')) {
+                                mensagens.push("O campo E-mail é obrigatório.");
+                            } else if (campo.toLowerCase().includes('filialid')) {
+                                mensagens.push("O campo Unidade (Filial) é obrigatório.");
+                            } else if (campo === 'request') {
+                                mensagens.push("Verifique todos os campos obrigatórios. Há dados inválidos.");
+                            } else {
+                                mensagens.push(...errosCampo);
+                            }
+                        }
+                    }
+                }
+
+                // Caso seja string ou objeto genérico
+                else if (typeof errorData === "string") {
+                    mensagens.push(errorData);
+                } else if (typeof errorData === "object") {
+                    mensagens.push(errorData?.title || errorData?.message || JSON.stringify(errorData));
+                }
+
+                errorMessage = mensagens.join("\n");
 
                 toast.error(errorMessage, {
                     duration: 5000,
                 });
             }
+
+
         }
     );
 
@@ -217,7 +250,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                         <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                             <div>
                                 <Label>Nome<span className="text-red-300">*</span></Label>
-                                <Input name="nome" value={formData.nome} onChange={handleChange} required />
+                                <Input name="nome" value={formData.nome} onChange={handleChange} required/>
                             </div>
                             <div>
                                 <Label>CPF<span className="text-red-300">*</span></Label>
@@ -273,7 +306,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                                 />
                             </div>
                             <div>
-                                <Label>Data de Nascimento</Label>
+                                <Label>Data de Nascimento<span className="text-red-300">*</span></Label>
                                 <InputMask
                                     mask="99/99/9999"
                                     maskChar=""
@@ -282,7 +315,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                                     onChange={handleChange}
                                     placeholder="dd/mm/aaaa"
                                     className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-dark-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
-                                    required={true}                                
+                                    required={true}
                                 />
                             </div>
                             <div>
