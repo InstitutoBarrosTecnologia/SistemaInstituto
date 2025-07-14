@@ -513,14 +513,28 @@ const Calendar: React.FC = () => {
 const renderEventContent = (eventInfo: any) => {
   // Usa a cor do funcionário, se não houver, usa azul padrão
   const cor = eventInfo.event.extendedProps.corFuncionario || '#2563eb'; // azul padrão
+  
+  // Função para determinar se a cor é clara ou escura
+  const isLightColor = (hexColor: string) => {
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return brightness > 155;
+  };
+
+  // Define cor do texto baseada no fundo
+  const textColor = isLightColor(cor) ? '#000000' : '#ffffff';
+  
   return (
     <div
       className="event-fc-color flex fc-event-main p-1 rounded-sm"
-      style={{ background: cor, borderColor: cor, color: '#fff' }}
+      style={{ background: cor, borderColor: cor }}
     >
-      <div className="fc-daygrid-event-dot" style={{ background: '#fff' }}></div>
-      <div className="fc-event-time">{eventInfo.timeText}</div>
-      <div className="fc-event-title">{eventInfo.event.title}</div>
+      <div className="fc-daygrid-event-dot" style={{ background: textColor }}></div>
+      <div className="fc-event-time" style={{ color: textColor }}>{eventInfo.timeText}</div>
+      <div className="fc-event-title" style={{ color: textColor }}>{eventInfo.event.title}</div>
     </div>
   );
 };
