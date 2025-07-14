@@ -42,6 +42,9 @@ export default function EmployeeGrid() {
     });
 
     const handleOpenModal = (employee: EmployeeResponseDto) => {
+        employee.dataNascimento = employee.dataNascimento
+            ? employee.dataNascimento.split("T")[0] // PEGA SÓ YYYY-MM-DD
+            : undefined
         setSelectedEmployee(employee);
         openModal();
     };
