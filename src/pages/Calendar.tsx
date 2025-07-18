@@ -140,8 +140,7 @@ const Calendar: React.FC = () => {
     onSuccess: (data: any) => {
       if (data?.status === 200 || data?.success === true || data?.id) {
         toast.success("Evento criado com sucesso!", {
-          duration: 3000,
-          position: "bottom-right"
+          duration: 3000
         });
         setTimeout(() => {
           closeModal();
@@ -150,8 +149,7 @@ const Calendar: React.FC = () => {
         }, 3000); // Fecha a modal após o toast sumir
       } else {
         toast.error("Erro ao criar evento. Tente novamente.", {
-          duration: 3000,
-          position: "bottom-right"
+          duration: 3000
         });
       }
     },
@@ -160,8 +158,7 @@ const Calendar: React.FC = () => {
       if (error?.response?.data?.message) message = error.response.data.message;
       else if (error?.message) message = error.message;
       toast.error(message, {
-        duration: 3000,
-        position: "bottom-right"
+        duration: 3000
       });
       console.error("Erro ao adicionar evento:", error);
     },
@@ -173,8 +170,7 @@ const Calendar: React.FC = () => {
 
       if (data?.status === 200 || data?.success === true || data?.id) {
         toast.success("Evento atualizado com sucesso!", {
-          duration: 3000,
-          position: "bottom-right"
+          duration: 3000
         });
         setTimeout(() => {
           closeModal();
@@ -183,8 +179,7 @@ const Calendar: React.FC = () => {
         }, 3000); // Fecha a modal após o toast sumir
       } else {
         toast.error("Erro ao atualizar evento. Tente novamente.", {
-          duration: 3000,
-          position: "bottom-right"
+          duration: 3000
         });
       }
     },
@@ -193,8 +188,7 @@ const Calendar: React.FC = () => {
       if (error?.response?.data?.message) message = error.response.data.message;
       else if (error?.message) message = error.message;
       toast.error(message, {
-        duration: 3000,
-        position: "bottom-right"
+        duration: 3000
       });
       console.error("Erro ao atualizar evento:", error);
     }
@@ -391,7 +385,6 @@ const Calendar: React.FC = () => {
 
   return (
     <>
-      <Toaster position="bottom-right" reverseOrder={false} toastOptions={{ duration: 3000 }} />
       <PageMeta
         title="Instituto Barros - Sistema"
         description="Sistema Instituto Barros - Página para gerenciamento de Agenda"
@@ -453,8 +446,8 @@ const Calendar: React.FC = () => {
           className="max-w-[700px] m-4"
         >
           <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
                 <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
                   {selectedEvent ? "Editar Evento" : "Novo Evento"}
                 </h5>
@@ -463,27 +456,29 @@ const Calendar: React.FC = () => {
                 </p>
               </div>
               {selectedEvent && (
-                <button
-                  onClick={handleDeleteEvent}
-                  className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 transition-colors"
-                  title="Excluir evento"
-                >
-                  <svg 
-                    width="20" 
-                    height="20" 
-                    viewBox="0 0 20 20" 
-                    fill="none" 
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="text-red-500"
+                <div className="flex items-center">
+                  <button
+                    onClick={handleDeleteEvent}
+                    className="flex items-center justify-center w-12 h-12 mr-6 mt-2 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 transition-colors"
+                    title="Excluir evento"
                   >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M6.54142 3.7915C6.54142 2.54886 7.54878 1.5415 8.79142 1.5415H11.2081C12.4507 1.5415 13.4581 2.54886 13.4581 3.7915V4.0415H15.6252H16.666C17.0802 4.0415 17.416 4.37729 17.416 4.7915C17.416 5.20572 17.0802 5.5415 16.666 5.5415H16.3752V8.24638V13.2464V16.2082C16.3752 17.4508 15.3678 18.4582 14.1252 18.4582H5.87516C4.63252 18.4582 3.62516 17.4508 3.62516 16.2082V13.2464V8.24638V5.5415H3.3335C2.91928 5.5415 2.5835 5.20572 2.5835 4.7915C2.5835 4.37729 2.91928 4.0415 3.3335 4.0415H4.37516H6.54142V3.7915ZM14.8752 13.2464V8.24638V5.5415H13.4581H12.7081H7.29142H6.54142H5.12516V8.24638V13.2464V16.2082C5.12516 16.6224 5.46095 16.9582 5.87516 16.9582H14.1252C14.5394 16.9582 14.8752 16.6224 14.8752 16.2082V13.2464ZM8.04142 4.0415H11.9581V3.7915C11.9581 3.37729 11.6223 3.0415 11.2081 3.0415H8.79142C8.37721 3.0415 8.04142 3.37729 8.04142 3.7915V4.0415ZM8.3335 7.99984C8.74771 7.99984 9.0835 8.33562 9.0835 8.74984V13.7498C9.0835 14.1641 8.74771 14.4998 8.3335 14.4998C7.91928 14.4998 7.5835 14.1641 7.5835 13.7498V8.74984C7.5835 8.33562 7.91928 7.99984 8.3335 7.99984ZM12.4168 8.74984C12.4168 8.33562 12.081 7.99984 11.6668 7.99984C11.2526 7.99984 10.9168 8.33562 10.9168 8.74984V13.7498C10.9168 14.1641 11.2526 14.4998 11.6668 14.4998C12.081 14.4998 12.4168 14.1641 12.4168 13.7498V8.74984Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                </button>
+                    <svg 
+                      width="24" 
+                      height="24" 
+                      viewBox="0 0 20 20" 
+                      fill="none" 
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="text-red-500"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        clipRule="evenodd"
+                        d="M6.54142 3.7915C6.54142 2.54886 7.54878 1.5415 8.79142 1.5415H11.2081C12.4507 1.5415 13.4581 2.54886 13.4581 3.7915V4.0415H15.6252H16.666C17.0802 4.0415 17.416 4.37729 17.416 4.7915C17.416 5.20572 17.0802 5.5415 16.666 5.5415H16.3752V8.24638V13.2464V16.2082C16.3752 17.4508 15.3678 18.4582 14.1252 18.4582H5.87516C4.63252 18.4582 3.62516 17.4508 3.62516 16.2082V13.2464V8.24638V5.5415H3.3335C2.91928 5.5415 2.5835 5.20572 2.5835 4.7915C2.5835 4.37729 2.91928 4.0415 3.3335 4.0415H4.37516H6.54142V3.7915ZM14.8752 13.2464V8.24638V5.5415H13.4581H12.7081H7.29142H6.54142H5.12516V8.24638V13.2464V16.2082C5.12516 16.6224 5.46095 16.9582 5.87516 16.9582H14.1252C14.5394 16.9582 14.8752 16.6224 14.8752 16.2082V13.2464ZM8.04142 4.0415H11.9581V3.7915C11.9581 3.37729 11.6223 3.0415 11.2081 3.0415H8.79142C8.37721 3.0415 8.04142 3.37729 8.04142 3.7915V4.0415ZM8.3335 7.99984C8.74771 7.99984 9.0835 8.33562 9.0835 8.74984V13.7498C9.0835 14.1641 8.74771 14.4998 8.3335 14.4998C7.91928 14.4998 7.5835 14.1641 7.5835 13.7498V8.74984C7.5835 8.33562 7.91928 7.99984 8.3335 7.99984ZM12.4168 8.74984C12.4168 8.33562 12.081 7.99984 11.6668 7.99984C11.2526 7.99984 10.9168 8.33562 10.9168 8.74984V13.7498C10.9168 14.1641 11.2526 14.4998 11.6668 14.4998C12.081 14.4998 12.4168 14.1641 12.4168 13.7498V8.74984Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </button>
+                </div>
               )}
             </div>
             <div className="mt-8">
@@ -627,6 +622,7 @@ const Calendar: React.FC = () => {
               </button>
             </div>
           </div>
+          <Toaster position="bottom-right" />
         </Modal >
         <Modal isOpen={isOpenDelete} onClose={closeModalDelete} className="max-w-[700px] m-4">
           <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
@@ -660,6 +656,7 @@ const Calendar: React.FC = () => {
               </div>
             </form>
           </div>
+          <Toaster position="bottom-right" />
         </Modal>
         {isLoading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 dark:bg-gray-900/60">
@@ -670,7 +667,6 @@ const Calendar: React.FC = () => {
           </div>
         )}
       </div >
-      <Toaster position="bottom-right" />
     </>
   );
 };
