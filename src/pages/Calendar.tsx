@@ -338,6 +338,8 @@ const Calendar: React.FC = () => {
     
     const { cliente, funcionario, observacao } = eventInfo.event.extendedProps;
     
+
+    // Renderiza o conteúdo do evento
     return (
       <div
         className="event-fc-color flex fc-event-main p-1 rounded-sm relative group cursor-pointer"
