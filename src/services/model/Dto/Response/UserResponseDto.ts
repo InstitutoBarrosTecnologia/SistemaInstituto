@@ -3,4 +3,5 @@ export interface UserResponseDto {
     userName: string;
     email: string;
     roles?: string[];
+    funcionarioId?: string;
   }
