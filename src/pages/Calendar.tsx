@@ -55,22 +55,6 @@ const Calendar: React.FC = () => {
     queryFn: () => getAllSchedulesAsync(filter)
   })
 
-  useEffect(() => {
-    if (schedules) {
-      const formattedEvents = schedules.map((schedule) => ({
-        id: schedule.id,
-        title: schedule.titulo,
-        start: schedule.dataInicio,
-        end: schedule.dataFim,
-        allDay: schedule.diaTodo,
-        extendedProps: {
-          calendar: "Primary", // You can set this based on your logic
-        },
-      }));
-      setEvents(formattedEvents);
-    }
-  }, [schedules]);
-
   const { data: filiaisData } = useQuery({
     queryKey: ["filiais"],
     queryFn: () => BranchOfficeService.getAll(),
@@ -85,6 +69,32 @@ const Calendar: React.FC = () => {
     queryKey: ["funcionarios"],
     queryFn: () => EmployeeService.getAll(),
   });
+
+  useEffect(() => {
+    if (schedules) {
+      const formattedEvents = schedules.map((schedule) => {
+        // Buscar nome do cliente
+        const cliente = clientesData?.find((c: any) => c.id === schedule.idCliente);
+        // Buscar nome do funcionário
+        const funcionario = funcionariosData?.find((f: any) => f.id === schedule.idFuncionario);
+        
+        return {
+          id: schedule.id,
+          title: schedule.titulo,
+          start: schedule.dataInicio,
+          end: schedule.dataFim,
+          allDay: schedule.diaTodo,
+          extendedProps: {
+            calendar: "Primary",
+            cliente: cliente?.nome || "Não informado",
+            funcionario: funcionario?.nome || "Não informado",
+            observacao: schedule.observacao || "Sem observação",
+          },
+        };
+      });
+      setEvents(formattedEvents);
+    }
+  }, [schedules, clientesData, funcionariosData]);
 
   useEffect(() => {
     if (filiaisData) {
@@ -251,6 +261,42 @@ const Calendar: React.FC = () => {
       filialId: selectedFilial || undefined,
     }));
   }, [selectedFilial]);
+
+  const renderEventContent = (eventInfo: any) => {
+    const colorClass = `fc-bg-${eventInfo.event.extendedProps.calendar.toLowerCase()}`;
+    const { cliente, funcionario, observacao } = eventInfo.event.extendedProps;
+    
+    return (
+      <div
+        className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm relative group cursor-pointer`}
+        title={`Cliente: ${cliente} | Funcionário: ${funcionario} | Observação: ${observacao}`}
+      >
+        <div className="fc-daygrid-event-dot"></div>
+        <div className="fc-event-time">{eventInfo.timeText}</div>
+        <div className="fc-event-title">{eventInfo.event.title}</div>
+        
+        {/* Tooltip personalizado */}
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs bg-gray-900 dark:bg-gray-800 text-white rounded-lg shadow-xl border border-gray-700 dark:border-gray-600 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 min-w-max max-w-xs">
+          <div className="space-y-1.5">
+            <div className="flex items-start gap-2">
+              <span className="text-gray-300 font-medium">Cliente:</span>
+              <span className="text-white">{cliente}</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-gray-300 font-medium">Funcionário:</span>
+              <span className="text-white">{funcionario}</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-gray-300 font-medium">Observação:</span>
+              <span className="text-white">{observacao}</span>
+            </div>
+          </div>
+          {/* Seta do tooltip */}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -519,19 +565,6 @@ const Calendar: React.FC = () => {
       </div >
       <Toaster position="bottom-right" />
     </>
-  );
-};
-
-const renderEventContent = (eventInfo: any) => {
-  const colorClass = `fc-bg-${eventInfo.event.extendedProps.calendar.toLowerCase()}`;
-  return (
-    <div
-      className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm`}
-    >
-      <div className="fc-daygrid-event-dot"></div>
-      <div className="fc-event-time">{eventInfo.timeText}</div>
-      <div className="fc-event-title">{eventInfo.event.title}</div>
-    </div>
   );
 };
 
