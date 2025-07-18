@@ -82,7 +82,7 @@ const Calendar: React.FC = () => {
     if (schedules) {
       const formattedEvents = schedules.map((schedule) => {
         // Buscar nome do cliente
-        const cliente = clientesData?.find((c: any) => c.id === schedule.idCliente);
+        const cliente = clientesData?.find((c: any) => c.id === schedule.clienteId);
         // Buscar nome do funcionário
         const funcionario = funcionariosData?.find((f: any) => f.id === schedule.funcionarioId);
         
@@ -229,7 +229,7 @@ const Calendar: React.FC = () => {
       setEventStartDate(schedule.dataInicio ? schedule.dataInicio.slice(0, 16) : "");
       setEventEndDate(schedule.dataFim ? schedule.dataFim.slice(0, 16) : "");
       setEventLevel("Primary");
-      setSelectedCliente(schedule.idCliente?.toString() || undefined);
+      setSelectedCliente(schedule.clienteId?.toString() || undefined);
       setSelectedFuncionario(schedule.funcionarioId?.toString() || undefined);
       setSelectedFilial(schedule.filialId?.toString() || undefined);
       setIsChecked(!!schedule.diaTodo);
@@ -250,13 +250,13 @@ const Calendar: React.FC = () => {
         observacao: eventTitle, // Assuming observation is the same as title for now
         notificar: false, // Assuming no notification for now
         status: 1, // Assuming status is active
-        idCliente: selectedCliente,
+        clienteId: selectedCliente,
         funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
       });
     } else {
       mutateAddEvent({
-        idCliente: selectedCliente,
+        clienteId: selectedCliente,
         funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
         titulo: eventTitle,
@@ -383,6 +383,7 @@ const Calendar: React.FC = () => {
     }));
   }, [selectedFuncionario]);
 
+ 
   return (
     <>
       <PageMeta
