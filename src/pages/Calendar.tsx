@@ -71,32 +71,6 @@ const Calendar: React.FC = () => {
   });
 
   useEffect(() => {
-    if (schedules) {
-      const formattedEvents = schedules.map((schedule) => {
-        // Buscar nome do cliente
-        const cliente = clientesData?.find((c: any) => c.id === schedule.idCliente);
-        // Buscar nome do funcionário
-        const funcionario = funcionariosData?.find((f: any) => f.id === schedule.funcionarioId);
-        
-        return {
-          id: schedule.id,
-          title: schedule.titulo,
-          start: schedule.dataInicio,
-          end: schedule.dataFim,
-          allDay: schedule.diaTodo,
-          extendedProps: {
-            calendar: "Primary",
-            cliente: cliente?.nome || "Não informado",
-            funcionario: funcionario?.nome || "Não informado",
-            observacao: schedule.observacao || "Sem observação",
-          },
-        };
-      });
-      setEvents(formattedEvents);
-    }
-  }, [schedules, clientesData, funcionariosData]);
-
-  useEffect(() => {
     // Cria o map de id do funcionário para cor
     const funcionarioColorMap = (funcionariosData || []).reduce((acc: Record<string, string>, funcionario: any) => {
       if (funcionario.id && funcionario.cor) {
@@ -107,6 +81,11 @@ const Calendar: React.FC = () => {
 
     if (schedules) {
       const formattedEvents = schedules.map((schedule) => {
+        // Buscar nome do cliente
+        const cliente = clientesData?.find((c: any) => c.id === schedule.idCliente);
+        // Buscar nome do funcionário
+        const funcionario = funcionariosData?.find((f: any) => f.id === schedule.funcionarioId);
+        
         const corFuncionario = schedule.funcionarioId && funcionarioColorMap[schedule.funcionarioId]
           ? funcionarioColorMap[schedule.funcionarioId]
           : undefined;
@@ -119,12 +98,15 @@ const Calendar: React.FC = () => {
           extendedProps: {
             calendar: "Primary",
             corFuncionario,
+            cliente: cliente?.nome || "Não informado",
+            funcionario: funcionario?.nome || "Não informado",
+            observacao: schedule.observacao || "Sem observação",
           },
         };
       });
       setEvents(formattedEvents);
     }
-  }, [schedules, funcionariosData]);
+  }, [schedules, funcionariosData, clientesData]);
 
   useEffect(() => {
     if (filiaisData) {
@@ -318,6 +300,10 @@ const Calendar: React.FC = () => {
     setEventDescription("");
     setEventLocation("");
     setSelectedEvent(null);
+    setSelectedCliente(undefined);
+    setSelectedFuncionario(undefined);
+    setSelectedFilial(undefined);
+    setIsChecked(false);
   };
 
   const handleOpenModal = () => {
@@ -334,21 +320,45 @@ const Calendar: React.FC = () => {
   }, [selectedFilial]);
 
   const renderEventContent = (eventInfo: any) => {
-    const colorClass = `fc-bg-${eventInfo.event.extendedProps.calendar.toLowerCase()}`;
+    // Usa a cor do funcionário, se não houver, usa azul padrão
+    const cor = eventInfo.event.extendedProps.corFuncionario || '#2563eb'; // azul padrão
+    
+    // Função para determinar se a cor é clara ou escura
+    const isLightColor = (hexColor: string) => {
+      const hex = hexColor.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+      return brightness > 155;
+    };
+
+    // Define cor do texto baseada no fundo
+    const textColor = isLightColor(cor) ? '#000000' : '#ffffff';
+    
     const { cliente, funcionario, observacao } = eventInfo.event.extendedProps;
     
     return (
       <div
-        className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm relative group cursor-pointer`}
+        className="event-fc-color flex fc-event-main p-1 rounded-sm relative group cursor-pointer"
+        style={{ background: cor, borderColor: cor }}
         title={`Cliente: ${cliente} | Funcionário: ${funcionario} | Observação: ${observacao}`}
       >
-        <div className="fc-daygrid-event-dot"></div>
-        <div className="fc-event-time">{eventInfo.timeText}</div>
-        <div className="fc-event-title">{eventInfo.event.title}</div>
+        <div className="fc-daygrid-event-dot" style={{ background: textColor }}></div>
+        <div className="fc-event-time" style={{ color: textColor }}>{eventInfo.timeText}</div>
+        <div className="fc-event-title" style={{ color: textColor }}>{cliente}</div>
         
         {/* Tooltip personalizado */}
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs bg-gray-900 dark:bg-gray-800 text-white rounded-lg shadow-xl border border-gray-700 dark:border-gray-600 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 min-w-max max-w-xs">
           <div className="space-y-1.5">
+            <div className="flex items-start gap-2">
+              <span className="text-gray-300 font-medium">Horário:</span>
+              <span className="text-white">{eventInfo.timeText}</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-gray-300 font-medium">Título:</span>
+              <span className="text-white">{eventInfo.event.title}</span>
+            </div>
             <div className="flex items-start gap-2">
               <span className="text-gray-300 font-medium">Cliente:</span>
               <span className="text-white">{cliente}</span>
@@ -660,35 +670,6 @@ const Calendar: React.FC = () => {
       </div >
       <Toaster position="bottom-right" />
     </>
-  );
-};
-
-const renderEventContent = (eventInfo: any) => {
-  // Usa a cor do funcionário, se não houver, usa azul padrão
-  const cor = eventInfo.event.extendedProps.corFuncionario || '#2563eb'; // azul padrão
-  
-  // Função para determinar se a cor é clara ou escura
-  const isLightColor = (hexColor: string) => {
-    const hex = hexColor.replace('#', '');
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-    return brightness > 155;
-  };
-
-  // Define cor do texto baseada no fundo
-  const textColor = isLightColor(cor) ? '#000000' : '#ffffff';
-  
-  return (
-    <div
-      className="event-fc-color flex fc-event-main p-1 rounded-sm"
-      style={{ background: cor, borderColor: cor }}
-    >
-      <div className="fc-daygrid-event-dot" style={{ background: textColor }}></div>
-      <div className="fc-event-time" style={{ color: textColor }}>{eventInfo.timeText}</div>
-      <div className="fc-event-title" style={{ color: textColor }}>{eventInfo.event.title}</div>
-    </div>
   );
 };
 
