@@ -16,7 +16,8 @@ import Label from "../components/form/Label";
 import Select from "../components/form/Select";
 import Checkbox from "../components/form/input/Checkbox";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Filter, getAllSchedulesAsync, postScheduleAsync, putScheduleAsync } from "../services/service/ScheduleService";
+import { Filter, getAllSchedulesAsync, postScheduleAsync, putScheduleAsync, deleteScheduleAsync } from "../services/service/ScheduleService";
+import toast, { Toaster } from "react-hot-toast";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -37,6 +38,7 @@ const Calendar: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const calendarRef = useRef<FullCalendar>(null);
   const { isOpen, openModal, closeModal } = useModal();
+  const { isOpen: isOpenDelete, openModal: openModalDelete, closeModal: closeModalDelete } = useModal();
   const [selectedFilial, setSelectedFilial] = useState<string | undefined>(undefined);
   const [selectedCliente, setSelectedCliente] = useState<string | undefined>(undefined);
   const [selectedFuncionario, setSelectedFuncionario] = useState<string | undefined>(undefined);
@@ -45,6 +47,7 @@ const Calendar: React.FC = () => {
   const [optionsCliente, setOptionsCliente] = useState<{ label: string; value: string }[]>([]);
   const [optionsFuncionario, setOptionsFuncionario] = useState<{ label: string; value: string }[]>([]);
   const [filter, setFilter] = useState<Filter>({});
+  const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
 
 
   const { isLoading, data: schedules, refetch: refetchCalendar } = useQuery({
@@ -134,6 +137,21 @@ const Calendar: React.FC = () => {
     }
   })
 
+  const { mutateAsync: mutateDeleteEvent } = useMutation({
+    mutationFn: deleteScheduleAsync,
+    onSuccess: () => {
+      toast.success("Evento excluído com sucesso!");
+      closeModal();
+      closeModalDelete();
+      resetModalFields();
+      refetchCalendar();
+    },
+    onError: (error) => {
+      console.error("Erro ao deletar evento:", error);
+      toast.error("Erro ao excluir evento. Tente novamente.");
+    }
+  })
+
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     resetModalFields();
     setEventStartDate(selectInfo.startStr);
@@ -194,6 +212,20 @@ const Calendar: React.FC = () => {
         notificar: false, // Assuming no notification for now
         status: 1, // Assuming status is active
       })
+    }
+  };
+
+  const handleDeleteEvent = () => {
+    if (selectedEvent && selectedEvent.id) {
+      setIdDeleteRegister(selectedEvent.id);
+      openModalDelete();
+    }
+  };
+
+  const handlePostDelete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (idDeleteRegister) {
+      mutateDeleteEvent(idDeleteRegister);
     }
   };
 
@@ -271,13 +303,38 @@ const Calendar: React.FC = () => {
           className="max-w-[700px] m-4"
         >
           <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
-            <div>
-              <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-                {selectedEvent ? "Editar Evento" : "Novo Evento"}
-              </h5>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Agende ou edite um evento e mantanha a clínica em ordem
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+                  {selectedEvent ? "Editar Evento" : "Novo Evento"}
+                </h5>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Agende ou edite um evento e mantanha a clínica em ordem
+                </p>
+              </div>
+              {selectedEvent && (
+                <button
+                  onClick={handleDeleteEvent}
+                  className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 transition-colors"
+                  title="Excluir evento"
+                >
+                  <svg 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 20 20" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="text-red-500"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M6.54142 3.7915C6.54142 2.54886 7.54878 1.5415 8.79142 1.5415H11.2081C12.4507 1.5415 13.4581 2.54886 13.4581 3.7915V4.0415H15.6252H16.666C17.0802 4.0415 17.416 4.37729 17.416 4.7915C17.416 5.20572 17.0802 5.5415 16.666 5.5415H16.3752V8.24638V13.2464V16.2082C16.3752 17.4508 15.3678 18.4582 14.1252 18.4582H5.87516C4.63252 18.4582 3.62516 17.4508 3.62516 16.2082V13.2464V8.24638V5.5415H3.3335C2.91928 5.5415 2.5835 5.20572 2.5835 4.7915C2.5835 4.37729 2.91928 4.0415 3.3335 4.0415H4.37516H6.54142V3.7915ZM14.8752 13.2464V8.24638V5.5415H13.4581H12.7081H7.29142H6.54142H5.12516V8.24638V13.2464V16.2082C5.12516 16.6224 5.46095 16.9582 5.87516 16.9582H14.1252C14.5394 16.9582 14.8752 16.6224 14.8752 16.2082V13.2464ZM8.04142 4.0415H11.9581V3.7915C11.9581 3.37729 11.6223 3.0415 11.2081 3.0415H8.79142C8.37721 3.0415 8.04142 3.37729 8.04142 3.7915V4.0415ZM8.3335 7.99984C8.74771 7.99984 9.0835 8.33562 9.0835 8.74984V13.7498C9.0835 14.1641 8.74771 14.4998 8.3335 14.4998C7.91928 14.4998 7.5835 14.1641 7.5835 13.7498V8.74984C7.5835 8.33562 7.91928 7.99984 8.3335 7.99984ZM12.4168 8.74984C12.4168 8.33562 12.081 7.99984 11.6668 7.99984C11.2526 7.99984 10.9168 8.33562 10.9168 8.74984V13.7498C10.9168 14.1641 11.2526 14.4998 11.6668 14.4998C12.081 14.4998 12.4168 14.1641 12.4168 13.7498V8.74984Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              )}
             </div>
             <div className="mt-8">
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 ">
@@ -336,7 +393,7 @@ const Calendar: React.FC = () => {
                 </div>
                 <div>
                   <Label >
-                    Data & Fora Fim
+                    Data & Hora Fim
                   </Label>
                   <div className="relative">
                     <input
@@ -355,7 +412,7 @@ const Calendar: React.FC = () => {
                   <Select
                     options={optionsCliente}
                     value={selectedCliente}
-                    placeholder="Selecione uma filial"
+                    placeholder="Selecione um cliente"
                     onChange={(value) =>
                       setSelectedCliente(value === "" ? undefined : value)
                     }
@@ -418,6 +475,39 @@ const Calendar: React.FC = () => {
             </div>
           </div>
         </Modal >
+        <Modal isOpen={isOpenDelete} onClose={closeModalDelete} className="max-w-[700px] m-4">
+          <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+            <div className="px-2 pr-14">
+              <h4 className="mb-2 text-2xl font-semibold text-center text-gray-800 dark:text-white/90">
+                Excluir Evento
+              </h4>
+            </div>
+            <form className="flex flex-col" onSubmit={handlePostDelete}>
+              <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
+                <div>
+                  <h5 className="mb-5 text-lg font-medium text-gray-800 text-center dark:text-white/90 lg:mb-6">
+                    Tem certeza que deseja excluir este evento permanentemente?
+                  </h5>
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={closeModalDelete}
+                  className="flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="bg-red-500 text-white shadow-theme-xs hover:bg-red-600 disabled:bg-red-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+                  type="submit"
+                >
+                  Excluir
+                </button>
+              </div>
+            </form>
+          </div>
+        </Modal>
         {isLoading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 dark:bg-gray-900/60">
             <svg className="animate-spin h-12 w-12 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -427,6 +517,7 @@ const Calendar: React.FC = () => {
           </div>
         )}
       </div >
+      <Toaster position="bottom-right" />
     </>
   );
 };
