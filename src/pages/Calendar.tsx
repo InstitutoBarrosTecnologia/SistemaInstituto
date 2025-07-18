@@ -76,7 +76,7 @@ const Calendar: React.FC = () => {
         // Buscar nome do cliente
         const cliente = clientesData?.find((c: any) => c.id === schedule.idCliente);
         // Buscar nome do funcionário
-        const funcionario = funcionariosData?.find((f: any) => f.id === schedule.idFuncionario);
+        const funcionario = funcionariosData?.find((f: any) => f.id === schedule.funcionarioId);
         
         return {
           id: schedule.id,
@@ -95,6 +95,36 @@ const Calendar: React.FC = () => {
       setEvents(formattedEvents);
     }
   }, [schedules, clientesData, funcionariosData]);
+
+  useEffect(() => {
+    // Cria o map de id do funcionário para cor
+    const funcionarioColorMap = (funcionariosData || []).reduce((acc: Record<string, string>, funcionario: any) => {
+      if (funcionario.id && funcionario.cor) {
+        acc[funcionario.id] = funcionario.cor;
+      }
+      return acc;
+    }, {});
+
+    if (schedules) {
+      const formattedEvents = schedules.map((schedule) => {
+        const corFuncionario = schedule.funcionarioId && funcionarioColorMap[schedule.funcionarioId]
+          ? funcionarioColorMap[schedule.funcionarioId]
+          : undefined;
+        return {
+          id: schedule.id,
+          title: schedule.titulo,
+          start: schedule.dataInicio,
+          end: schedule.dataFim,
+          allDay: schedule.diaTodo,
+          extendedProps: {
+            calendar: "Primary",
+            corFuncionario,
+          },
+        };
+      });
+      setEvents(formattedEvents);
+    }
+  }, [schedules, funcionariosData]);
 
   useEffect(() => {
     if (filiaisData) {
@@ -125,24 +155,65 @@ const Calendar: React.FC = () => {
 
   const { mutateAsync: mutateAddEvent } = useMutation({
     mutationFn: postScheduleAsync,
-    onSuccess: () => {
-      closeModal();
-      resetModalFields();
-      refetchCalendar();
+    onSuccess: (data: any) => {
+      if (data?.status === 200 || data?.success === true || data?.id) {
+        toast.success("Evento criado com sucesso!", {
+          duration: 3000,
+          position: "bottom-right"
+        });
+        setTimeout(() => {
+          closeModal();
+          resetModalFields();
+          refetchCalendar();
+        }, 3000); // Fecha a modal após o toast sumir
+      } else {
+        toast.error("Erro ao criar evento. Tente novamente.", {
+          duration: 3000,
+          position: "bottom-right"
+        });
+      }
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      let message = "Erro ao criar evento. Tente novamente.";
+      if (error?.response?.data?.message) message = error.response.data.message;
+      else if (error?.message) message = error.message;
+      toast.error(message, {
+        duration: 3000,
+        position: "bottom-right"
+      });
       console.error("Erro ao adicionar evento:", error);
     },
   });
 
   const { mutateAsync: mutateUpdateEvent } = useMutation({
     mutationFn: putScheduleAsync,
-    onSuccess: () => {
-      closeModal();
-      resetModalFields();
-      refetchCalendar();
+    onSuccess: (data: any) => {
+
+      if (data?.status === 200 || data?.success === true || data?.id) {
+        toast.success("Evento atualizado com sucesso!", {
+          duration: 3000,
+          position: "bottom-right"
+        });
+        setTimeout(() => {
+          closeModal();
+          resetModalFields();
+          refetchCalendar();
+        }, 3000); // Fecha a modal após o toast sumir
+      } else {
+        toast.error("Erro ao atualizar evento. Tente novamente.", {
+          duration: 3000,
+          position: "bottom-right"
+        });
+      }
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      let message = "Erro ao atualizar evento. Tente novamente.";
+      if (error?.response?.data?.message) message = error.response.data.message;
+      else if (error?.message) message = error.message;
+      toast.error(message, {
+        duration: 3000,
+        position: "bottom-right"
+      });
       console.error("Erro ao atualizar evento:", error);
     }
   })
@@ -183,7 +254,7 @@ const Calendar: React.FC = () => {
       setEventEndDate(schedule.dataFim ? schedule.dataFim.slice(0, 16) : "");
       setEventLevel("Primary");
       setSelectedCliente(schedule.idCliente?.toString() || undefined);
-      setSelectedFuncionario(schedule.idFuncionario?.toString() || undefined);
+      setSelectedFuncionario(schedule.funcionarioId?.toString() || undefined);
       setSelectedFilial(schedule.filialId?.toString() || undefined);
       setIsChecked(!!schedule.diaTodo);
     }
@@ -204,13 +275,13 @@ const Calendar: React.FC = () => {
         notificar: false, // Assuming no notification for now
         status: 1, // Assuming status is active
         idCliente: selectedCliente,
-        idFuncionario: selectedFuncionario,
+        funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
       });
     } else {
       mutateAddEvent({
         idCliente: selectedCliente,
-        idFuncionario: selectedFuncionario,
+        funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
         titulo: eventTitle,
         descricao: eventDescription, // Assuming description is the same as title for now
@@ -298,23 +369,44 @@ const Calendar: React.FC = () => {
     );
   };
 
+  // Atualize o filtro quando o fisioterapeuta for selecionado
+  useEffect(() => {
+    setFilter((prev) => ({
+      ...prev,
+      idFuncionario: selectedFuncionario || undefined,
+    }));
+  }, [selectedFuncionario]);
+
   return (
     <>
+      <Toaster position="bottom-right" reverseOrder={false} toastOptions={{ duration: 3000 }} />
       <PageMeta
         title="Instituto Barros - Sistema"
         description="Sistema Instituto Barros - Página para gerenciamento de Agenda"
       />
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <PageBreadcrumb pageTitle="Agenda Instituto Barros" />
-        <div className="flex items-center">
-          <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Filial:</Label>
-          <Select
-            options={[{ label: "Todas", value: "" }, ...optionsFilial]}
-            value={selectedFilial || ""}
-            placeholder="Filial"
-            onChange={(value) => setSelectedFilial(value === "" ? undefined : value)}
-            className="w-28 text-xs h-8 px-2 py-1"
-          />
+        <div className="flex items-center gap-4">
+          <div className="flex items-center">
+            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Filial:</Label>
+            <Select
+              options={[{ label: "Todas", value: "" }, ...optionsFilial]}
+              value={selectedFilial || ""}
+              placeholder="Filial"
+              onChange={(value) => setSelectedFilial(value === "" ? undefined : value)}
+              className="w-28 text-xs h-8 px-2 py-1"
+            />
+          </div>
+          <div className="flex items-center">
+            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Fisioterapeuta:</Label>
+            <Select
+              options={[{ label: "Todos", value: "" }, ...optionsFuncionario]}
+              value={selectedFuncionario || ""}
+              placeholder="Fisioterapeuta"
+              onChange={(value) => setSelectedFuncionario(value === "" ? undefined : value)}
+              className="w-36 text-xs h-8 px-2 py-1"
+            />
+          </div>
         </div>
       </div>
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
@@ -387,6 +479,7 @@ const Calendar: React.FC = () => {
                 <div>
                   <Label >
                     Título Evento
+                    <span className="text-red-300">*</span>
                   </Label>
                   <input
                     id="event-title"
@@ -426,6 +519,7 @@ const Calendar: React.FC = () => {
                 <div>
                   <Label >
                     Data & Hora Início
+                    <span className="text-red-300">*</span>
                   </Label>
                   <div className="relative">
                     <input
@@ -440,6 +534,7 @@ const Calendar: React.FC = () => {
                 <div>
                   <Label >
                     Data & Hora Fim
+                    <span className="text-red-300">*</span>
                   </Label>
                   <div className="relative">
                     <input
@@ -468,12 +563,12 @@ const Calendar: React.FC = () => {
                 </div>
                 <div>
                   <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Funcionário
+                    Fisioterapeuta
                   </Label>
                   <Select
                     options={optionsFuncionario}
                     value={selectedFuncionario}
-                    placeholder="Selecione um funcionário"
+                    placeholder="Selecione um fisioterapeuta"
                     onChange={(value) =>
                       setSelectedFuncionario(value === "" ? undefined : value)
                     }
@@ -565,6 +660,35 @@ const Calendar: React.FC = () => {
       </div >
       <Toaster position="bottom-right" />
     </>
+  );
+};
+
+const renderEventContent = (eventInfo: any) => {
+  // Usa a cor do funcionário, se não houver, usa azul padrão
+  const cor = eventInfo.event.extendedProps.corFuncionario || '#2563eb'; // azul padrão
+  
+  // Função para determinar se a cor é clara ou escura
+  const isLightColor = (hexColor: string) => {
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return brightness > 155;
+  };
+
+  // Define cor do texto baseada no fundo
+  const textColor = isLightColor(cor) ? '#000000' : '#ffffff';
+  
+  return (
+    <div
+      className="event-fc-color flex fc-event-main p-1 rounded-sm"
+      style={{ background: cor, borderColor: cor }}
+    >
+      <div className="fc-daygrid-event-dot" style={{ background: textColor }}></div>
+      <div className="fc-event-time" style={{ color: textColor }}>{eventInfo.timeText}</div>
+      <div className="fc-event-title" style={{ color: textColor }}>{eventInfo.event.title}</div>
+    </div>
   );
 };
 

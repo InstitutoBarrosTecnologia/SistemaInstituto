@@ -11,13 +11,13 @@ import InputMask from "react-input-mask";
 import Select from "../../../components/form/Select";
 import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
 import Checkbox from "../../../components/form/input/Checkbox";
+import { ChromePicker } from "react-color";
 
 interface FormEmployeeProps {
     data?: EmployeeResponseDto;
     edit?: boolean;
     closeModal?: () => void;
 }
-
 
 export default function FormEmployee({ data, edit, closeModal }: FormEmployeeProps) {
     const [userConfig, setUserConfig] = useState<boolean>(false);
@@ -32,9 +32,14 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
         cargo: data?.cargo ?? "",
         filialId: data?.filialId ?? "",
         crefito: data?.crefito ?? "",
+        dataNascimento: data?.dataNascimento ?? "",
+        contatoEmergencial: data?.contatoEmergencial ?? "",
         dataCadastro: data?.dataCadastro ?? new Date().toISOString(),
+        cor: data?.cor ?? "#000000",
     });
-    
+    const [color, setColor] = useState<string>(data?.cor ?? "#000000");
+    const [showColorPicker, setShowColorPicker] = useState(false);
+
     const [optionsFilial, setOptionsFilial] = useState<{ label: string, value: string }[]>([]);
 
     const queryClient = useQueryClient();
@@ -66,24 +71,57 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
             },
             onError: (error: any) => {
                 const errorData = error?.data;
-
+                const validationErrors = errorData?.errors;
                 let errorMessage = "Erro ao salvar funcionário";
 
-                if (Array.isArray(errorData)) {
-                    errorMessage = errorData.map((e: any) => e.errorMensagem).join("\n");
-                } else if (typeof errorData === "string") {
-                    errorMessage = errorData;
-                } else if (typeof errorData === "object") {
-                    errorMessage =
-                        errorData?.title ||
-                        errorData?.message ||
-                        JSON.stringify(errorData);
+                const mensagens: string[] = [];
+
+                // Caso seja um array de objetos com campo errorMensagem
+                if (Array.isArray(errorData) && errorData[0]?.errorMensagem) {
+                    errorData.forEach((e: any) => {
+                        mensagens.push(e.errorMensagem);
+                    });
                 }
+
+                // Validação de estrutura de erros por campo (estrutura antiga)
+                else if (validationErrors && typeof validationErrors === 'object') {
+                    for (const campo in validationErrors) {
+                        const errosCampo = validationErrors[campo];
+                        if (Array.isArray(errosCampo)) {
+                            if (campo.includes('dataNascimento') || errosCampo[0]?.includes('could not be converted')) {
+                                mensagens.push("Revise o campo Data de Nascimento. O valor está inválido ou em branco.");
+                            } else if (campo.toLowerCase().includes('nome')) {
+                                mensagens.push("O campo Nome é obrigatório.");
+                            } else if (campo.toLowerCase().includes('cpf')) {
+                                mensagens.push("O campo CPF é obrigatório.");
+                            } else if (campo.toLowerCase().includes('email')) {
+                                mensagens.push("O campo E-mail é obrigatório.");
+                            } else if (campo.toLowerCase().includes('filialid')) {
+                                mensagens.push("O campo Unidade (Filial) é obrigatório.");
+                            } else if (campo === 'request') {
+                                mensagens.push("Verifique todos os campos obrigatórios. Há dados inválidos.");
+                            } else {
+                                mensagens.push(...errosCampo);
+                            }
+                        }
+                    }
+                }
+
+                // Caso seja string ou objeto genérico
+                else if (typeof errorData === "string") {
+                    mensagens.push(errorData);
+                } else if (typeof errorData === "object") {
+                    mensagens.push(errorData?.title || errorData?.message || JSON.stringify(errorData));
+                }
+
+                errorMessage = mensagens.join("\n");
 
                 toast.error(errorMessage, {
                     duration: 5000,
                 });
             }
+
+
         }
     );
 
@@ -100,8 +138,12 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                 cargo: data.cargo ?? "",
                 filialId: data.filialId ?? "",
                 crefito: data.crefito ?? "",
+                dataNascimento: data.dataNascimento ?? "",
+                contatoEmergencial: data.contatoEmergencial ?? "",
                 dataCadastro: data?.dataCadastro ?? new Date().toISOString(),
+                cor: data.cor ?? "#000000",
             });
+            setColor(data.cor ?? "#000000");
         }
     }, [data]);
 
@@ -126,6 +168,11 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (formData.dataNascimento && /^\d{2}\/\d{2}\/\d{4}$/.test(formData.dataNascimento)) {
+            const [day, month, year] = formData.dataNascimento.split("/");
+            formData.dataNascimento = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+        }
         mutation.mutate(formData);
     };
 
@@ -158,6 +205,44 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                 <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
                     {edit ? "Atualize os dados do funcionário ." : "Adicione as informações para registrar um funcionário."}
                 </p>
+                <div className="mb-6">
+                    <Label>Cor do Funcionário</Label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <button
+                            type="button"
+                            className="px-3 py-1 rounded bg-brand-500 text-white text-xs hover:bg-brand-600"
+                            onClick={() => setShowColorPicker(true)}
+                        >
+                            Definir cor
+                        </button>
+                        <div style={{
+                            width: 32, height: 32, borderRadius: "50%", border: "1px solid #ccc",
+                            background: color
+                        }} />
+                    </div>
+                    {showColorPicker && (
+                        <div style={{ position: "relative", zIndex: 10 }}>
+                            <div style={{ position: "absolute" }}>
+                                <ChromePicker
+                                    color={color}
+                                    onChangeComplete={(colorResult: { hex: string }) => {
+                                        setColor(colorResult.hex);
+                                        setFormData((prev) => ({ ...prev, cor: colorResult.hex }));
+                                    }}
+                                    disableAlpha
+                                />
+                                <button
+                                    type="button"
+                                    style={{ marginTop: 8, width: '100%' }}
+                                    className="px-3 py-1 rounded bg-gray-200 text-gray-800 text-xs hover:bg-gray-300"
+                                    onClick={() => setShowColorPicker(false)}
+                                >
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
             <form className="flex flex-col" onSubmit={handleSave}>
                 <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
@@ -165,7 +250,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                         <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                             <div>
                                 <Label>Nome<span className="text-red-300">*</span></Label>
-                                <Input name="nome" value={formData.nome} onChange={handleChange} required />
+                                <Input name="nome" value={formData.nome} onChange={handleChange} required/>
                             </div>
                             <div>
                                 <Label>CPF<span className="text-red-300">*</span></Label>
@@ -176,7 +261,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                                     value={formData.cpf}
                                     onChange={handleChange}
                                     placeholder="000.000.000-00"
-                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
                                     required={true}
                                 />
                             </div>
@@ -205,7 +290,32 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                                     value={formData.telefone ?? ""}
                                     onChange={handleChange}
                                     placeholder="(00) 00000-0000"
-                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-dark-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                                />
+                            </div>
+                            <div>
+                                <Label>Contato Emergencial</Label>
+                                <InputMask
+                                    mask="(99) 99999-9999"
+                                    maskChar=""
+                                    name="contatoEmergencial"
+                                    value={formData.contatoEmergencial ?? ""}
+                                    onChange={handleChange}
+                                    placeholder="Contato Emergencial"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-dark-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                                />
+                            </div>
+                            <div>
+                                <Label>Data de Nascimento<span className="text-red-300">*</span></Label>
+                                <InputMask
+                                    mask="99/99/9999"
+                                    maskChar=""
+                                    name="dataNascimento"
+                                    value={formData.dataNascimento ?? ""}
+                                    onChange={handleChange}
+                                    placeholder="dd/mm/aaaa"
+                                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-dark-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                                    required={true}
                                 />
                             </div>
                             <div>
