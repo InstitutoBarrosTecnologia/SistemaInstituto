@@ -5,6 +5,7 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import { EmployeeResponseDto } from "../../services/model/Dto/Response/EmployeeResponseDto";
 import { UserResponseDto } from "../../services/model/Dto/Response/UserResponseDto";
+import { formatCPF, formatPhone, formatRG, formatDate } from "../helper/formatUtils";
 
 interface UserMetaCardProps {
   userData: UserResponseDto | null;
@@ -12,20 +13,7 @@ interface UserMetaCardProps {
 }
 
 export default function UserMetaCard({ userData, employeeData }: UserMetaCardProps) {
-  const { isOpen, openModal, closeModal } = useModal();
-
-  // Função para formatar telefone
-  const formatPhone = (phone?: string) => {
-    if (!phone) return "Não informado";
-    return phone;
-  };
-
-  // Função para formatar data
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "Não informado";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("pt-BR");
-  };
+  const { isOpen, closeModal } = useModal();
 
   return (
     <>
@@ -94,7 +82,7 @@ export default function UserMetaCard({ userData, employeeData }: UserMetaCardPro
                   Telefone
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {formatPhone(employeeData?.telefone)}
+                  {formatPhone(employeeData?.telefone) || "Não informado"}
                 </p>
               </div>
 
@@ -103,7 +91,7 @@ export default function UserMetaCard({ userData, employeeData }: UserMetaCardPro
                   CPF
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {employeeData?.cpf || "Não informado"}
+                  {formatCPF(employeeData?.cpf) || "Não informado"}
                 </p>
               </div>
 
@@ -112,7 +100,7 @@ export default function UserMetaCard({ userData, employeeData }: UserMetaCardPro
                   RG
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {employeeData?.rg || "Não informado"}
+                  {formatRG(employeeData?.rg) || "Não informado"}
                 </p>
               </div>
 
@@ -121,7 +109,7 @@ export default function UserMetaCard({ userData, employeeData }: UserMetaCardPro
                   Data de Nascimento
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {formatDate(employeeData?.dataNascimento)}
+                  {formatDate(employeeData?.dataNascimento) || "Não informado"}
                 </p>
               </div>
 
@@ -205,22 +193,22 @@ export default function UserMetaCard({ userData, employeeData }: UserMetaCardPro
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Telefone</Label>
-                    <Input type="text" value={employeeData?.telefone || ""} disabled />
+                    <Input type="text" value={formatPhone(employeeData?.telefone) || ""} disabled />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>CPF</Label>
-                    <Input type="text" value={employeeData?.cpf || ""} disabled />
+                    <Input type="text" value={formatCPF(employeeData?.cpf) || ""} disabled />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>RG</Label>
-                    <Input type="text" value={employeeData?.rg || ""} disabled />
+                    <Input type="text" value={formatRG(employeeData?.rg) || ""} disabled />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Data de Nascimento</Label>
-                    <Input type="text" value={formatDate(employeeData?.dataNascimento)} disabled />
+                    <Input type="text" value={formatDate(employeeData?.dataNascimento) || ""} disabled />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">

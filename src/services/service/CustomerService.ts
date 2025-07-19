@@ -1,4 +1,5 @@
 import { CustomerRequestDto, HistoryCustomerRequestDto } from "../model/Dto/Request/CustomerRequestDto";
+import { CustomerFilterRequestDto } from "../model/Dto/Request/CustomerFilterRequestDto";
 import { CustomerResponseDto, HistoryCustomerResponseDto } from "../model/Dto/Response/CustomerResponseDto";
 import { instanceApi } from "./AxioService";
 
@@ -23,8 +24,23 @@ export const getCustomerIdAsync = async (id: string): Promise<CustomerResponseDt
 };
 
 // GET - Listar todos os clientes
-export const getAllCustomersAsync = async (): Promise<CustomerResponseDto[] | null> => {
-    const response = await instanceApi.get<CustomerResponseDto[] | null>(`/Customer/GetAllCustomer`);
+export const getAllCustomersAsync = async (filters?: CustomerFilterRequestDto): Promise<CustomerResponseDto[] | null> => {
+    let url = `/Customer/GetAllCustomer`;
+    
+    if (filters) {
+        const params = new URLSearchParams();
+        if (filters.nome) params.append('nome', filters.nome);
+        if (filters.cpf) params.append('cpf', filters.cpf);
+        if (filters.email) params.append('email', filters.email);
+        if (filters.status !== undefined) params.append('status', filters.status.toString());
+        if (filters.telefone) params.append('telefone', filters.telefone);
+        
+        if (params.toString()) {
+            url += `?${params.toString()}`;
+        }
+    }
+    
+    const response = await instanceApi.get<CustomerResponseDto[] | null>(url);
     return response.data;
 };
 

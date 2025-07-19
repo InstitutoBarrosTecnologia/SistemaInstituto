@@ -5,11 +5,83 @@ import { useModal } from "../../../hooks/useModal";
 import FormCustomer from "../../Forms/Customer/FormCustomer";
 import CustomerGrid from "../../../components/tables/CustomerGrid/CustomerGrid";
 import FileInputExample from "../../../components/form/form-elements/FileInputExample";
-
+import Label from "../../../components/form/Label";
+import Input from "../../../components/form/input/InputField";
+import Select from "../../../components/form/Select";
+import { useState } from "react";
+import { CustomerFilterRequestDto } from "../../../services/model/Dto/Request/CustomerFilterRequestDto";
+import InputMask from "react-input-mask";
 
 export default function CustomerTables() {
-
+    const [showFilter, setShowFilter] = useState(false);
     const { isOpen, openModal, closeModal } = useModal();
+    
+    // Estados para os valores dos inputs (para exibição imediata)
+    const [inputValues, setInputValues] = useState<CustomerFilterRequestDto>({
+        nome: "",
+        cpf: "",
+        email: "",
+        telefone: "",
+        status: undefined
+    });
+
+    // Estados para os filtros que serão enviados ao backend (apenas ao clicar em pesquisar)
+    const [filters, setFilters] = useState<CustomerFilterRequestDto>({
+        nome: "",
+        cpf: "",
+        email: "",
+        telefone: "",
+        status: undefined
+    });
+
+    const handleFilterChange = (field: keyof CustomerFilterRequestDto, value: string | number | undefined) => {
+        setInputValues(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    // Função para verificar se há filtros preenchidos
+    const hasFilters = () => {
+        return (inputValues.nome || "").trim() !== "" || 
+               (inputValues.cpf || "").trim() !== "" || 
+               (inputValues.email || "").trim() !== "" || 
+               (inputValues.telefone || "").trim() !== "" || 
+               inputValues.status !== undefined;
+    };
+
+    // Função para aplicar os filtros
+    const handleSearch = () => {
+        if (hasFilters()) {
+            setFilters(inputValues);
+        }
+    };
+
+    const clearFilters = () => {
+        const emptyFilters = {
+            nome: "",
+            cpf: "",
+            email: "",
+            telefone: "",
+            status: undefined
+        };
+        setInputValues(emptyFilters);
+        setFilters(emptyFilters);
+    };
+
+    const statusOptions = [
+        { value: "", label: "Todos" },
+        { value: "0", label: "Novo Paciente" },
+        { value: "1", label: "Aguardando Avaliação" },
+        { value: "2", label: "Em Avaliação" },
+        { value: "3", label: "Plano de Tratamento" },
+        { value: "4", label: "Em Atendimento" },
+        { value: "5", label: "Faltou Atendimento" },
+        { value: "6", label: "Tratamento Concluído" },
+        { value: "7", label: "Alta" },
+        { value: "8", label: "Cancelado" },
+        { value: "9", label: "Inativo" }
+    ];
 
     return (
         <>
@@ -23,28 +95,97 @@ export default function CustomerTables() {
             <div className="flex justify-between gap-6 mb-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center w-full">
                     <div className="relative w-full">
-                        <button className="absolute -translate-y-1/2 left-4 top-1/2">
-                            <svg
-                                className="fill-gray-500 dark:fill-gray-400"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 20 20"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
+                        <div className="mb-2">
+                            <button
+                                onClick={() => setShowFilter(!showFilter)}
+                                className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-t-lg shadow-sm hover:bg-gray-200"
                             >
-                                <path
-                                    fillRule="evenodd"
-                                    clipRule="evenodd"
-                                    d="M3.04199 9.37381C3.04199 5.87712 5.87735 3.04218 9.37533 3.04218C12.8733 3.04218 15.7087 5.87712 15.7087 9.37381C15.7087 12.8705 12.8733 15.7055 9.37533 15.7055C5.87735 15.7055 3.04199 12.8705 3.04199 9.37381ZM9.37533 1.54218C5.04926 1.54218 1.54199 5.04835 1.54199 9.37381C1.54199 13.6993 5.04926 17.2055 9.37533 17.2055C11.2676 17.2055 13.0032 16.5346 14.3572 15.4178L17.1773 18.2381C17.4702 18.531 17.945 18.5311 18.2379 18.2382C18.5308 17.9453 18.5309 17.4704 18.238 17.1775L15.4182 14.3575C16.5367 13.0035 17.2087 11.2671 17.2087 9.37381C17.2087 5.04835 13.7014 1.54218 9.37533 1.54218Z"
-                                    fill=""
-                                ></path>
-                            </svg>
-                        </button>
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            className="dark:bg-dark-900 h-[42px] w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-[42px] pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 "
-                        />
+                                <span>Filtro</span>
+                                <svg className={`w-4 h-4 transform transition-transform ${showFilter ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+            {showFilter && (
+                                <div className="px-4 py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-b-lg shadow-sm">
+                                    <div className="grid grid-cols-1 gap-x-6 gap-y-4 lg:grid-cols-5">
+                                        <div>
+                                            <Label className="text-gray-700 dark:text-white font-medium">Nome</Label>
+                                            <Input
+                                                type="text"
+                                                placeholder="Filtrar por nome"
+                                                value={inputValues.nome}
+                                                onChange={(e) => handleFilterChange('nome', e.target.value)}
+                                                className="dark:bg-dark-900"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-gray-700 dark:text-white font-medium">CPF</Label>
+                                            <InputMask
+                                                mask="999.999.999-99"
+                                                maskChar=""
+                                                value={inputValues.cpf}
+                                                onChange={(e) => handleFilterChange('cpf', e.target.value)}
+                                                placeholder="000.000.000-00"
+                                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-gray-700 dark:text-white font-medium">Email</Label>
+                                            <Input
+                                                type="text"
+                                                placeholder="Filtrar por email"
+                                                value={inputValues.email}
+                                                onChange={(e) => handleFilterChange('email', e.target.value)}
+                                                className="dark:bg-dark-900"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-gray-700 dark:text-white font-medium">Telefone</Label>
+                                            <InputMask
+                                                mask="(99) 99999-9999"
+                                                maskChar=""
+                                                value={inputValues.telefone}
+                                                onChange={(e) => handleFilterChange('telefone', e.target.value)}
+                                                placeholder="(00) 00000-0000"
+                                                className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-gray-700 dark:text-white font-medium">Status</Label>
+                                            <Select
+                                                options={statusOptions}
+                                                placeholder="Filtrar por status"
+                                                value={inputValues.status !== undefined ? inputValues.status.toString() : ""}
+                                                onChange={(value) => {
+                                                    if (value === "" || value === undefined) {
+                                                        handleFilterChange('status', undefined);
+                                                    } else {
+                                                        handleFilterChange('status', Number(value));
+                                                    }
+                                                }}
+                                                className="dark:bg-dark-900"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 flex gap-3">
+                                        <button
+                                            onClick={clearFilters}
+                                            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                        >
+                                            Limpar Filtros
+                                        </button>
+                                        <button
+                                            onClick={handleSearch}
+                                            disabled={!hasFilters()}
+                                            className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Pesquisar
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <button onClick={openModal} className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition  px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 ">
@@ -77,7 +218,7 @@ export default function CustomerTables() {
             </Modal>
 
             <div className="space-y-6">
-                <CustomerGrid />
+                <CustomerGrid filters={filters} />
             </div>
 
         </>

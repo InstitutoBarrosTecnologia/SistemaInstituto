@@ -27,8 +27,13 @@ import toast from "react-hot-toast";
 import { formatPhone, formatCPF } from "../../helper/formatUtils";
 import FormMetaDataCustomer from "../../../pages/Forms/Customer/FormMetaDataCustomer";
 import FormSession from "../../../pages/Forms/OrderServiceForms/FormSession";
+import { CustomerFilterRequestDto } from "../../../services/model/Dto/Request/CustomerFilterRequestDto";
 
-export default function CustomerTableComponent() {
+interface CustomerGridProps {
+    filters?: CustomerFilterRequestDto;
+}
+
+export default function CustomerTableComponent({ filters }: CustomerGridProps) {
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerRequestDto | undefined>(undefined);
     const [selectedCustomerData, setSelectedCustomerData] = useState<CustomerRequestDto | undefined>(undefined);
     const { isOpen, openModal, closeModal } = useModal();
@@ -43,8 +48,8 @@ export default function CustomerTableComponent() {
     const queryClient = useQueryClient();
 
     const { data: clientes = [], isLoading, isError } = useQuery({
-        queryKey: ["allCustomer"],
-        queryFn: getAllCustomersAsync,
+        queryKey: ["allCustomer", filters],
+        queryFn: () => getAllCustomersAsync(filters),
     })
 
     const mutationDelete = useMutation({
