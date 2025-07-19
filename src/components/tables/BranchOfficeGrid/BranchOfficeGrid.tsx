@@ -164,18 +164,16 @@ export default function BranchOfficeGrid() {
                                 </h5>
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 items-center text-center">
-                            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-center">
-                                <Button size="sm" variant="outline" onClick={closeModalDelete}>
-                                    Cancelar
-                                </Button>
-                                <button
-                                    className="bg-red-500 text-white shadow-theme-xs hover:bg-red-600 disabled:bg-red-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
-                                    type="submit"
-                                >
-                                    Apagar
-                                </button>
-                            </div>
+                        <div className="flex items-center justify-center gap-3 mt-6">
+                            <Button size="sm" variant="outline" onClick={closeModalDelete}>
+                                Cancelar
+                            </Button>
+                            <button
+                                className="bg-red-500 text-white shadow-theme-xs hover:bg-red-600 disabled:bg-red-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+                                type="submit"
+                            >
+                                Apagar
+                            </button>
                         </div>
                     </form>
                 </div>
