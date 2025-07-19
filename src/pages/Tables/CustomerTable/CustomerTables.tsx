@@ -92,7 +92,7 @@ export default function CustomerTables() {
 
             <PageBreadcrumb pageTitle="Pacientes Instituto Barros" />
 
-            <div className="flex justify-between gap-6 mb-6">
+            <div className="flex justify-between items-start gap-6 mb-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center w-full">
                     <div className="relative w-full">
                         <div className="mb-2">
@@ -188,7 +188,7 @@ export default function CustomerTables() {
                         </div>
                     </div>
                 </div>
-                <button onClick={openModal} className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition  px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 ">
+                <button onClick={openModal} className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 flex-shrink-0">
                     <span className="flex items-center">
                         <svg
                             width="1em"
