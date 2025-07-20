@@ -17,6 +17,8 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
+import DashboardOperacao from "./pages/Dashboard/DashboardOperacao";
+import DashboardLead from "./pages/Dashboard/DashboardLead";
 import ProtectedRoute from "./ProtectedRoute";
 import CustomerTables from "./pages/Tables/CustomerTable/CustomerTables";
 import ServiceCategoryTables from "./pages/Tables/ServicesTable/ServiceCategoryTables";
@@ -40,6 +42,8 @@ export default function App() {
           }
         >
           <Route index path="/" element={<Home />} />
+          <Route path="/dashboard-operacao" element={<DashboardOperacao />} />
+          <Route path="/dashboard-lead" element={<DashboardLead />} />
 
           {/* Others Page */}
           <Route path="/profile" element={<UserProfiles />} />

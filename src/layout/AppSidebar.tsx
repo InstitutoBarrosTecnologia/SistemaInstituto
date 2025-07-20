@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { Link, useLocation } from "react-router";
 
 import {
@@ -10,49 +10,119 @@ import {
   UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
+import { 
+  MENU_PERMISSIONS, 
+  hasPermissionForMenu, 
+  getUserRoleFromToken 
+} from "../services/util/rolePermissions";
 
 
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  subItems?: { 
+    name: string; 
+    path: string; 
+    pro?: boolean; 
+    new?: boolean;
+    permissions?: readonly string[];
+  }[];
+  permissions?: readonly string[];
 };
 
-const navItems: NavItem[] = [
- {
+// Configuração completa do menu com permissões
+const allNavItems: NavItem[] = [
+  {
     icon: <CalenderIcon />,
     name: "Agenda",
     path: "/calendar",
+    permissions: MENU_PERMISSIONS.AGENDA,
   },
   {
     name: "Whatsapp",
     icon: <GridIcon />,
-    subItems: [{ name: "Atendimento", path: "/basic-tables", pro: false }],
+    permissions: MENU_PERMISSIONS.WHATSAPP,
+    subItems: [{ 
+      name: "Atendimento", 
+      path: "/basic-tables", 
+      pro: false,
+      permissions: MENU_PERMISSIONS.WHATSAPP,
+    }],
   },
   {
     name: "Gestão",
     icon: <ListIcon />,
     subItems: [
-      { name: "Pacientes", path: "/customer", pro: false },
-      { name: "Funcionários", path: "/form-employee", pro: false },
-      { name: "Unidades", path: "/form-branch", pro: false },
-      { name: "Cat. Serviço", path: "/form-cat-servico", pro: false },
-      { name: "Sub. Serviço", path: "/form-sub-cat-servico", pro: false },
-      { name: "Tratamento e Sessão", path: "/ordem-servico", pro: false },
+      { 
+        name: "Pacientes", 
+        path: "/customer", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.PACIENTES,
+      },
+      { 
+        name: "Funcionários", 
+        path: "/form-employee", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.FORM_FUNCIONARIOS,
+      },
+      { 
+        name: "Unidades", 
+        path: "/form-branch", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.UNIDADES,
+      },
+      { 
+        name: "Cat. Serviço", 
+        path: "/form-cat-servico", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.CATEGORIA_SERVICO,
+      },
+      { 
+        name: "Sub. Serviço", 
+        path: "/form-sub-cat-servico", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.SUB_CATEGORIA_SERVICO,
+      },
+      { 
+        name: "Tratamento e Sessão", 
+        path: "/ordem-servico", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.TRATAMENTO_SESSAO,
+      },
     ],
   },
   {
     icon: <UserCircleIcon />,
     name: "Funcionários",
     path: "/profile",
+    permissions: MENU_PERMISSIONS.FUNCIONARIOS,
   },
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Financeiro", path: "/", pro: false }],
+    permissions: MENU_PERMISSIONS.DASHBOARD,
+    subItems: [
+      { 
+        name: "Financeiro", 
+        path: "/", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.DASHBOARD_FINANCEIRO,
+      },
+      { 
+        name: "Operação", 
+        path: "/dashboard-operacao", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.DASHBOARD_OPERACAO,
+      },
+      { 
+        name: "Lead", 
+        path: "/dashboard-lead", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.DASHBOARD_LEAD,
+      }
+    ],
   },
- 
 ];
 
 
@@ -68,6 +138,44 @@ const AppSidebar: React.FC = () => {
     {}
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Obter role do usuário e filtrar itens do menu
+  const userRole = getUserRoleFromToken(localStorage.getItem("token"));
+  
+  // Função para filtrar subitens baseado nas permissões
+  const filterSubItems = useCallback((subItems: NavItem['subItems'], userRole: string | null) => {
+    if (!subItems || !userRole) return [];
+    
+    return subItems.filter(subItem => {
+      if (!subItem.permissions) return true; // Se não tem permissão definida, mostra para todos
+      return hasPermissionForMenu(userRole, subItem.permissions);
+    });
+  }, []);
+
+  // Filtrar itens do menu baseado no perfil do usuário usando useMemo
+  const navItems = useMemo(() => {
+    return allNavItems.filter(item => {
+      if (!userRole) return false; // Se não tem role, não mostra nada
+      
+      // Se o item não tem permissões definidas, mostra para todos (fallback)
+      if (!item.permissions) return true;
+      
+      // Verificar se o usuário tem permissão para o item principal
+      const hasPermission = hasPermissionForMenu(userRole, item.permissions);
+      
+      // Se tem subitens, verificar se pelo menos um subitem tem permissão
+      if (item.subItems && item.subItems.length > 0) {
+        const filteredSubItems = filterSubItems(item.subItems, userRole);
+        return hasPermission && filteredSubItems.length > 0;
+      }
+      
+      return hasPermission;
+    }).map(item => ({
+      ...item,
+      // Filtrar subitens também
+      subItems: item.subItems ? filterSubItems(item.subItems, userRole) : undefined
+    }));
+  }, [userRole, filterSubItems]);
 
   // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(

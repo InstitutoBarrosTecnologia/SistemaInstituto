@@ -59,7 +59,7 @@ src/
 ├── pages/              # Páginas da aplicação
 │   ├── AuthPages/      # Login e registro
 │   ├── Charts/         # Páginas de gráficos
-│   ├── Dashboard/      # Dashboard principal
+│   ├── Dashboard/      # Dashboard com múltiplas visões (Financeiro, Operação, Lead)
 │   ├── Forms/          # Formulários de cadastro
 │   ├── Tables/         # Páginas de tabelas
 │   └── UiElements/     # Elementos de interface
@@ -113,7 +113,81 @@ O Sistema Instituto Barros é uma solução completa para gestão clínica que i
 - Gestão de leads e conversões
 - Acompanhamento de campanhas
 
-## 🛠️ Comandos de Desenvolvimento
+## �️ Telas e Funcionalidades
+
+### **📊 Sistema de Dashboard**
+O sistema possui três dashboards especializados com controle de acesso baseado em perfil:
+
+#### **💰 Dashboard Financeiro** (`/`)
+- **Acesso**: Administrador, Administrativo, Comercial, Funcionário
+- **Funcionalidades**:
+  - Métricas financeiras e faturamento
+  - Análise de receitas e despesas
+  - Indicadores de performance financeira
+  - Gráficos de tendências e comparativos
+
+#### **⚙️ Dashboard Operação** (`/dashboard-operacao`)
+- **Acesso**: Todos os perfis (incluindo Fisioterapeuta)
+- **Funcionalidades**:
+  - Sessões do dia e taxa de ocupação
+  - Controle de pacientes ativos
+  - Métricas de avaliações realizadas
+  - Indicadores operacionais em tempo real
+  - Acompanhamento de agendamentos
+
+#### **📈 Dashboard Lead** (`/dashboard-lead`)
+- **Acesso**: Administrador, Administrativo, Comercial, Funcionário
+- **Funcionalidades**:
+  - Funil de vendas interativo
+  - Taxa de conversão de leads
+  - Análise de origem dos leads (WhatsApp, Instagram, Indicação, Site)
+  - Métricas de leads qualificados
+  - Acompanhamento de novos pacientes
+
+### **🔐 Sistema de Controle de Acesso**
+- **Autenticação JWT** com roles específicos
+- **Controle de Menu** baseado no perfil do usuário
+- **Permissões Granulares** por funcionalidade
+
+#### **Perfis e Acessos:**
+- **👨‍⚕️ Fisioterapeuta**: Dashboard Operação, Agenda, Pacientes (apenas check-in), Funcionários
+- **👨‍💼 Comercial**: WhatsApp, Agenda, Sub.Serviço, Funcionários, Dashboard (todos)
+- **👩‍💻 Administrador/Administrativo**: Acesso completo a todas as funcionalidades
+- **👤 Funcionário**: Dashboard, Agenda, Funcionários, Pacientes
+
+### **📋 Páginas Principais**
+
+#### **👥 Gestão de Pacientes** (`/customer`)
+- Listagem com filtros avançados
+- Cadastro e edição de pacientes
+- Sistema de status do tratamento
+- Histórico detalhado de atendimentos
+- Botões de ação contextuais por perfil
+
+#### **🗓️ Agenda** (`/calendar`)
+- Calendário completo (mês, semana, dia)
+- Agendamento de consultas e sessões
+- Controle de conflitos de horário
+- Visualização por profissional
+
+#### **👨‍💼 Funcionários** (`/profile`, `/form-employee`)
+- Cadastro de profissionais
+- Controle de especialidades
+- Sistema de cores para calendário
+- Gestão de credenciais
+
+#### **💬 WhatsApp** (`/basic-tables`)
+- Sistema de atendimento integrado
+- Gestão de leads
+- Campanhas e conversões
+
+#### **🏢 Gestão Administrativa**
+- **Unidades** (`/form-branch`): Controle de filiais
+- **Categorias de Serviço** (`/form-cat-servico`): Tipos de tratamento
+- **Subcategorias** (`/form-sub-cat-servico`): Especialidades
+- **Ordens de Serviço** (`/ordem-servico`): Controle de tratamentos
+
+## �🛠️ Comandos de Desenvolvimento
 
 ### **Instalação**
 ```bash
@@ -413,6 +487,35 @@ VITE_API_URL=http://localhost:5101/api
 VITE_API_URL=https://instituto-barros-sistema.azurewebsites.net/api
 ```
 
+### **🛣️ Rotas da Aplicação**
+```
+📊 Dashboards:
+├── /                           # Dashboard Financeiro
+├── /dashboard-operacao         # Dashboard Operação (todos perfis)
+└── /dashboard-lead            # Dashboard Lead (sem fisioterapeuta)
+
+👥 Gestão de Pessoas:
+├── /customer                   # Listagem de Pacientes
+├── /profile                    # Perfil de Funcionários
+└── /form-employee             # Cadastro de Funcionários
+
+🗓️ Agendamento:
+└── /calendar                   # Sistema de Agenda
+
+💬 Atendimento:
+└── /basic-tables              # WhatsApp/Leads
+
+🏢 Configurações:
+├── /form-branch               # Unidades/Filiais
+├── /form-cat-servico          # Categorias de Serviço
+├── /form-sub-cat-servico      # Subcategorias
+└── /ordem-servico             # Ordens de Serviço
+
+🔐 Autenticação:
+├── /signin                    # Login
+└── /signup                    # Registro
+```
+
 ### **URLs do Sistema**
 - **Frontend Produção**: Hospedado via Vercel
 - **Backend Produção**: `https://instituto-barros-sistema.azurewebsites.net`
@@ -436,9 +539,11 @@ VITE_API_URL=https://instituto-barros-sistema.azurewebsites.net/api
 - [ ] Sistema de relatórios avançados
 - [ ] Integração com WhatsApp Business API
 - [ ] Notificações push
-- [ ] Dashboard analytics
+- [x] ✅ **Dashboard Operação** - Métricas operacionais para fisioterapeutas
+- [x] ✅ **Dashboard Lead** - Funil de vendas e análise de conversão
+- [x] ✅ **Sistema de Controle de Acesso** - Permissões baseadas em perfil
 - [ ] Backup automático de dados
-- [ ] Sistema de permissões granular
+- [ ] Sistema de permissões granular avançado
 
 ---
 
