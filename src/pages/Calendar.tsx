@@ -333,6 +333,12 @@ const Calendar: React.FC = () => {
     const { cliente, funcionario, observacao } = eventInfo.event.extendedProps;
     
 
+    // Função para truncar o nome do cliente
+    const truncateText = (text: string, maxLength: number = 15) => {
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + '...';
+    };
+
     // Renderiza o conteúdo do evento
     return (
       <div
@@ -342,7 +348,7 @@ const Calendar: React.FC = () => {
       >
         <div className="fc-daygrid-event-dot" style={{ background: textColor }}></div>
         <div className="fc-event-time" style={{ color: textColor }}>{eventInfo.timeText}</div>
-        <div className="fc-event-title" style={{ color: textColor }}>{cliente}</div>
+        <div className="fc-event-title" style={{ color: textColor }}>{truncateText(cliente)}</div>
         
         {/* Tooltip personalizado */}
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs bg-gray-900 dark:bg-gray-800 text-white rounded-lg shadow-xl border border-gray-700 dark:border-gray-600 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 min-w-max max-w-xs">
