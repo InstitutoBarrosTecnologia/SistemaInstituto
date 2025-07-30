@@ -48,103 +48,6 @@ const Calendar: React.FC = () => {
   const [optionsFuncionario, setOptionsFuncionario] = useState<{ label: string; value: string }[]>([]);
   const [filter, setFilter] = useState<Filter>({});
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
-  
-  // Estados para recorrência
-  const [isRecurrent, setIsRecurrent] = useState<boolean>(false);
-  const [selectedDiaSemana, setSelectedDiaSemana] = useState<string>("");
-  const [selectedHorarioRecorrente, setSelectedHorarioRecorrente] = useState<string>("");
-  const [qtdSessoes, setQtdSessoes] = useState<number>(1);
-
-  // Função para calcular as próximas datas baseado no dia da semana
-  const getNextDatesForWeekday = (dayOfWeek: string, count: number): Date[] => {
-    const days = {
-      "Segunda-Feira": 1,
-      "Terça-Feira": 2,
-      "Quarta-Feira": 3,
-      "Quinta-Feira": 4,
-      "Sexta-Feira": 5,
-      Sábado: 6,
-      Domingo: 0,
-    };
-
-    const targetDay = days[dayOfWeek as keyof typeof days];
-    if (targetDay === undefined) return [];
-
-    const dates: Date[] = [];
-    const today = new Date();
-
-    // Encontrar a próxima ocorrência do dia da semana
-    let nextDate = new Date(today);
-    const currentDay = today.getDay();
-    const daysUntilTarget = (targetDay - currentDay + 7) % 7;
-
-    // Se for hoje e ainda não passou do horário, usar hoje, senão próxima semana
-    if (daysUntilTarget === 0) {
-      // Se for hoje, verificar se já passou do horário
-      if (selectedHorarioRecorrente) {
-        const [hours, minutes] = selectedHorarioRecorrente.split(":").map(Number);
-        const targetTime = new Date(today);
-        targetTime.setHours(hours, minutes, 0, 0);
-
-        if (today > targetTime) {
-          // Já passou do horário hoje, começar na próxima semana
-          nextDate.setDate(today.getDate() + 7);
-        }
-      }
-    } else {
-      nextDate.setDate(today.getDate() + daysUntilTarget);
-    }
-
-    // Gerar as próximas 'count' datas
-    for (let i = 0; i < count; i++) {
-      dates.push(new Date(nextDate));
-      nextDate.setDate(nextDate.getDate() + 7); // Próxima semana
-    }
-
-    return dates;
-  };
-
-  // Função para criar agendamentos recorrentes
-  const createRecurrentSchedules = async () => {
-    if (!isRecurrent || !selectedDiaSemana || !selectedHorarioRecorrente || qtdSessoes <= 0) {
-      return;
-    }
-
-    const dates = getNextDatesForWeekday(selectedDiaSemana, qtdSessoes);
-    const [hours, minutes] = selectedHorarioRecorrente.split(":").map(Number);
-
-    const schedulePromises = dates.map((date, index) => {
-      const startDateTime = new Date(date);
-      startDateTime.setHours(hours, minutes, 0, 0);
-
-      const endDateTime = new Date(startDateTime);
-      endDateTime.setHours(hours + 1, minutes, 0, 0); // Assumindo 1 hora de duração
-
-      return postScheduleAsync({
-        titulo: `${eventTitle || 'Agendamento'} - Sessão ${index + 1}`,
-        descricao: eventDescription || 'Agendamento recorrente',
-        dataInicio: startDateTime.toISOString(),
-        dataFim: endDateTime.toISOString(),
-        diaTodo: false,
-        clienteId: selectedCliente,
-        funcionarioId: selectedFuncionario,
-        filialId: selectedFilial,
-        localizacao: eventLocation || 'Clínica',
-        observacao: `Agendamento recorrente - Sessão ${index + 1} de ${qtdSessoes}`,
-        notificar: false,
-        status: 1,
-      });
-    });
-
-    try {
-      await Promise.all(schedulePromises);
-      toast.success(`${qtdSessoes} agendamentos recorrentes criados com sucesso!`);
-      refetchCalendar();
-    } catch (error) {
-      console.error("Erro ao criar agendamentos recorrentes:", error);
-      toast.error("Erro ao criar alguns agendamentos. Verifique o calendário.");
-    }
-  };
 
 
   const { isLoading, data: schedules, refetch: refetchCalendar } = useQuery({
@@ -334,30 +237,7 @@ const Calendar: React.FC = () => {
     openModal();
   };
 
-  const handleAddOrUpdateEvent = async () => {
-    // Se for recorrência, usar a função específica
-    if (isRecurrent && !selectedEvent) {
-      // Validações para recorrência
-      if (!selectedDiaSemana) {
-        toast.error("Selecione o dia da semana para a recorrência.");
-        return;
-      }
-      if (!selectedHorarioRecorrente) {
-        toast.error("Selecione o horário para a recorrência.");
-        return;
-      }
-      if (qtdSessoes <= 0) {
-        toast.error("Defina a quantidade de sessões.");
-        return;
-      }
-      
-      await createRecurrentSchedules();
-      closeModal();
-      resetModalFields();
-      return;
-    }
-
-    // Lógica normal para evento único ou edição
+  const handleAddOrUpdateEvent = () => {
     if (selectedEvent) {
       mutateUpdateEvent({
         id: selectedEvent.id,
@@ -367,9 +247,9 @@ const Calendar: React.FC = () => {
         dataInicio: eventStartDate,
         dataFim: eventEndDate,
         diaTodo: isChecked,
-        observacao: eventTitle,
-        notificar: false,
-        status: 1,
+        observacao: eventTitle, // Assuming observation is the same as title for now
+        notificar: false, // Assuming no notification for now
+        status: 1, // Assuming status is active
         clienteId: selectedCliente,
         funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
@@ -380,15 +260,15 @@ const Calendar: React.FC = () => {
         funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
         titulo: eventTitle,
-        descricao: eventDescription,
-        localizacao: eventLocation,
+        descricao: eventDescription, // Assuming description is the same as title for now
+        localizacao: eventLocation, // Assuming location is the same as title for now
         dataInicio: eventStartDate,
         dataFim: eventEndDate,
         diaTodo: isChecked,
-        observacao: eventTitle,
-        notificar: false,
-        status: 1,
-      });
+        observacao: eventTitle, // Assuming observation is the same as title for now
+        notificar: false, // Assuming no notification for now
+        status: 1, // Assuming status is active
+      })
     }
   };
 
@@ -418,12 +298,6 @@ const Calendar: React.FC = () => {
     setSelectedFuncionario(undefined);
     setSelectedFilial(undefined);
     setIsChecked(false);
-    
-    // Resetar campos de recorrência
-    setIsRecurrent(false);
-    setSelectedDiaSemana("");
-    setSelectedHorarioRecorrente("");
-    setQtdSessoes(1);
   };
 
   const handleOpenModal = () => {
@@ -459,12 +333,6 @@ const Calendar: React.FC = () => {
     const { cliente, funcionario, observacao } = eventInfo.event.extendedProps;
     
 
-    // Função para truncar o nome do cliente
-    const truncateText = (text: string, maxLength: number = 15) => {
-      if (text.length <= maxLength) return text;
-      return text.substring(0, maxLength) + '...';
-    };
-
     // Renderiza o conteúdo do evento
     return (
       <div
@@ -474,7 +342,7 @@ const Calendar: React.FC = () => {
       >
         <div className="fc-daygrid-event-dot" style={{ background: textColor }}></div>
         <div className="fc-event-time" style={{ color: textColor }}>{eventInfo.timeText}</div>
-        <div className="fc-event-title" style={{ color: textColor }}>{truncateText(cliente)}</div>
+        <div className="fc-event-title" style={{ color: textColor }}>{cliente}</div>
         
         {/* Tooltip personalizado */}
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs bg-gray-900 dark:bg-gray-800 text-white rounded-lg shadow-xl border border-gray-700 dark:border-gray-600 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 min-w-max max-w-xs">
@@ -615,7 +483,7 @@ const Calendar: React.FC = () => {
               )}
             </div>
             <div className="mt-8">
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-3">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 ">
                 <div>
                   <Label >
                     Título Evento
@@ -655,42 +523,39 @@ const Calendar: React.FC = () => {
                 </div>
               </div>
 
-              {/* Campos de data/hora - ocultos quando recorrência está ativa */}
-              {(!isRecurrent || selectedEvent) && (
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-3">
-                  <div>
-                    <Label >
-                      Data & Hora Início
-                      <span className="text-red-300">*</span>
-                    </Label>
-                    <div className="relative">
-                      <input
-                        id="event-start-date"
-                        type="datetime-local"
-                        value={eventStartDate}
-                        onChange={(e) => setEventStartDate(e.target.value)}
-                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label >
-                      Data & Hora Fim
-                      <span className="text-red-300">*</span>
-                    </Label>
-                    <div className="relative">
-                      <input
-                        id="event-end-date"
-                        type="datetime-local"
-                        value={eventEndDate}
-                        onChange={(e) => setEventEndDate(e.target.value)}
-                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                      />
-                    </div>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 ">
+                <div>
+                  <Label >
+                    Data & Hora Início
+                    <span className="text-red-300">*</span>
+                  </Label>
+                  <div className="relative">
+                    <input
+                      id="event-start-date"
+                      type="datetime-local"
+                      value={eventStartDate}
+                      onChange={(e) => setEventStartDate(e.target.value)}
+                      className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    />
                   </div>
                 </div>
-              )}
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-3">
+                <div>
+                  <Label >
+                    Data & Hora Fim
+                    <span className="text-red-300">*</span>
+                  </Label>
+                  <div className="relative">
+                    <input
+                      id="event-end-date"
+                      type="datetime-local"
+                      value={eventEndDate}
+                      onChange={(e) => setEventEndDate(e.target.value)}
+                      className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 ">
                 <div>
                   <Label>Cliente</Label>
                   <Select
@@ -733,101 +598,13 @@ const Calendar: React.FC = () => {
                   />
                 </div>
               </div>
-              
-              {/* Checkbox para recorrência - apenas para novos eventos */}
-              {!selectedEvent && (
-                <div className="mb-5">
-                  <div className="flex items-center gap-3">
-                    <Checkbox checked={isRecurrent} onChange={setIsRecurrent} />
-                    <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
-                      Criar agendamento recorrente
-                      {isRecurrent && (
-                        <span className="ml-2 text-xs text-green-600 dark:text-green-400">
-                          (Múltiplos agendamentos)
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Configuração de recorrência */}
-              {isRecurrent && !selectedEvent && (
-                <>
-                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <h6 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-                      Configuração de Recorrência
-                    </h6>
-                    {qtdSessoes > 0 && selectedDiaSemana && (
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        <strong>Informação:</strong> Serão criados {qtdSessoes} agendamentos 
-                        todas as {selectedDiaSemana.toLowerCase()}s
-                        {selectedHorarioRecorrente && ` às ${selectedHorarioRecorrente}`}.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-3 mb-5">
-                    <div>
-                      <Label>
-                        Dia da Semana<span className="text-red-300">*</span>
-                      </Label>
-                      <Select
-                        options={[
-                          { label: "Segunda-Feira", value: "Segunda-Feira" },
-                          { label: "Terça-Feira", value: "Terça-Feira" },
-                          { label: "Quarta-Feira", value: "Quarta-Feira" },
-                          { label: "Quinta-Feira", value: "Quinta-Feira" },
-                          { label: "Sexta-Feira", value: "Sexta-Feira" },
-                          { label: "Sábado", value: "Sábado" },
-                          { label: "Domingo", value: "Domingo" },
-                        ]}
-                        value={selectedDiaSemana}
-                        onChange={(value) => setSelectedDiaSemana(value)}
-                        placeholder="Selecione o dia da semana"
-                        className="dark:bg-dark-900"
-                      />
-                    </div>
-                    <div>
-                      <Label>
-                        Horário<span className="text-red-300">*</span>
-                      </Label>
-                      <input
-                        type="time"
-                        value={selectedHorarioRecorrente}
-                        onChange={(e) => setSelectedHorarioRecorrente(e.target.value)}
-                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                      />
-                    </div>
-                    <div>
-                      <Label>
-                        Qtd. Sessões<span className="text-red-300">*</span>
-                      </Label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="52"
-                        value={qtdSessoes}
-                        onChange={(e) => setQtdSessoes(parseInt(e.target.value) || 1)}
-                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                        placeholder="Ex: 10"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
               <br></br>
-              
-              {/* Checkbox "Dia todo" - oculto quando recorrência está ativa */}
-              {(!isRecurrent || selectedEvent) && (
-                <div className="flex items-center gap-3">
-                  <Checkbox checked={isChecked} onChange={setIsChecked} />
-                  <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Dia todo
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                <Checkbox checked={isChecked} onChange={setIsChecked} />
+                <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Dia todo
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
               <button
@@ -842,7 +619,7 @@ const Calendar: React.FC = () => {
                 type="button"
                 className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
               >
-                {selectedEvent ? "Atualizar" : (isRecurrent ? "Criar Recorrência" : "Salvar")}
+                {selectedEvent ? "Atualizar" : "Salvar"}
               </button>
             </div>
           </div>
