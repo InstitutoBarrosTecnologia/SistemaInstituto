@@ -34,6 +34,7 @@ export const getAllCustomersAsync = async (filters?: CustomerFilterRequestDto): 
         if (filters.email) params.append('email', filters.email);
         if (filters.status !== undefined) params.append('status', filters.status.toString());
         if (filters.telefone) params.append('telefone', filters.telefone);
+        if (filters.quantidadeSessoes !== undefined) params.append('quantidadeSessoes', filters.quantidadeSessoes.toString());
         
         if (params.toString()) {
             url += `?${params.toString()}`;

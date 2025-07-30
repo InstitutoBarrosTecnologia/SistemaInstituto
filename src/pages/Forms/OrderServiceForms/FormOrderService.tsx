@@ -1,7 +1,7 @@
 import Input from "../../../components/form/input/InputField";
 import Label from "../../../components/form/Label";
 import Button from "../../../components/ui/button/Button";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import Select from "../../../components/form/Select";
@@ -21,6 +21,10 @@ import {
 } from "../../../services/service/OrderServiceService";
 import { ServiceRequestDto } from "../../../services/model/Dto/Request/ServiceRequestDto";
 import Checkbox from "../../../components/form/input/Checkbox";
+import EmployeeService from "../../../services/service/EmployeeService";
+import { ScheduleRequestDto } from "../../../services/model/Dto/Request/ScheduleRequestDto";
+import { postScheduleAsync } from "../../../services/service/ScheduleService";
+import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
 
 interface FormOrderServiceProps {
   data?: OrderServiceResponseDto;
@@ -33,7 +37,21 @@ export default function FormOrderService({
   edit,
   closeModal,
 }: FormOrderServiceProps) {
+  const [selectedFuncionario, setSelectedFuncionario] = useState<
+    string | undefined
+  >(undefined);
+  const [optionsFuncionario, setOptionsFuncionario] = useState<
+    { label: string; value: string }[]
+  >([]);
   const [userConfig, setUserConfig] = useState<boolean>(false);
+  const [selectedDiaSemana, setSelectedDiaSemana] = useState<string>("");
+  const [optionsFilial, setOptionsFilial] = useState<
+    { label: string; value: string }[]
+  >([]);
+  const [selectedFilial, setSelectedFilial] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedHorario, setSelectedHorario] = useState<string>("");
   const [formData, setFormData] = useState<OrderServiceRequestDto>({
     referencia: "",
     status: 0,
@@ -58,12 +76,120 @@ export default function FormOrderService({
   const [selectedServices, setSelectedServices] = useState<Option[]>([]);
   const queryClient = useQueryClient();
 
+  // Função para calcular as próximas datas baseado no dia da semana
+  const getNextDatesForWeekday = (dayOfWeek: string, count: number): Date[] => {
+    const days = {
+      "Segunda-Feira": 1,
+      "Terça-Feira": 2,
+      "Quarta-Feira": 3,
+      "Quinta-Feira": 4,
+      "Sexta-Feira": 5,
+      Sábado: 6,
+      Domingo: 0,
+    };
+
+    const targetDay = days[dayOfWeek as keyof typeof days];
+    if (targetDay === undefined) return [];
+
+    const dates: Date[] = [];
+    const today = new Date();
+
+    // Encontrar a próxima ocorrência do dia da semana
+    let nextDate = new Date(today);
+    const currentDay = today.getDay();
+    const daysUntilTarget = (targetDay - currentDay + 7) % 7;
+
+    // Se for hoje e ainda não passou do horário, usar hoje, senão próxima semana
+    if (daysUntilTarget === 0) {
+      // Se for hoje, verificar se já passou do horário
+      if (selectedHorario) {
+        const [hours, minutes] = selectedHorario.split(":").map(Number);
+        const targetTime = new Date(today);
+        targetTime.setHours(hours, minutes, 0, 0);
+
+        if (today > targetTime) {
+          // Já passou do horário hoje, começar na próxima semana
+          nextDate.setDate(today.getDate() + 7);
+        }
+      }
+    } else {
+      nextDate.setDate(today.getDate() + daysUntilTarget);
+    }
+
+    // Gerar as próximas 'count' datas
+    for (let i = 0; i < count; i++) {
+      dates.push(new Date(nextDate));
+      nextDate.setDate(nextDate.getDate() + 7); // Próxima semana
+    }
+
+    return dates;
+  };
+
+  // Função para criar agendamentos recorrentes
+  const createRecurrentSchedules = async (orderServiceId: string) => {
+    if (
+      !userConfig ||
+      !selectedDiaSemana ||
+      !selectedHorario ||
+      !selectedFuncionario
+    ) {
+      return;
+    }
+
+    const qtdSessoes = formData.qtdSessaoTotal || 0;
+    if (qtdSessoes <= 0) return;
+
+    const dates = getNextDatesForWeekday(selectedDiaSemana, qtdSessoes);
+    const [hours, minutes] = selectedHorario.split(":").map(Number);
+
+    const schedulePromises = dates.map((date, index) => {
+      const startDateTime = new Date(date);
+      startDateTime.setHours(hours, minutes, 0, 0);
+
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setHours(hours + 1, minutes, 0, 0); // Assumindo 1 hora de duração
+
+      const scheduleData: ScheduleRequestDto = {
+        titulo: `Sessão ${index + 1} - ${formData.cliente?.nome || "Cliente"}`,
+        descricao: `Sessão de fisioterapia - Tratamento: ${
+          formData.cliente?.nome || "N/A"
+        }`,
+        dataInicio: startDateTime.toISOString(),
+        dataFim: endDateTime.toISOString(),
+        diaTodo: false,
+        clienteId: formData.clienteId,
+        funcionarioId: selectedFuncionario,
+        filialId: selectedFilial,
+        localizacao: "Clínica",
+        observacao: `Agendamento automático - Ordem de Serviço: ${orderServiceId}`,
+        notificar: false,
+        status: 1,
+      };
+
+      return postScheduleAsync(scheduleData);
+    });
+
+    try {
+      await Promise.all(schedulePromises);
+      toast.success(`${qtdSessoes} agendamentos criados com sucesso!`);
+    } catch (error) {
+      console.error("Erro ao criar agendamentos:", error);
+      toast.error("Erro ao criar alguns agendamentos. Verifique o calendário.");
+    }
+  };
+
   const mutation = useMutation({
     mutationFn: createOrderServiceAsync,
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       if (response.status === 200) {
-        toast.success("Ordem cadastrada com sucesso!");
+        toast.success("Tratamento cadastrado com sucesso!");
         queryClient.invalidateQueries(["getAllOrderService"]);
+
+        // Criar agendamentos recorrentes se configurado
+        if (userConfig && response.data?.id) {
+          await createRecurrentSchedules(response.data.id);
+        }
+
         setTimeout(() => {
           if (closeModal) closeModal();
         }, 2000);
@@ -80,7 +206,7 @@ export default function FormOrderService({
         toast.error(response, { duration: 4000 });
       } else {
         toast.error(
-          "Erro ao salvar a ordem de serviço. Verifique os dados e tente novamente.",
+          "Erro ao salvar o tratamento. Verifique os dados e tente novamente.",
           {
             duration: 4000,
           }
@@ -111,7 +237,7 @@ export default function FormOrderService({
         toast.error(response, { duration: 4000 });
       } else {
         toast.error(
-          "Erro ao atualizar a ordem de serviço. Verifique os dados e tente novamente.",
+          "Erro ao atualizar o tratamento. Verifique os dados e tente novamente.",
           {
             duration: 4000,
           }
@@ -119,6 +245,34 @@ export default function FormOrderService({
       }
     },
   });
+
+  const { data: funcionariosData } = useQuery({
+    queryKey: ["funcionarios"],
+    queryFn: () => EmployeeService.getAll(),
+  });
+  const { data: filiaisData } = useQuery({
+    queryKey: ["filiais"],
+    queryFn: () => BranchOfficeService.getAll(),
+  });
+
+  useEffect(() => {
+    if (filiaisData) {
+      setOptionsFilial(
+        filiaisData.map((item: any) => ({
+          label: item.nomeFilial,
+          value: item.id,
+        }))
+      );
+    }
+    if (funcionariosData) {
+      setOptionsFuncionario(
+        funcionariosData.map((item: any) => ({
+          label: item.nome,
+          value: item.id,
+        }))
+      );
+    }
+  }, [funcionariosData, filiaisData]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -231,6 +385,29 @@ export default function FormOrderService({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validação específica para recorrência
+    if (userConfig) {
+      if (!selectedDiaSemana) {
+        toast.error("Selecione o dia da semana para a recorrência.");
+        return;
+      }
+      if (!selectedHorario) {
+        toast.error("Selecione o horário para a recorrência.");
+        return;
+      }
+      if (!selectedFuncionario) {
+        toast.error("Selecione um fisioterapeuta para a recorrência.");
+        return;
+      }
+      if (!formData.qtdSessaoTotal || formData.qtdSessaoTotal <= 0) {
+        toast.error(
+          "Defina a quantidade de sessões máxima para criar os agendamentos."
+        );
+        return;
+      }
+    }
+
     const payload: OrderServiceRequestDto = {
       ...formData,
       funcionarioId: formData.funcionarioId?.trim()
@@ -416,16 +593,30 @@ export default function FormOrderService({
                   />
 
                   <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Configurar acesso ao sistema
+                    Configurar recorrência
                   </span>
                 </div>
               </div>
               {userConfig && (
                 <>
                   <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                    Configurar recorrência (Agendamento de Sessões)
+                    Configuração de recorrência (Agendamento de Sessões)
                   </h5>
-                  <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+
+                  {formData.qtdSessaoTotal &&
+                    formData.qtdSessaoTotal > 0 &&
+                    selectedDiaSemana && (
+                      <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                          <strong>Informação:</strong> Serão criados{" "}
+                          {formData.qtdSessaoTotal} agendamentos todas as{" "}
+                          {selectedDiaSemana.toLowerCase()}s
+                          {selectedHorario && ` às ${selectedHorario}`}.
+                        </p>
+                      </div>
+                    )}
+
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
                     <div>
                       <Label>
                         Dias semana<span className="text-red-300">*</span>
@@ -440,14 +631,10 @@ export default function FormOrderService({
                           { label: "Sábado", value: "Sábado" },
                           { label: "Domingo", value: "Domingo" },
                         ]}
-                        value={""}
-                        onChange={(selectedOption) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            diasSemana: "",
-                          }))
-                        }
-                        placeholder="Selecione o tipo"
+                        value={selectedDiaSemana}
+                        onChange={(value) => setSelectedDiaSemana(value)}
+                        placeholder="Selecione o dia da semana"
+                        required={userConfig}
                       />
                     </div>
                     <div>
@@ -455,11 +642,43 @@ export default function FormOrderService({
                         Horário<span className="text-red-300">*</span>
                       </Label>
                       <input
-                        id="event-start-date"
-                        type="datetime-local"
-                        // value={eventStartDate}
-                        // onChange={(e) => setEventStartDate(e.target.value)}
+                        id="event-start-time"
+                        type="time"
+                        value={selectedHorario}
+                        onChange={(e) => setSelectedHorario(e.target.value)}
                         className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                        required={userConfig}
+                      />
+                    </div>
+                    <div>
+                      <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                        Fisioterapeuta
+                      </Label>
+                      <Select
+                        options={optionsFuncionario}
+                        value={selectedFuncionario}
+                        placeholder="Selecione um fisioterapeuta"
+                        onChange={(value) =>
+                          setSelectedFuncionario(
+                            value === "" ? undefined : value
+                          )
+                        }
+                        className="dark:bg-dark-900"
+                        required={userConfig}
+                      />
+                    </div>
+                    <div>
+                      <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                        Filial
+                      </Label>
+                      <Select
+                        options={optionsFilial}
+                        value={selectedFilial || ""}
+                        placeholder="Filial"
+                        onChange={(value) =>
+                          setSelectedFilial(value === "" ? undefined : value)
+                        }
+                        className="dark:bg-dark-900"
                       />
                     </div>
                   </div>
