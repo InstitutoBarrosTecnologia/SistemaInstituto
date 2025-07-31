@@ -147,3 +147,31 @@ export const getUserRoleFromToken = (token: string | null): string | null => {
     return null;
   }
 };
+
+// Função para obter o ID do funcionário a partir do token JWT
+export const getUserFuncionarioIdFromToken = (token: string | null): string | null => {
+  if (!token) return null;
+  
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => `%${("00" + c.charCodeAt(0).toString(16)).slice(-2)}`)
+        .join("")
+    );
+    const decoded = JSON.parse(jsonPayload);
+    
+    // Buscar funcionarioId no token - pode estar em diferentes propriedades
+    return decoded.funcionarioId || decoded.FuncionarioId || decoded.IdUserLogin || null;
+  } catch (e) {
+    console.error("Erro ao decodificar token:", e);
+    return null;
+  }
+};
+
+// Função para verificar se o usuário deve ter filtro aplicado na agenda
+export const shouldApplyAgendaFilter = (userRole: string | null): boolean => {
+  return userRole === USER_ROLES.FISIOTERAPEUTA;
+};

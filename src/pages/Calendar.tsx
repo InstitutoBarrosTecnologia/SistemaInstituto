@@ -18,6 +18,7 @@ import Checkbox from "../components/form/input/Checkbox";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Filter, getAllSchedulesAsync, postScheduleAsync, putScheduleAsync, deleteScheduleAsync } from "../services/service/ScheduleService";
 import toast, { Toaster } from "react-hot-toast";
+import { getUserRoleFromToken, getUserFuncionarioIdFromToken, shouldApplyAgendaFilter } from "../services/util/rolePermissions";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -48,6 +49,7 @@ const Calendar: React.FC = () => {
   const [optionsFuncionario, setOptionsFuncionario] = useState<{ label: string; value: string }[]>([]);
   const [filter, setFilter] = useState<Filter>({});
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
 
   const { isLoading, data: schedules, refetch: refetchCalendar } = useQuery({
@@ -383,6 +385,25 @@ const Calendar: React.FC = () => {
     }));
   }, [selectedFuncionario]);
 
+  // Aplica filtro automático para fisioterapeutas
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const currentUserRole = getUserRoleFromToken(token);
+    setUserRole(currentUserRole);
+    
+    if (shouldApplyAgendaFilter(currentUserRole)) {
+      // Se é fisioterapeuta, aplicar filtro por ID do funcionário
+      const funcionarioId = getUserFuncionarioIdFromToken(token);
+      if (funcionarioId) {
+        setFilter((prev) => ({
+          ...prev,
+          idFuncionario: funcionarioId,
+        }));
+        setSelectedFuncionario(funcionarioId);
+      }
+    }
+  }, []);
+
  
   return (
     <>
@@ -403,16 +424,18 @@ const Calendar: React.FC = () => {
               className="w-28 text-xs h-8 px-2 py-1"
             />
           </div>
-          <div className="flex items-center">
-            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Fisioterapeuta:</Label>
-            <Select
-              options={[{ label: "Todos", value: "" }, ...optionsFuncionario]}
-              value={selectedFuncionario || ""}
-              placeholder="Fisioterapeuta"
-              onChange={(value) => setSelectedFuncionario(value === "" ? undefined : value)}
-              className="w-36 text-xs h-8 px-2 py-1"
-            />
-          </div>
+          {!shouldApplyAgendaFilter(userRole) && (
+            <div className="flex items-center">
+              <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Fisioterapeuta:</Label>
+              <Select
+                options={[{ label: "Todos", value: "" }, ...optionsFuncionario]}
+                value={selectedFuncionario || ""}
+                placeholder="Fisioterapeuta"
+                onChange={(value) => setSelectedFuncionario(value === "" ? undefined : value)}
+                className="w-36 text-xs h-8 px-2 py-1"
+              />
+            </div>
+          )}
         </div>
       </div>
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
