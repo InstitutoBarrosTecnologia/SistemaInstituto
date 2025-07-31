@@ -134,6 +134,16 @@ O sistema possui três dashboards especializados com controle de acesso baseado 
   - Métricas de avaliações realizadas
   - Indicadores operacionais em tempo real
   - Acompanhamento de agendamentos
+  - **📊 Gráfico de Sessões Mensais Multi-Séries**:
+    - 🟢 Sessões Realizadas
+    - 🔴 Sessões Canceladas
+    - 🟡 Sessões Reagendadas
+    - Visualização comparativa mensal
+    - Estados vazios elegantes quando sem dados
+  - **📈 Gráficos de Distribuição**:
+    - Distribuição por Unidades (Pie Chart)
+    - Top Serviços Mais Agendados (Pie Chart)  
+    - Sessões por Fisioterapeuta (Bar Chart)
 
 #### **📈 Dashboard Lead** (`/dashboard-lead`)
 - **Acesso**: Administrador, Administrativo, Comercial, Funcionário
@@ -148,6 +158,42 @@ O sistema possui três dashboards especializados com controle de acesso baseado 
 - **Autenticação JWT** com roles específicos
 - **Controle de Menu** baseado no perfil do usuário
 - **Permissões Granulares** por funcionalidade
+
+#### **🏗️ Arquitetura do Dashboard**
+
+O sistema de dashboard implementa uma arquitetura robusta com integração completa entre frontend e backend:
+
+**🔄 Service Layer**
+- `DashboardService.ts` - Camada de serviços com 10+ endpoints especializados
+- Requests assíncronos com Promise.all para otimização de performance
+- Tratamento automático de erros e loading states
+- Suporte a filtros avançados (período, filial, funcionário)
+
+**📊 Componentes de Gráficos**
+- `MonthlySessionsChart` - Gráfico de barras com suporte a múltiplas séries
+- `UnidadesPieChart` - Distribuição por unidades (Pie Chart)
+- `ServicosPieChart` - Top serviços mais agendados (Pie Chart)
+- `FisioterapeutasBarChart` - Sessões por fisioterapeuta (Bar Chart)
+- Estados vazios elegantes com ícones contextuais
+- Loading states individuais por componente
+
+**⚡ Custom Hooks**
+- `useDashboard` - Hook customizado para gerenciamento de estado
+- Carregamento paralelo de dados com otimização
+- Cache automático via React Query
+- Recarregamento manual com função `recarregarDados()`
+
+**🎨 TypeScript Integration**
+- Interfaces tipadas para todas as responses da API
+- DTOs específicos para cada tipo de dado
+- Type safety completo entre frontend e backend
+- Suporte a modelos legados e novos (multi-séries)
+
+**📱 Responsividade**
+- Grid layout adaptativo (1-4 colunas)
+- Gráficos responsivos com scroll horizontal
+- Estados de loading otimizados para mobile
+- Tooltips e interações touch-friendly
 
 #### **Perfis e Acessos:**
 - **👨‍⚕️ Fisioterapeuta**: Dashboard Operação, Agenda, Pacientes (apenas check-in), Funcionários
@@ -261,7 +307,71 @@ npm run build && cp -r dist/* /seu/servidor/
 
 ---
 
-### **👥 Gestão de Pacientes**
+### **� Dashboard Analytics**
+
+#### **GET /api/Dashboard/pacientes-ativos**
+- **Descrição**: Número total de pacientes ativos
+- **Filters**: `periodo`, `dataInicio`, `dataFim`, `filialId`, `funcionarioId`
+- **Response**: `{ total: number, variacao: number }`
+
+#### **GET /api/Dashboard/agendamentos-marcados**
+- **Descrição**: Agendamentos marcados por período
+- **Filters**: `periodo`, `dataInicio`, `dataFim`, `filialId`, `funcionarioId`
+- **Response**: `[{ periodo: string, total: number, variacao: number }]`
+
+#### **GET /api/Dashboard/avaliacoes-agendadas**
+- **Descrição**: Avaliações agendadas por período
+- **Filters**: `periodo`, `dataInicio`, `dataFim`, `filialId`, `funcionarioId`
+- **Response**: `[{ periodo: string, total: number, variacao: number }]`
+
+#### **GET /api/Dashboard/avaliacoes-executadas**
+- **Descrição**: Avaliações realizadas no período
+- **Filters**: `periodo`, `dataInicio`, `dataFim`, `filialId`, `funcionarioId`
+- **Response**: `{ total: number, variacao: number }`
+
+#### **GET /api/Dashboard/sessoes-realizadas**
+- **Descrição**: Sessões realizadas por período
+- **Filters**: `periodo`, `dataInicio`, `dataFim`, `filialId`, `funcionarioId`
+- **Response**: `[{ periodo: string, total: number, variacao: number }]`
+
+#### **GET /api/Dashboard/sessoes-canceladas**
+- **Descrição**: Sessões canceladas com percentual
+- **Filters**: `periodo`, `dataInicio`, `dataFim`, `filialId`, `funcionarioId`
+- **Response**: `{ periodo: string, total: number, percentual: number, variacao: number }`
+
+#### **GET /api/Dashboard/sessoes-mensais-multi** 🆕
+- **Descrição**: Evolução mensal com múltiplas séries (Realizadas, Canceladas, Reagendadas)
+- **Filters**: `dataInicio`, `dataFim`, `filialId`, `funcionarioId`
+- **Response**: 
+```json
+{
+  "meses": ["Jan", "Fev", "Mar", ...],
+  "series": [
+    { "name": "Realizadas", "data": [145, 220, 189, ...] },
+    { "name": "Canceladas", "data": [25, 35, 28, ...] },
+    { "name": "Reagendadas", "data": [18, 28, 22, ...] }
+  ]
+}
+```
+
+#### **GET /api/Dashboard/unidades-distribuicao**
+- **Descrição**: Distribuição de sessões por unidade
+- **Filters**: `periodo`, `dataInicio`, `dataFim`, `funcionarioId`
+- **Response**: `[{ unidade: string, total: number }]`
+
+#### **GET /api/Dashboard/servicos-mais-agendados**
+- **Descrição**: Top serviços mais agendados
+- **Filters**: `periodo`, `dataInicio`, `dataFim`, `filialId`, `funcionarioId`
+- **Response**: `[{ servico: string, total: number }]`
+
+#### **GET /api/Dashboard/sessoes-por-fisioterapeuta**
+- **Descrição**: Sessões realizadas por fisioterapeuta
+- **Filters**: `periodo`, `dataInicio`, `dataFim`, `filialId`
+- **Response**: `[{ fisioterapeuta: string, total: number }]`
+
+---
+
+### **�👥 Gestão de Pacientes**
 
 #### **GET /api/Customer/GetAllCustomer**
 - **Descrição**: Listar todos os pacientes com filtros
@@ -542,8 +652,14 @@ VITE_API_URL=https://instituto-barros-sistema.azurewebsites.net/api
 - [x] ✅ **Dashboard Operação** - Métricas operacionais para fisioterapeutas
 - [x] ✅ **Dashboard Lead** - Funil de vendas e análise de conversão
 - [x] ✅ **Sistema de Controle de Acesso** - Permissões baseadas em perfil
+- [x] ✅ **Gráficos Multi-Séries** - Sessões realizadas, canceladas e reagendadas
+- [x] ✅ **API Dashboard Completa** - 10+ endpoints especializados para analytics
+- [x] ✅ **Estados Vazios Elegantes** - UX otimizada quando sem dados
+- [x] ✅ **Service Layer Otimizada** - Requisições paralelas e cache automático
 - [ ] Backup automático de dados
 - [ ] Sistema de permissões granular avançado
+- [ ] Filtros avançados de período nos dashboards
+- [ ] Exportação de dados dos gráficos (PDF/Excel)
 
 ---
 
@@ -561,6 +677,24 @@ Para contribuir com o projeto:
 ## 📄 Licença
 
 Este projeto é propriedade do **Instituto Barros** e está protegido por direitos autorais.
+
+---
+
+## 📝 Changelog
+
+### **v2.1.0** - Janeiro 2025
+- ✅ **Dashboard Multi-Séries**: Implementação completa do gráfico de sessões com múltiplas séries
+- ✅ **API Dashboard**: 10+ novos endpoints especializados para analytics
+- ✅ **UX Melhorada**: Estados vazios elegantes com ícones contextuais
+- ✅ **Performance**: Service layer otimizada com requisições paralelas
+- ✅ **TypeScript**: Type safety completo entre frontend e backend
+- ✅ **Responsividade**: Gráficos otimizados para todos os dispositivos
+
+### **v2.0.0** - Dezembro 2024
+- ✅ Sistema de Dashboard completo (Financeiro, Operação, Lead)
+- ✅ Controle de acesso baseado em perfis
+- ✅ Integração com WhatsApp
+- ✅ Sistema de agendamento avançado
 
 ---
 
