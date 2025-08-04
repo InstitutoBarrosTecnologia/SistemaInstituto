@@ -12,6 +12,7 @@ import Select from "../../../components/form/Select";
 import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { ChromePicker } from "react-color";
+import { getRoleOptionsForEmployeeForm } from "../../../services/util/roleOptions";
 
 interface FormEmployeeProps {
     data?: EmployeeResponseDto;
@@ -379,11 +380,7 @@ export default function FormEmployee({ data, edit, closeModal }: FormEmployeePro
                                     <div>
                                         <Label>Perfil<span className="text-red-300">*</span></Label>
                                         <Select
-                                            options={[
-                                                { label: "Administrativo", value: "Administrativo" },
-                                                { label: "Comercial", value: "Comercial" },
-                                                { label: "Fisioterapeuta", value: "Fisioterapeuta" },
-                                            ]}
+                                            options={getRoleOptionsForEmployeeForm()}
                                             value={formData.role?.toString()}
                                             onChange={(value) => handleChange("role", value)}
                                             placeholder="Selecione o tipo"
