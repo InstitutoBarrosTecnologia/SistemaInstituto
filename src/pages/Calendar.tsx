@@ -8,7 +8,7 @@ import { Modal } from "../components/ui/modal";
 import { useModal } from "../hooks/useModal";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
-import ptBrLocale from '@fullcalendar/core/locales/pt-br';
+import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { BranchOfficeService } from "../services/service/BranchOfficeService";
 import EmployeeService from "../services/service/EmployeeService";
 import { getAllCustomersAsync } from "../services/service/CustomerService";
@@ -16,9 +16,19 @@ import Label from "../components/form/Label";
 import Select from "../components/form/Select";
 import Checkbox from "../components/form/input/Checkbox";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Filter, getAllSchedulesAsync, postScheduleAsync, putScheduleAsync, deleteScheduleAsync } from "../services/service/ScheduleService";
+import {
+  Filter,
+  getAllSchedulesAsync,
+  postScheduleAsync,
+  putScheduleAsync,
+  deleteScheduleAsync,
+} from "../services/service/ScheduleService";
 import toast, { Toaster } from "react-hot-toast";
-import { getUserRoleFromToken, getUserFuncionarioIdFromToken, shouldApplyAgendaFilter } from "../services/util/rolePermissions";
+import {
+  getUserRoleFromToken,
+  getUserFuncionarioIdFromToken,
+  shouldApplyAgendaFilter,
+} from "../services/util/rolePermissions";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -39,23 +49,151 @@ const Calendar: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const calendarRef = useRef<FullCalendar>(null);
   const { isOpen, openModal, closeModal } = useModal();
-  const { isOpen: isOpenDelete, openModal: openModalDelete, closeModal: closeModalDelete } = useModal();
-  const [selectedFilial, setSelectedFilial] = useState<string | undefined>(undefined);
-  const [selectedCliente, setSelectedCliente] = useState<string | undefined>(undefined);
-  const [selectedFuncionario, setSelectedFuncionario] = useState<string | undefined>(undefined);
+  const {
+    isOpen: isOpenDelete,
+    openModal: openModalDelete,
+    closeModal: closeModalDelete,
+  } = useModal();
+  const [selectedFilial, setSelectedFilial] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedCliente, setSelectedCliente] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedFuncionario, setSelectedFuncionario] = useState<
+    string | undefined
+  >(undefined);
   const [isChecked, setIsChecked] = useState(false);
-  const [optionsFilial, setOptionsFilial] = useState<{ label: string; value: string }[]>([]);
-  const [optionsCliente, setOptionsCliente] = useState<{ label: string; value: string }[]>([]);
-  const [optionsFuncionario, setOptionsFuncionario] = useState<{ label: string; value: string }[]>([]);
+  const [optionsFilial, setOptionsFilial] = useState<
+    { label: string; value: string }[]
+  >([]);
+  const [optionsCliente, setOptionsCliente] = useState<
+    { label: string; value: string }[]
+  >([]);
+  const [optionsFuncionario, setOptionsFuncionario] = useState<
+    { label: string; value: string }[]
+  >([]);
   const [filter, setFilter] = useState<Filter>({});
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
   const [userRole, setUserRole] = useState<string | null>(null);
 
+  // Estados para recorrência
+  const [isRecurrent, setIsRecurrent] = useState<boolean>(false);
+  const [selectedDiaSemana, setSelectedDiaSemana] = useState<string>("");
+  const [selectedHorarioRecorrente, setSelectedHorarioRecorrente] =
+    useState<string>("");
+  const [qtdSessoes, setQtdSessoes] = useState<number>(1);
 
-  const { isLoading, data: schedules, refetch: refetchCalendar } = useQuery({
+  // Função para calcular as próximas datas baseado no dia da semana
+  const getNextDatesForWeekday = (dayOfWeek: string, count: number): Date[] => {
+    const days = {
+      "Segunda-Feira": 1,
+      "Terça-Feira": 2,
+      "Quarta-Feira": 3,
+      "Quinta-Feira": 4,
+      "Sexta-Feira": 5,
+      Sábado: 6,
+      Domingo: 0,
+    };
+
+    const targetDay = days[dayOfWeek as keyof typeof days];
+    if (targetDay === undefined) return [];
+
+    const dates: Date[] = [];
+    const today = new Date();
+
+    // Encontrar a próxima ocorrência do dia da semana
+    let nextDate = new Date(today);
+    const currentDay = today.getDay();
+    const daysUntilTarget = (targetDay - currentDay + 7) % 7;
+
+    // Se for hoje e ainda não passou do horário, usar hoje, senão próxima semana
+    if (daysUntilTarget === 0) {
+      // Se for hoje, verificar se já passou do horário
+      if (selectedHorarioRecorrente) {
+        const [hours, minutes] = selectedHorarioRecorrente
+          .split(":")
+          .map(Number);
+        const targetTime = new Date(today);
+        targetTime.setHours(hours, minutes, 0, 0);
+
+        if (today > targetTime) {
+          // Já passou do horário hoje, começar na próxima semana
+          nextDate.setDate(today.getDate() + 7);
+        }
+      }
+    } else {
+      nextDate.setDate(today.getDate() + daysUntilTarget);
+    }
+
+    // Gerar as próximas 'count' datas
+    for (let i = 0; i < count; i++) {
+      dates.push(new Date(nextDate));
+      nextDate.setDate(nextDate.getDate() + 7); // Próxima semana
+    }
+
+    return dates;
+  };
+
+  // Função para criar agendamentos recorrentes
+  const createRecurrentSchedules = async () => {
+    if (
+      !isRecurrent ||
+      !selectedDiaSemana ||
+      !selectedHorarioRecorrente ||
+      qtdSessoes <= 0
+    ) {
+      return;
+    }
+
+    const dates = getNextDatesForWeekday(selectedDiaSemana, qtdSessoes);
+    const [hours, minutes] = selectedHorarioRecorrente.split(":").map(Number);
+
+    const schedulePromises = dates.map((date, index) => {
+      const startDateTime = new Date(date);
+      startDateTime.setHours(hours, minutes, 0, 0);
+
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setHours(hours + 1, minutes, 0, 0); // Assumindo 1 hora de duração
+
+      return postScheduleAsync({
+        titulo: `${eventTitle || "Agendamento"} - Sessão ${index + 1}`,
+        descricao: eventDescription || "Agendamento recorrente",
+        dataInicio: startDateTime.toISOString(),
+        dataFim: endDateTime.toISOString(),
+        diaTodo: false,
+        clienteId: selectedCliente,
+        funcionarioId: selectedFuncionario,
+        filialId: selectedFilial,
+        localizacao: eventLocation || "Clínica",
+        observacao: `Agendamento recorrente - Sessão ${
+          index + 1
+        } de ${qtdSessoes}`,
+        notificar: false,
+        status: 1,
+      });
+    });
+
+    try {
+      await Promise.all(schedulePromises);
+      toast.success(
+        `${qtdSessoes} agendamentos recorrentes criados com sucesso!`
+      );
+      refetchCalendar();
+    } catch (error) {
+      console.error("Erro ao criar agendamentos recorrentes:", error);
+      toast.error("Erro ao criar alguns agendamentos. Verifique o calendário.");
+    }
+  };
+
+  const {
+    isLoading,
+    data: schedules,
+    refetch: refetchCalendar,
+  } = useQuery({
     queryKey: ["schedules", filter],
-    queryFn: () => getAllSchedulesAsync(filter)
-  })
+    queryFn: () => getAllSchedulesAsync(filter),
+  });
 
   const { data: filiaisData } = useQuery({
     queryKey: ["filiais"],
@@ -74,23 +212,31 @@ const Calendar: React.FC = () => {
 
   useEffect(() => {
     // Cria o map de id do funcionário para cor
-    const funcionarioColorMap = (funcionariosData || []).reduce((acc: Record<string, string>, funcionario: any) => {
-      if (funcionario.id && funcionario.cor) {
-        acc[funcionario.id] = funcionario.cor;
-      }
-      return acc;
-    }, {});
+    const funcionarioColorMap = (funcionariosData || []).reduce(
+      (acc: Record<string, string>, funcionario: any) => {
+        if (funcionario.id && funcionario.cor) {
+          acc[funcionario.id] = funcionario.cor;
+        }
+        return acc;
+      },
+      {}
+    );
 
     if (schedules) {
       const formattedEvents = schedules.map((schedule) => {
         // Buscar nome do cliente
-        const cliente = clientesData?.find((c: any) => c.id === schedule.clienteId);
+        const cliente = clientesData?.find(
+          (c: any) => c.id === schedule.clienteId
+        );
         // Buscar nome do funcionário
-        const funcionario = funcionariosData?.find((f: any) => f.id === schedule.funcionarioId);
-        
-        const corFuncionario = schedule.funcionarioId && funcionarioColorMap[schedule.funcionarioId]
-          ? funcionarioColorMap[schedule.funcionarioId]
-          : undefined;
+        const funcionario = funcionariosData?.find(
+          (f: any) => f.id === schedule.funcionarioId
+        );
+
+        const corFuncionario =
+          schedule.funcionarioId && funcionarioColorMap[schedule.funcionarioId]
+            ? funcionarioColorMap[schedule.funcionarioId]
+            : undefined;
         return {
           id: schedule.id,
           title: schedule.titulo,
@@ -142,7 +288,7 @@ const Calendar: React.FC = () => {
     onSuccess: (data: any) => {
       if (data?.status === 200 || data?.success === true || data?.id) {
         toast.success("Evento criado com sucesso!", {
-          duration: 3000
+          duration: 3000,
         });
         setTimeout(() => {
           closeModal();
@@ -151,7 +297,7 @@ const Calendar: React.FC = () => {
         }, 3000); // Fecha a modal após o toast sumir
       } else {
         toast.error("Erro ao criar evento. Tente novamente.", {
-          duration: 3000
+          duration: 3000,
         });
       }
     },
@@ -160,7 +306,7 @@ const Calendar: React.FC = () => {
       if (error?.response?.data?.message) message = error.response.data.message;
       else if (error?.message) message = error.message;
       toast.error(message, {
-        duration: 3000
+        duration: 3000,
       });
       console.error("Erro ao adicionar evento:", error);
     },
@@ -169,10 +315,9 @@ const Calendar: React.FC = () => {
   const { mutateAsync: mutateUpdateEvent } = useMutation({
     mutationFn: putScheduleAsync,
     onSuccess: (data: any) => {
-
       if (data?.status === 200 || data?.success === true || data?.id) {
         toast.success("Evento atualizado com sucesso!", {
-          duration: 3000
+          duration: 3000,
         });
         setTimeout(() => {
           closeModal();
@@ -181,7 +326,7 @@ const Calendar: React.FC = () => {
         }, 3000); // Fecha a modal após o toast sumir
       } else {
         toast.error("Erro ao atualizar evento. Tente novamente.", {
-          duration: 3000
+          duration: 3000,
         });
       }
     },
@@ -190,11 +335,11 @@ const Calendar: React.FC = () => {
       if (error?.response?.data?.message) message = error.response.data.message;
       else if (error?.message) message = error.message;
       toast.error(message, {
-        duration: 3000
+        duration: 3000,
       });
       console.error("Erro ao atualizar evento:", error);
-    }
-  })
+    },
+  });
 
   const { mutateAsync: mutateDeleteEvent } = useMutation({
     mutationFn: deleteScheduleAsync,
@@ -208,8 +353,8 @@ const Calendar: React.FC = () => {
     onError: (error) => {
       console.error("Erro ao deletar evento:", error);
       toast.error("Erro ao excluir evento. Tente novamente.");
-    }
-  })
+    },
+  });
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     resetModalFields();
@@ -220,15 +365,17 @@ const Calendar: React.FC = () => {
 
   const handleEventClick = (clickInfo: EventClickArg) => {
     const event = clickInfo.event;
-    const publicId = clickInfo.event._def.publicId
-    const schedule = schedules?.find((schedule) => schedule.id === publicId)
+    const publicId = clickInfo.event._def.publicId;
+    const schedule = schedules?.find((schedule) => schedule.id === publicId);
     setSelectedEvent(event as unknown as CalendarEvent);
 
     if (schedule) {
       setEventTitle(schedule.titulo || "");
       setEventDescription(schedule.descricao || "");
       setEventLocation(schedule.localizacao || "");
-      setEventStartDate(schedule.dataInicio ? schedule.dataInicio.slice(0, 16) : "");
+      setEventStartDate(
+        schedule.dataInicio ? schedule.dataInicio.slice(0, 16) : ""
+      );
       setEventEndDate(schedule.dataFim ? schedule.dataFim.slice(0, 16) : "");
       setEventLevel("Primary");
       setSelectedCliente(schedule.clienteId?.toString() || undefined);
@@ -239,7 +386,30 @@ const Calendar: React.FC = () => {
     openModal();
   };
 
-  const handleAddOrUpdateEvent = () => {
+  const handleAddOrUpdateEvent = async () => {
+    // Se for recorrência, usar a função específica
+    if (isRecurrent && !selectedEvent) {
+      // Validações para recorrência
+      if (!selectedDiaSemana) {
+        toast.error("Selecione o dia da semana para a recorrência.");
+        return;
+      }
+      if (!selectedHorarioRecorrente) {
+        toast.error("Selecione o horário para a recorrência.");
+        return;
+      }
+      if (qtdSessoes <= 0) {
+        toast.error("Defina a quantidade de sessões.");
+        return;
+      }
+
+      await createRecurrentSchedules();
+      closeModal();
+      resetModalFields();
+      return;
+    }
+
+    // Lógica normal para evento único ou edição
     if (selectedEvent) {
       mutateUpdateEvent({
         id: selectedEvent.id,
@@ -249,9 +419,9 @@ const Calendar: React.FC = () => {
         dataInicio: eventStartDate,
         dataFim: eventEndDate,
         diaTodo: isChecked,
-        observacao: eventTitle, // Assuming observation is the same as title for now
-        notificar: false, // Assuming no notification for now
-        status: 1, // Assuming status is active
+        observacao: eventTitle,
+        notificar: false,
+        status: 1,
         clienteId: selectedCliente,
         funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
@@ -262,15 +432,15 @@ const Calendar: React.FC = () => {
         funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
         titulo: eventTitle,
-        descricao: eventDescription, // Assuming description is the same as title for now
-        localizacao: eventLocation, // Assuming location is the same as title for now
+        descricao: eventDescription,
+        localizacao: eventLocation,
         dataInicio: eventStartDate,
         dataFim: eventEndDate,
         diaTodo: isChecked,
-        observacao: eventTitle, // Assuming observation is the same as title for now
-        notificar: false, // Assuming no notification for now
-        status: 1, // Assuming status is active
-      })
+        observacao: eventTitle,
+        notificar: false,
+        status: 1,
+      });
     }
   };
 
@@ -300,6 +470,11 @@ const Calendar: React.FC = () => {
     setSelectedFuncionario(undefined);
     setSelectedFilial(undefined);
     setIsChecked(false);
+
+    setIsRecurrent(false);
+    setSelectedDiaSemana("");
+    setSelectedHorarioRecorrente("");
+    setQtdSessoes(1);
   };
 
   const handleOpenModal = () => {
@@ -317,23 +492,28 @@ const Calendar: React.FC = () => {
 
   const renderEventContent = (eventInfo: any) => {
     // Usa a cor do funcionário, se não houver, usa azul padrão
-    const cor = eventInfo.event.extendedProps.corFuncionario || '#2563eb'; // azul padrão
-    
+    const cor = eventInfo.event.extendedProps.corFuncionario || "#2563eb"; // azul padrão
+
     // Função para determinar se a cor é clara ou escura
     const isLightColor = (hexColor: string) => {
-      const hex = hexColor.replace('#', '');
+      const hex = hexColor.replace("#", "");
       const r = parseInt(hex.substr(0, 2), 16);
       const g = parseInt(hex.substr(2, 2), 16);
       const b = parseInt(hex.substr(4, 2), 16);
-      const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
       return brightness > 155;
     };
 
     // Define cor do texto baseada no fundo
-    const textColor = isLightColor(cor) ? '#000000' : '#ffffff';
-    
+    const textColor = isLightColor(cor) ? "#000000" : "#ffffff";
+
     const { cliente, funcionario, observacao } = eventInfo.event.extendedProps;
-    
+
+    // Função para truncar o nome do cliente
+    const truncateText = (text: string, maxLength: number = 15) => {
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + "...";
+    };
 
     // Renderiza o conteúdo do evento
     return (
@@ -342,10 +522,17 @@ const Calendar: React.FC = () => {
         style={{ background: cor, borderColor: cor }}
         title={`Cliente: ${cliente} | Funcionário: ${funcionario} | Observação: ${observacao}`}
       >
-        <div className="fc-daygrid-event-dot" style={{ background: textColor }}></div>
-        <div className="fc-event-time" style={{ color: textColor }}>{eventInfo.timeText}</div>
-        <div className="fc-event-title" style={{ color: textColor }}>{cliente}</div>
-        
+        <div
+          className="fc-daygrid-event-dot"
+          style={{ background: textColor }}
+        ></div>
+        <div className="fc-event-time" style={{ color: textColor }}>
+          {eventInfo.timeText}
+        </div>
+        <div className="fc-event-title" style={{ color: textColor }}>
+          {truncateText(cliente)}
+        </div>
+
         {/* Tooltip personalizado */}
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs bg-gray-900 dark:bg-gray-800 text-white rounded-lg shadow-xl border border-gray-700 dark:border-gray-600 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 min-w-max max-w-xs">
           <div className="space-y-1.5">
@@ -390,7 +577,7 @@ const Calendar: React.FC = () => {
     const token = localStorage.getItem("token");
     const currentUserRole = getUserRoleFromToken(token);
     setUserRole(currentUserRole);
-    
+
     if (shouldApplyAgendaFilter(currentUserRole)) {
       // Se é fisioterapeuta, aplicar filtro por ID do funcionário
       const funcionarioId = getUserFuncionarioIdFromToken(token);
@@ -404,7 +591,6 @@ const Calendar: React.FC = () => {
     }
   }, []);
 
- 
   return (
     <>
       <PageMeta
@@ -415,23 +601,31 @@ const Calendar: React.FC = () => {
         <PageBreadcrumb pageTitle="Agenda" />
         <div className="flex items-center gap-4">
           <div className="flex items-center">
-            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Filial:</Label>
+            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">
+              Filial:
+            </Label>
             <Select
               options={[{ label: "Todas", value: "" }, ...optionsFilial]}
               value={selectedFilial || ""}
               placeholder="Filial"
-              onChange={(value) => setSelectedFilial(value === "" ? undefined : value)}
+              onChange={(value) =>
+                setSelectedFilial(value === "" ? undefined : value)
+              }
               className="w-28 text-xs h-8 px-2 py-1"
             />
           </div>
           {!shouldApplyAgendaFilter(userRole) && (
             <div className="flex items-center">
-              <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Fisioterapeuta:</Label>
+              <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">
+                Fisioterapeuta:
+              </Label>
               <Select
                 options={[{ label: "Todos", value: "" }, ...optionsFuncionario]}
                 value={selectedFuncionario || ""}
                 placeholder="Fisioterapeuta"
-                onChange={(value) => setSelectedFuncionario(value === "" ? undefined : value)}
+                onChange={(value) =>
+                  setSelectedFuncionario(value === "" ? undefined : value)
+                }
                 className="w-36 text-xs h-8 px-2 py-1"
               />
             </div>
@@ -486,11 +680,11 @@ const Calendar: React.FC = () => {
                     className="flex items-center justify-center w-12 h-12 mr-6 mt-2 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 transition-colors"
                     title="Excluir evento"
                   >
-                    <svg 
-                      width="24" 
-                      height="24" 
-                      viewBox="0 0 20 20" 
-                      fill="none" 
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 20 20"
+                      fill="none"
                       xmlns="http://www.w3.org/2000/svg"
                       className="text-red-500"
                     >
@@ -506,9 +700,9 @@ const Calendar: React.FC = () => {
               )}
             </div>
             <div className="mt-8">
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 ">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-3">
                 <div>
-                  <Label >
+                  <Label>
                     Título Evento
                     <span className="text-red-300">*</span>
                   </Label>
@@ -521,9 +715,7 @@ const Calendar: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <Label >
-                    Descrição
-                  </Label>
+                  <Label>Descrição</Label>
                   <input
                     id="event-description"
                     type="text"
@@ -533,9 +725,7 @@ const Calendar: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <Label >
-                    Localização
-                  </Label>
+                  <Label>Localização</Label>
                   <input
                     id="event-location"
                     type="text"
@@ -546,39 +736,42 @@ const Calendar: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 ">
-                <div>
-                  <Label >
-                    Data & Hora Início
-                    <span className="text-red-300">*</span>
-                  </Label>
-                  <div className="relative">
-                    <input
-                      id="event-start-date"
-                      type="datetime-local"
-                      value={eventStartDate}
-                      onChange={(e) => setEventStartDate(e.target.value)}
-                      className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                    />
+              {/* Campos de data/hora - ocultos quando recorrência está ativa */}
+              {(!isRecurrent || selectedEvent) && (
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-3">
+                  <div>
+                    <Label>
+                      Data & Hora Início
+                      <span className="text-red-300">*</span>
+                    </Label>
+                    <div className="relative">
+                      <input
+                        id="event-start-date"
+                        type="datetime-local"
+                        value={eventStartDate}
+                        onChange={(e) => setEventStartDate(e.target.value)}
+                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>
+                      Data & Hora Fim
+                      <span className="text-red-300">*</span>
+                    </Label>
+                    <div className="relative">
+                      <input
+                        id="event-end-date"
+                        type="datetime-local"
+                        value={eventEndDate}
+                        onChange={(e) => setEventEndDate(e.target.value)}
+                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <Label >
-                    Data & Hora Fim
-                    <span className="text-red-300">*</span>
-                  </Label>
-                  <div className="relative">
-                    <input
-                      id="event-end-date"
-                      type="datetime-local"
-                      value={eventEndDate}
-                      onChange={(e) => setEventEndDate(e.target.value)}
-                      className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 ">
+              )}
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-3">
                 <div>
                   <Label>Cliente</Label>
                   <Select
@@ -589,7 +782,6 @@ const Calendar: React.FC = () => {
                       setSelectedCliente(value === "" ? undefined : value)
                     }
                     className="dark:bg-dark-900"
-
                   />
                 </div>
                 <div>
@@ -621,13 +813,106 @@ const Calendar: React.FC = () => {
                   />
                 </div>
               </div>
+
+              {/* Checkbox para recorrência - apenas para novos eventos */}
+              {!selectedEvent && (
+                <div className="mb-5">
+                  <div className="flex items-center gap-3">
+                    <Checkbox checked={isRecurrent} onChange={setIsRecurrent} />
+                    <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
+                      Criar agendamento recorrente
+                      {isRecurrent && (
+                        <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                          (Múltiplos agendamentos)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Configuração de recorrência */}
+              {isRecurrent && !selectedEvent && (
+                <>
+                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <h6 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                      Configuração de Recorrência
+                    </h6>
+                    {qtdSessoes > 0 && selectedDiaSemana && (
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        <strong>Informação:</strong> Serão criados {qtdSessoes}{" "}
+                        agendamentos todas as {selectedDiaSemana.toLowerCase()}s
+                        {selectedHorarioRecorrente &&
+                          ` às ${selectedHorarioRecorrente}`}
+                        .
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-3 mb-5">
+                    <div>
+                      <Label>
+                        Dia da Semana<span className="text-red-300">*</span>
+                      </Label>
+                      <Select
+                        options={[
+                          { label: "Segunda-Feira", value: "Segunda-Feira" },
+                          { label: "Terça-Feira", value: "Terça-Feira" },
+                          { label: "Quarta-Feira", value: "Quarta-Feira" },
+                          { label: "Quinta-Feira", value: "Quinta-Feira" },
+                          { label: "Sexta-Feira", value: "Sexta-Feira" },
+                          { label: "Sábado", value: "Sábado" },
+                          { label: "Domingo", value: "Domingo" },
+                        ]}
+                        value={selectedDiaSemana}
+                        onChange={(value) => setSelectedDiaSemana(value)}
+                        placeholder="Selecione o dia da semana"
+                        className="dark:bg-dark-900"
+                      />
+                    </div>
+                    <div>
+                      <Label>
+                        Horário<span className="text-red-300">*</span>
+                      </Label>
+                      <input
+                        type="time"
+                        value={selectedHorarioRecorrente}
+                        onChange={(e) =>
+                          setSelectedHorarioRecorrente(e.target.value)
+                        }
+                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                      />
+                    </div>
+                    <div>
+                      <Label>
+                        Qtd. Sessões<span className="text-red-300">*</span>
+                      </Label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="52"
+                        value={qtdSessoes}
+                        onChange={(e) =>
+                          setQtdSessoes(parseInt(e.target.value) || 1)
+                        }
+                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                        placeholder="Ex: 10"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
               <br></br>
-              <div className="flex items-center gap-3">
-                <Checkbox checked={isChecked} onChange={setIsChecked} />
-                <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Dia todo
-                </span>
-              </div>
+              {/* Checkbox "Dia todo" - oculto quando recorrência está ativa */}
+              {(!isRecurrent || selectedEvent) && (
+                <div className="flex items-center gap-3">
+                  <Checkbox checked={isChecked} onChange={setIsChecked} />
+                  <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Dia todo
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
               <button
@@ -642,13 +927,21 @@ const Calendar: React.FC = () => {
                 type="button"
                 className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
               >
-                {selectedEvent ? "Atualizar" : "Salvar"}
+                {selectedEvent
+                  ? "Atualizar"
+                  : isRecurrent
+                  ? "Criar Recorrência"
+                  : "Salvar"}
               </button>
             </div>
           </div>
           <Toaster position="bottom-right" />
-        </Modal >
-        <Modal isOpen={isOpenDelete} onClose={closeModalDelete} className="max-w-[700px] m-4">
+        </Modal>
+        <Modal
+          isOpen={isOpenDelete}
+          onClose={closeModalDelete}
+          className="max-w-[700px] m-4"
+        >
           <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
             <div className="px-2 pr-14">
               <h4 className="mb-2 text-2xl font-semibold text-center text-gray-800 dark:text-white/90">
@@ -684,13 +977,29 @@ const Calendar: React.FC = () => {
         </Modal>
         {isLoading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 dark:bg-gray-900/60">
-            <svg className="animate-spin h-12 w-12 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            <svg
+              className="animate-spin h-12 w-12 text-brand-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
             </svg>
           </div>
         )}
-      </div >
+      </div>
     </>
   );
 };
