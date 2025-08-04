@@ -408,11 +408,11 @@ const Calendar: React.FC = () => {
   return (
     <>
       <PageMeta
-        title="Instituto Barros - Sistema"
+        title="Sistema Instituto Barros - Agenda"
         description="Sistema Instituto Barros - Página para gerenciamento de Agenda"
       />
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <PageBreadcrumb pageTitle="Agenda Instituto Barros" />
+        <PageBreadcrumb pageTitle="Agenda" />
         <div className="flex items-center gap-4">
           <div className="flex items-center">
             <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">Filial:</Label>
