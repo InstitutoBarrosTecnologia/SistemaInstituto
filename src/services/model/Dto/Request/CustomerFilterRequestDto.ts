@@ -4,4 +4,5 @@ export interface CustomerFilterRequestDto {
   email?: string;
   status?: number;
   telefone?: string;
+  quantidadeSessoes?: number;
 }
