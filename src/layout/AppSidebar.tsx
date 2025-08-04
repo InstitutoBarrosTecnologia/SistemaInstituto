@@ -103,12 +103,12 @@ const allNavItems: NavItem[] = [
     name: "Dashboard",
     permissions: MENU_PERMISSIONS.DASHBOARD,
     subItems: [
-      { 
-        name: "Financeiro", 
-        path: "/", 
-        pro: false,
-        permissions: MENU_PERMISSIONS.DASHBOARD_FINANCEIRO,
-      },
+      // { 
+      //   name: "Financeiro", 
+      //   path: "/", 
+      //   pro: false,
+      //   permissions: MENU_PERMISSIONS.DASHBOARD_FINANCEIRO,
+      // },
       { 
         name: "Operação", 
         path: "/dashboard-operacao", 
