@@ -3,7 +3,6 @@ import DashboardService from '../services/service/DashboardService';
 import {
   DashboardState,
   DashboardFilterRequestDto,
-  DashboardPeriodResponse,
 } from '../services/model/dashboard.types';
 
 export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
@@ -48,11 +47,6 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
     error: null,
   });
 
-  // Função para buscar dados por período específico
-  const findByPeriod = (data: DashboardPeriodResponse[], periodo: string): DashboardPeriodResponse | null => {
-    return data.find(item => item.periodo === periodo) || null;
-  };
-
   // Carregar todos os dados
   const carregarDados = async () => {
     try {
@@ -68,13 +62,29 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
         error: null,
       }));
 
+      // Preparar filtros para o gráfico mensal (ano todo)
+      const anoAtual = new Date().getFullYear();
+      const inicioAno = `${anoAtual}-01-01`;
+      const fimAno = `${anoAtual}-12-31`;
+      const filtroAnoCompleto = {
+        ...filter,
+        dataInicio: inicioAno,
+        dataFim: fimAno
+      };
+
       // Buscar todos os dados em paralelo
       const [
         pacientesAtivos,
-        agendamentosMarcados,
-        avaliacoesAgendadas,
+        agendamentosMes,
+        agendamentosSemana,
+        agendamentosDia,
+        avaliacoesAgendadasMes,
+        avaliacoesAgendadasSemana,
+        avaliacoesAgendadasDia,
         avaliacoesExecutadas,
-        sessoesRealizadas,
+        sessoesMes,
+        sessoesSemana,
+        sessoesDia,
         sessoesCanceladas,
         sessoesMensaisMulti,
         unidadesDistribuicao,
@@ -82,12 +92,18 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
         sessoesPorFisioterapeuta,
       ] = await Promise.all([
         DashboardService.getPacientesAtivos(filter),
-        DashboardService.getAgendamentosMarcados(filter),
-        DashboardService.getAvaliacoesAgendadas(filter),
+        DashboardService.getAgendamentosMarcados({ ...filter, periodo: 'mes' }),
+        DashboardService.getAgendamentosMarcados({ ...filter, periodo: 'semana' }),
+        DashboardService.getAgendamentosMarcados({ ...filter, periodo: 'dia' }),
+        DashboardService.getAvaliacoesAgendadas({ ...filter, periodo: 'mes' }),
+        DashboardService.getAvaliacoesAgendadas({ ...filter, periodo: 'semana' }),
+        DashboardService.getAvaliacoesAgendadas({ ...filter, periodo: 'dia' }),
         DashboardService.getAvaliacoesExecutadas(filter),
-        DashboardService.getSessoesRealizadas(filter),
+        DashboardService.getSessoesRealizadas({ ...filter, periodo: 'mes' }),
+        DashboardService.getSessoesRealizadas({ ...filter, periodo: 'semana' }),
+        DashboardService.getSessoesRealizadas({ ...filter, periodo: 'dia' }),
         DashboardService.getSessoesCanceladas({ ...filter, periodo: 'dia' }),
-        DashboardService.getSessoesMensaisMultiSeries(filter),
+        DashboardService.getSessoesMensaisMultiSeries(filtroAnoCompleto),
         DashboardService.getUnidadesDistribuicao(filter),
         DashboardService.getServicosMaisAgendados(filter),
         DashboardService.getSessoesPorFisioterapeuta(filter),
@@ -99,18 +115,18 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
         pacientesAtivos,
         avaliacoesExecutadas,
         
-        // Indicadores por período
-        agendamentosMes: findByPeriod(agendamentosMarcados, 'mes'),
-        agendamentosSemana: findByPeriod(agendamentosMarcados, 'semana'),
-        agendamentosDia: findByPeriod(agendamentosMarcados, 'dia'),
+        // Indicadores por período - agora usando valores diretos das chamadas específicas
+        agendamentosMes: Array.isArray(agendamentosMes) ? agendamentosMes[0] || null : agendamentosMes,
+        agendamentosSemana: Array.isArray(agendamentosSemana) ? agendamentosSemana[0] || null : agendamentosSemana,
+        agendamentosDia: Array.isArray(agendamentosDia) ? agendamentosDia[0] || null : agendamentosDia,
         
-        avaliacoesAgendadasMes: findByPeriod(avaliacoesAgendadas, 'mes'),
-        avaliacoesAgendadasSemana: findByPeriod(avaliacoesAgendadas, 'semana'),
-        avaliacoesAgendadasDia: findByPeriod(avaliacoesAgendadas, 'dia'),
+        avaliacoesAgendadasMes: Array.isArray(avaliacoesAgendadasMes) ? avaliacoesAgendadasMes[0] || null : avaliacoesAgendadasMes,
+        avaliacoesAgendadasSemana: Array.isArray(avaliacoesAgendadasSemana) ? avaliacoesAgendadasSemana[0] || null : avaliacoesAgendadasSemana,
+        avaliacoesAgendadasDia: Array.isArray(avaliacoesAgendadasDia) ? avaliacoesAgendadasDia[0] || null : avaliacoesAgendadasDia,
         
-        sessoesMes: findByPeriod(sessoesRealizadas, 'mes'),
-        sessoesSemana: findByPeriod(sessoesRealizadas, 'semana'),
-        sessoesDia: findByPeriod(sessoesRealizadas, 'dia'),
+        sessoesMes: Array.isArray(sessoesMes) ? sessoesMes[0] || null : sessoesMes,
+        sessoesSemana: Array.isArray(sessoesSemana) ? sessoesSemana[0] || null : sessoesSemana,
+        sessoesDia: Array.isArray(sessoesDia) ? sessoesDia[0] || null : sessoesDia,
         
         // Sessões canceladas
         sessoesCanceladas,
