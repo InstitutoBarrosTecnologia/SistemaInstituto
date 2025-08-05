@@ -17,7 +17,7 @@ export default function UnidadesDonutChart() {
       fontFamily: "Outfit, sans-serif",
     },
     labels: ["Marketplace", "Ipiranga", "Mooca", "Bela Vista"],
-    colors: ["#10B981", "#3B82F6", "#F59E0B", "#EF4444"], // Verde, Azul, Amarelo, Vermelho
+    colors: ["#98ff96", "#50d2ff", "#e3651b", "#800000"], // Verde, Azul, Laranja, Vermelho
     dataLabels: {
       enabled: true,
       formatter: function (val: number) {

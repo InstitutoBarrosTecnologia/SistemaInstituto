@@ -26,15 +26,24 @@ export default function UnidadesPieChart({ data, loading = false }: UnidadesPieC
       fontFamily: "Outfit, sans-serif",
     },
     labels: labels,
-    colors: ["#10B981", "#3B82F6", "#F59E0B", "#EF4444"], // Verde, Azul, Amarelo, Vermelho
+    colors: ["#98ff96", "#50d2ff", "#e3651b", "#800000"], // Verde, Azul, Laranja, Vermelho
     dataLabels: {
       enabled: true,
       formatter: function (val: number) {
         return Math.round(val) + "%";
       },
       style: {
-        fontSize: "14px",
-        fontWeight: "600",
+        fontSize: "16px", // Aumentando um pouco o tamanho
+        fontWeight: "bold",
+        colors: ["#ffffff"], // Cor branca para as porcentagens
+      },
+      dropShadow: {
+        enabled: true,
+        top: 2,
+        left: 2,
+        blur: 4,
+        color: "#000000",
+        opacity: 0.9, // Sombra preta bem forte para contraste
       },
     },
     legend: {
@@ -64,10 +73,31 @@ export default function UnidadesPieChart({ data, loading = false }: UnidadesPieC
       colors: ["#fff"],
     },
     tooltip: {
-      y: {
-        formatter: function (val: number) {
-          return val + "%";
-        },
+      custom: function({ series, seriesIndex, dataPointIndex, w }: any) {
+        // Usar seriesIndex quando dataPointIndex for null
+        const index = dataPointIndex !== null ? dataPointIndex : seriesIndex;
+        
+        const unidadeName = w.config.labels[index] || 
+                           labels[index] || 
+                           chartData[index]?.unidade || 
+                           'Unidade não identificada';
+        const totalValue = series[seriesIndex];
+        
+        return `
+          <div style="
+            padding: 10px 12px; 
+            background-color: #070d18; 
+            color: #ffffff; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-family: Outfit, sans-serif;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            border: 1px solid #1a1a1a;
+          ">
+            <div style="font-weight: 600; margin-bottom: 4px;">${unidadeName}</div>
+            <div>${totalValue} sessões</div>
+          </div>
+        `;
       },
     },
     responsive: [
