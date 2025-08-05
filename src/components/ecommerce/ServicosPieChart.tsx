@@ -26,7 +26,7 @@ export default function ServicosPieChart({ data, loading = false }: ServicosPieC
       fontFamily: "Outfit, sans-serif",
     },
     labels: labels,
-    colors: ["#98ff96", "#50d2ff", "#8B5CF6", "#e3651b", "#800000", "#06B6D4"], // Verde, Azul, Roxo, Laranja, Vermelho, Ciano
+    colors: ["#3C50E0", "#06B6D4", "#8B5CF6", "#F59E0B", "#EF4444", "#10B981"], // Azul, Ciano, Roxo, Amarelo, Vermelho, Verde
     dataLabels: {
       enabled: true,
       formatter: function (_val: number, opts: any) {

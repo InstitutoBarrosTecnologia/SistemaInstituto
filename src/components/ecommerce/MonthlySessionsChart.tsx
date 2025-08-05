@@ -38,7 +38,7 @@ export default function MonthlySessionsChart({ data, loading = false }: MonthlyS
   }
 
   const options: ApexOptions = {
-    colors: ["#98ff96", "#800000", "#e3651b"], // Verde para realizadas, vermelho para canceladas, laranja para reagendadas
+    colors: ["#10B981", "#EF4444", "#F59E0B"], // Verde para realizadas, vermelho para canceladas, amarelo para reagendadas
     chart: {
       fontFamily: "Outfit, sans-serif",
       type: "bar",

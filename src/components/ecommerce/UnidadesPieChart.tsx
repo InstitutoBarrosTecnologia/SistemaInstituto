@@ -26,7 +26,7 @@ export default function UnidadesPieChart({ data, loading = false }: UnidadesPieC
       fontFamily: "Outfit, sans-serif",
     },
     labels: labels,
-    colors: ["#98ff96", "#50d2ff", "#e3651b", "#800000"], // Verde, Azul, Laranja, Vermelho
+    colors: ["#3C50E0", "#06B6D4", "#F59E0B", "#EF4444"], // Azul, Ciano, Amarelo, Vermelho (cores originais ApexCharts)
     dataLabels: {
       enabled: true,
       formatter: function (val: number) {

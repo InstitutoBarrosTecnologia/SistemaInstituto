@@ -14,9 +14,9 @@ const defaultUnidades: UnidadePerformance[] = [
   {
     nome: "Marketplace",
     percentual: 35,
-    cor: "bg-[#98ff96]",
+    cor: "bg-[#10B981]",
     corFundo: "bg-green-50 dark:bg-green-900/20",
-    corTexto: "text-[#98ff96] dark:text-green-400"
+    corTexto: "text-[#10B981] dark:text-green-400"
   },
   {
     nome: "Ipiranga",

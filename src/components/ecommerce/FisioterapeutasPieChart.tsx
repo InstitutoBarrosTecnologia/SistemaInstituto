@@ -17,7 +17,7 @@ export default function FisioterapeutasPieChart() {
       fontFamily: "Outfit, sans-serif",
     },
     labels: ["Dr. Ana Silva", "Dr. Carlos Santos", "Dra. Maria Oliveira", "Dr. João Costa", "Dra. Lucia Ferreira"],
-    colors: ["#98ff96", "#50d2ff", "#8B5CF6", "#e3651b", "#800000"], // Verde, Azul, Roxo, Laranja, Vermelho
+    colors: ["#3C50E0", "#06B6D4", "#8B5CF6", "#F59E0B", "#EF4444"], // Azul, Ciano, Roxo, Amarelo, Vermelho
     dataLabels: {
       enabled: true,
       formatter: function (_val: number, opts: any) {
