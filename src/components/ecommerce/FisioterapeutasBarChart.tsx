@@ -30,7 +30,7 @@ export default function FisioterapeutasBarChart({
   const categories = chartData.map((item) => item.fisioterapeuta);
 
   const options: ApexOptions = {
-    colors: ["#10B981"], // Verde para as barras
+    colors: ["#3C50E0"], // Azul padrão para as barras
     chart: {
       fontFamily: "Outfit, sans-serif",
       type: "bar",

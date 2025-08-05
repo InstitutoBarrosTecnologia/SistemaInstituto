@@ -14,30 +14,30 @@ const defaultUnidades: UnidadePerformance[] = [
   {
     nome: "Marketplace",
     percentual: 35,
-    cor: "bg-green-500",
+    cor: "bg-[#10B981]",
     corFundo: "bg-green-50 dark:bg-green-900/20",
-    corTexto: "text-green-600 dark:text-green-400"
+    corTexto: "text-[#10B981] dark:text-green-400"
   },
   {
     nome: "Ipiranga",
     percentual: 25,
-    cor: "bg-blue-500",
+    cor: "bg-[#0000fe]",
     corFundo: "bg-blue-50 dark:bg-blue-900/20",
-    corTexto: "text-blue-600 dark:text-blue-400"
+    corTexto: "text-[#0000fe] dark:text-blue-400"
   },
   {
     nome: "Mooca",
     percentual: 22,
-    cor: "bg-yellow-500",
+    cor: "bg-[#e3651b]",
     corFundo: "bg-yellow-50 dark:bg-yellow-900/20",
-    corTexto: "text-yellow-600 dark:text-yellow-400"
+    corTexto: "text-[#e3651b] dark:text-yellow-400"
   },
   {
     nome: "Bela Vista",
     percentual: 18,
-    cor: "bg-red-500",
+    cor: "bg-[#800000]",
     corFundo: "bg-red-50 dark:bg-red-900/20",
-    corTexto: "text-red-600 dark:text-red-400"
+    corTexto: "text-[#800000] dark:text-red-400"
   }
 ];
 

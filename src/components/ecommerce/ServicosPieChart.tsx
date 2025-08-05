@@ -26,7 +26,7 @@ export default function ServicosPieChart({ data, loading = false }: ServicosPieC
       fontFamily: "Outfit, sans-serif",
     },
     labels: labels,
-    colors: ["#10B981", "#3B82F6", "#8B5CF6", "#F59E0B", "#EF4444", "#06B6D4"], // Verde, Azul, Roxo, Amarelo, Vermelho, Ciano
+    colors: ["#3C50E0", "#06B6D4", "#8B5CF6", "#F59E0B", "#EF4444", "#10B981"], // Azul, Ciano, Roxo, Amarelo, Vermelho, Verde
     dataLabels: {
       enabled: true,
       formatter: function (_val: number, opts: any) {
@@ -34,11 +34,17 @@ export default function ServicosPieChart({ data, loading = false }: ServicosPieC
         return seriesValue + " agend.";
       },
       style: {
-        fontSize: "11px",
-        fontWeight: "600",
+        fontSize: "12px", // Aumentando um pouco
+        fontWeight: "bold",
+        colors: ["#ffffff"], // Cor branca para os textos
       },
       dropShadow: {
-        enabled: false,
+        enabled: true,
+        top: 2,
+        left: 2,
+        blur: 4,
+        color: "#000000",
+        opacity: 0.9, // Sombra preta bem forte para contraste
       },
     },
     legend: {
@@ -72,10 +78,33 @@ export default function ServicosPieChart({ data, loading = false }: ServicosPieC
       colors: ["#fff"],
     },
     tooltip: {
-      y: {
-        formatter: function (val: number) {
-          return val + " agendamentos no mês";
-        },
+      custom: function({ series, seriesIndex, dataPointIndex, w }: any) {
+        // Usar seriesIndex quando dataPointIndex for null
+        const index = dataPointIndex !== null ? dataPointIndex : seriesIndex;
+        
+        // Tentar diferentes formas de acessar o nome do serviço
+        const serviceName = w.config.labels[index] || 
+                           labels[index] || 
+                           chartData[index]?.servico || 
+                           'Serviço não identificado';
+        const totalValue = series[seriesIndex];
+        
+        return `
+          <div style="
+            padding: 10px 12px; 
+            background-color: #070d18; 
+            color: #ffffff; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-family: Outfit, sans-serif;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            border: 1px solid #1a1a1a;
+          ">
+            <div style="font-weight: 600; margin-bottom: 4px;">${serviceName}</div>
+            <div>${totalValue} agendamentos</div>
+            <div style="margin-top: 4px; opacity: 0.8;">Todas as unidades</div>
+          </div>
+        `;
       },
     },
     responsive: [
