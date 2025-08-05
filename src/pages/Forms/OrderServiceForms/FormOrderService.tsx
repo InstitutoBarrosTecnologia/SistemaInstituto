@@ -217,10 +217,16 @@ export default function FormOrderService({
 
   const mutationEdit = useMutation({
     mutationFn: updateOrderServiceAsync,
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       if (response.status === 200) {
         toast.success("Ordem atualizada com sucesso!");
         queryClient.invalidateQueries(["getAllOrderService"]);
+
+        // Criar agendamentos recorrentes se configurado na edição
+        if (userConfig && formData.id) {
+          await createRecurrentSchedules(formData.id);
+        }
+
         setTimeout(() => {
           if (closeModal) closeModal();
         }, 2000);
@@ -420,6 +426,29 @@ export default function FormOrderService({
 
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validação específica para recorrência (mesma validação do handleSave)
+    if (userConfig) {
+      if (!selectedDiaSemana) {
+        toast.error("Selecione o dia da semana para a recorrência.");
+        return;
+      }
+      if (!selectedHorario) {
+        toast.error("Selecione o horário para a recorrência.");
+        return;
+      }
+      if (!selectedFuncionario) {
+        toast.error("Selecione um fisioterapeuta para a recorrência.");
+        return;
+      }
+      if (!formData.qtdSessaoTotal || formData.qtdSessaoTotal <= 0) {
+        toast.error(
+          "Defina a quantidade de sessões máxima para criar os agendamentos."
+        );
+        return;
+      }
+    }
+
     mutationEdit.mutate(formData);
   };
 

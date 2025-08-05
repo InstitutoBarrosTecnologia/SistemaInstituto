@@ -313,7 +313,7 @@ export default function DashboardOperacao() {
                   Sessões Canceladas Dia
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.sessoes ? "..." : (sessoesCanceladas?.percentual ? `${sessoesCanceladas.percentual}` : '0')}
+                  {loading.sessoes ? "..." : (sessoesCanceladas?.total ? `${sessoesCanceladas.total}` : '0')}
                 </h4>
               </div>
               {sessoesCanceladas && renderVariacaoBadge(sessoesCanceladas.variacao)}
