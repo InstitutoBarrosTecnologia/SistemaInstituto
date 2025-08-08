@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router";
 import {
   CalenderIcon,
   ChevronDownIcon,
+  DollarLineIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
@@ -97,6 +98,19 @@ const allNavItems: NavItem[] = [
     name: "Funcionários",
     path: "/profile",
     permissions: MENU_PERMISSIONS.FUNCIONARIOS,
+  },
+  {
+    icon: <DollarLineIcon />,
+    name: "Financeiro",
+    permissions: MENU_PERMISSIONS.FINANCEIRO,
+    subItems: [
+      { 
+        name: "Despesas", 
+        path: "/financeiro/despesas", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.FINANCEIRO_DESPESAS,
+      }
+    ],
   },
   {
     icon: <GridIcon />,
