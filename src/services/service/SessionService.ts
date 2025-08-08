@@ -1,6 +1,7 @@
 import { instanceApi } from "./AxioService";
 import { OrderServiceSessionRequestDto } from "../model/Dto/Request/OrderServiceSessionRequestDto";
 import { OrderServiceSessionResponseDto } from "../model/Dto/Response/OrderServiceSessionResponseDto";
+import { DailySessionsSummaryResponseDto } from "../model/Dto/Response/DailySessionsSummaryResponseDto";
 
 // POST: Cria uma nova sessão
 export const createSessionAsync = async (
@@ -33,6 +34,17 @@ export const getSessionByIdAsync = async (
 ): Promise<OrderServiceSessionResponseDto> => {
   const response = await instanceApi.get<OrderServiceSessionResponseDto>(
     `/SessionService/${id}`
+  );
+  return response.data;
+};
+
+// GET: Recuperar resumo das sessões do dia com detalhes do fisioterapeuta e cliente
+export const getDailySessionsSummaryAsync = async (
+  date?: string
+): Promise<DailySessionsSummaryResponseDto> => {
+  const query = date ? `?date=${date}` : "";
+  const response = await instanceApi.get<DailySessionsSummaryResponseDto>(
+    `/SessionService/daily-summary${query}`
   );
   return response.data;
 };
