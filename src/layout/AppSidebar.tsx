@@ -8,6 +8,7 @@ import {
   GridIcon,
   HorizontaLDots,
   ListIcon,
+  PaperPlaneIcon,
   UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
@@ -109,6 +110,19 @@ const allNavItems: NavItem[] = [
         path: "/financeiro/despesas", 
         pro: false,
         permissions: MENU_PERMISSIONS.FINANCEIRO_DESPESAS,
+      }
+    ],
+  },
+  {
+    icon: <PaperPlaneIcon />,
+    name: "Notificações",
+    permissions: MENU_PERMISSIONS.NOTIFICACOES,
+    subItems: [
+      { 
+        name: "Enviar", 
+        path: "/notificacoes/enviar", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.NOTIFICACOES_ENVIAR,
       }
     ],
   },

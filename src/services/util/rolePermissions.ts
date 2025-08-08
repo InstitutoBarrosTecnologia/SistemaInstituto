@@ -127,6 +127,16 @@ export const MENU_PERMISSIONS = {
   // Financeiro - Despesas
   FINANCEIRO_DESPESAS: [
     USER_ROLES.ADMINISTRADOR
+  ],
+
+  // Módulo Notificações - apenas Administradores
+  NOTIFICACOES: [
+    USER_ROLES.ADMINISTRADOR
+  ],
+
+  // Notificações - Enviar
+  NOTIFICACOES_ENVIAR: [
+    USER_ROLES.ADMINISTRADOR
   ]
 } as const;
 
