@@ -4,9 +4,11 @@ import { Link, useLocation } from "react-router";
 import {
   CalenderIcon,
   ChevronDownIcon,
+  DollarLineIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
+  PaperPlaneIcon,
   UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
@@ -97,6 +99,32 @@ const allNavItems: NavItem[] = [
     name: "Funcionários",
     path: "/profile",
     permissions: MENU_PERMISSIONS.FUNCIONARIOS,
+  },
+  {
+    icon: <DollarLineIcon />,
+    name: "Financeiro",
+    permissions: MENU_PERMISSIONS.FINANCEIRO,
+    subItems: [
+      { 
+        name: "Despesas", 
+        path: "/financeiro/despesas", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.FINANCEIRO_DESPESAS,
+      }
+    ],
+  },
+  {
+    icon: <PaperPlaneIcon />,
+    name: "Notificações",
+    permissions: MENU_PERMISSIONS.NOTIFICACOES,
+    subItems: [
+      { 
+        name: "Enviar", 
+        path: "/notificacoes/enviar", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.NOTIFICACOES_ENVIAR,
+      }
+    ],
   },
   {
     icon: <GridIcon />,
