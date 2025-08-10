@@ -13,6 +13,7 @@ import MonthlySessionsChart from "../../components/ecommerce/MonthlySessionsChar
 import UnidadesPieChart from "../../components/ecommerce/UnidadesPieChart";
 import FisioterapeutasBarChart from "../../components/ecommerce/FisioterapeutasBarChart";
 import ServicosPieChart from "../../components/ecommerce/ServicosPieChart";
+import PatologiasPieChart from "../../components/ecommerce/PatologiasPieChart";
 import { useDashboard } from "../../hooks/useDashboard";
 
 export default function DashboardOperacao() {
@@ -33,6 +34,7 @@ export default function DashboardOperacao() {
     unidadesDistribuicao,
     servicosMaisAgendados,
     sessoesPorFisioterapeuta,
+    patologiasAgrupadas,
     loading,
     error,
     isLoading,
@@ -44,7 +46,7 @@ export default function DashboardOperacao() {
     const isPositive = variacao >= 0;
     const color = isPositive ? "success" : "error";
     const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
-    
+
     return (
       <Badge color={color}>
         <Icon />
@@ -61,12 +63,14 @@ export default function DashboardOperacao() {
           description="Sistema Instituto Barros - Página para gerenciamento de Operação"
         />
         <PageBreadcrumb pageTitle="Dashboard de Operação" />
-        
+
         <div className="container mx-auto p-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h3 className="text-red-800 font-semibold">Erro ao carregar dados</h3>
+            <h3 className="text-red-800 font-semibold">
+              Erro ao carregar dados
+            </h3>
             <p className="text-red-600">{error}</p>
-            <button 
+            <button
               onClick={recarregarDados}
               className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
             >
@@ -114,7 +118,9 @@ export default function DashboardOperacao() {
                   Pacientes Ativos
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.pacientesAtivos ? "..." : (pacientesAtivos?.total || 0)}
+                  {loading.pacientesAtivos
+                    ? "..."
+                    : pacientesAtivos?.total || 0}
                 </h4>
               </div>
               {pacientesAtivos && renderVariacaoBadge(pacientesAtivos.variacao)}
@@ -131,7 +137,7 @@ export default function DashboardOperacao() {
                   Agendamentos Marcados Mês
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.agendamentos ? "..." : (agendamentosMes?.total || 0)}
+                  {loading.agendamentos ? "..." : agendamentosMes?.total || 0}
                 </h4>
               </div>
               {agendamentosMes && renderVariacaoBadge(agendamentosMes.variacao)}
@@ -149,10 +155,13 @@ export default function DashboardOperacao() {
                   Agendamentos Marcados Semana
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.agendamentos ? "..." : (agendamentosSemana?.total || 0)}
+                  {loading.agendamentos
+                    ? "..."
+                    : agendamentosSemana?.total || 0}
                 </h4>
               </div>
-              {agendamentosSemana && renderVariacaoBadge(agendamentosSemana.variacao)}
+              {agendamentosSemana &&
+                renderVariacaoBadge(agendamentosSemana.variacao)}
             </div>
           </div>
 
@@ -167,7 +176,7 @@ export default function DashboardOperacao() {
                   Agendamentos Marcados Dia
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.agendamentos ? "..." : (agendamentosDia?.total || 0)}
+                  {loading.agendamentos ? "..." : agendamentosDia?.total || 0}
                 </h4>
               </div>
               {agendamentosDia && renderVariacaoBadge(agendamentosDia.variacao)}
@@ -185,10 +194,13 @@ export default function DashboardOperacao() {
                   Avaliações Agendadas Mês
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.avaliacoes ? "..." : (avaliacoesAgendadasMes?.total || 0)}
+                  {loading.avaliacoes
+                    ? "..."
+                    : avaliacoesAgendadasMes?.total || 0}
                 </h4>
               </div>
-              {avaliacoesAgendadasMes && renderVariacaoBadge(avaliacoesAgendadasMes.variacao)}
+              {avaliacoesAgendadasMes &&
+                renderVariacaoBadge(avaliacoesAgendadasMes.variacao)}
             </div>
           </div>
 
@@ -203,10 +215,13 @@ export default function DashboardOperacao() {
                   Avaliações Agendadas Semana
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.avaliacoes ? "..." : (avaliacoesAgendadasSemana?.total || 0)}
+                  {loading.avaliacoes
+                    ? "..."
+                    : avaliacoesAgendadasSemana?.total || 0}
                 </h4>
               </div>
-              {avaliacoesAgendadasSemana && renderVariacaoBadge(avaliacoesAgendadasSemana.variacao)}
+              {avaliacoesAgendadasSemana &&
+                renderVariacaoBadge(avaliacoesAgendadasSemana.variacao)}
             </div>
           </div>
 
@@ -221,10 +236,13 @@ export default function DashboardOperacao() {
                   Avaliações Agendadas Dia
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.avaliacoes ? "..." : (avaliacoesAgendadasDia?.total || 0)}
+                  {loading.avaliacoes
+                    ? "..."
+                    : avaliacoesAgendadasDia?.total || 0}
                 </h4>
               </div>
-              {avaliacoesAgendadasDia && renderVariacaoBadge(avaliacoesAgendadasDia.variacao)}
+              {avaliacoesAgendadasDia &&
+                renderVariacaoBadge(avaliacoesAgendadasDia.variacao)}
             </div>
           </div>
 
@@ -239,10 +257,13 @@ export default function DashboardOperacao() {
                   Avaliações Executadas
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.avaliacoes ? "..." : (avaliacoesExecutadas?.total || 0)}
+                  {loading.avaliacoes
+                    ? "..."
+                    : avaliacoesExecutadas?.total || 0}
                 </h4>
               </div>
-              {avaliacoesExecutadas && renderVariacaoBadge(avaliacoesExecutadas.variacao)}
+              {avaliacoesExecutadas &&
+                renderVariacaoBadge(avaliacoesExecutadas.variacao)}
             </div>
           </div>
         </div>
@@ -260,27 +281,10 @@ export default function DashboardOperacao() {
                   Sessões do Mês
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.sessoes ? "..." : (sessoesMes?.total || 0)}
+                  {loading.sessoes ? "..." : sessoesMes?.total || 0}
                 </h4>
               </div>
               {sessoesMes && renderVariacaoBadge(sessoesMes.variacao)}
-            </div>
-          </div>
-          {/* Sessões Diárias */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-            <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
-              <CalenderIcon className="text-gray-800 size-6 dark:text-white/90" />
-            </div>
-            <div className="flex items-end justify-between mt-5">
-              <div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Sessões Diárias
-                </span>
-                <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.sessoes ? "..." : (sessoesDia?.total || 0)}
-                </h4>
-              </div>
-              {sessoesDia && renderVariacaoBadge(sessoesDia.variacao)}
             </div>
           </div>
 
@@ -295,13 +299,29 @@ export default function DashboardOperacao() {
                   Sessões da Semana
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.sessoes ? "..." : (sessoesSemana?.total || 0)}
+                  {loading.sessoes ? "..." : sessoesSemana?.total || 0}
                 </h4>
               </div>
               {sessoesSemana && renderVariacaoBadge(sessoesSemana.variacao)}
             </div>
           </div>
-
+          {/* Sessões Diárias */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
+            <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
+              <CalenderIcon className="text-gray-800 size-6 dark:text-white/90" />
+            </div>
+            <div className="flex items-end justify-between mt-5">
+              <div>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Sessões Diárias
+                </span>
+                <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
+                  {loading.sessoes ? "..." : sessoesDia?.total || 0}
+                </h4>
+              </div>
+              {sessoesDia && renderVariacaoBadge(sessoesDia.variacao)}
+            </div>
+          </div>
           {/* Sessões Canceladas */}
           <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
             <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
@@ -313,30 +333,53 @@ export default function DashboardOperacao() {
                   Sessões Canceladas Dia
                 </span>
                 <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-                  {loading.sessoes ? "..." : (sessoesCanceladas?.total ? `${sessoesCanceladas.total}` : '0')}
+                  {loading.sessoes
+                    ? "..."
+                    : sessoesCanceladas?.total
+                    ? `${sessoesCanceladas.total}`
+                    : "0"}
                 </h4>
               </div>
-              {sessoesCanceladas && renderVariacaoBadge(sessoesCanceladas.variacao)}
+              {sessoesCanceladas &&
+                renderVariacaoBadge(sessoesCanceladas.variacao)}
             </div>
           </div>
         </div>
         {/* Gráfico de Sessões Mensais */}
         <div className="mb-8">
-          <MonthlySessionsChart data={sessoesMensaisMulti} loading={loading.graficos} />
+          <MonthlySessionsChart
+            data={sessoesMensaisMulti}
+            loading={loading.graficos}
+          />
         </div>
-        {/* Gráficos de Pizza - Unidades e Serviços */}
+        {/* Gráficos de Pizza - Unidades, Serviços e Patologias */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-8">
           <div>
-            <UnidadesPieChart data={unidadesDistribuicao} loading={loading.graficos} />
+            <UnidadesPieChart
+              data={unidadesDistribuicao}
+              loading={loading.graficos}
+            />
           </div>
           <div>
-            <ServicosPieChart data={servicosMaisAgendados} loading={loading.graficos} />
+            <ServicosPieChart
+              data={servicosMaisAgendados}
+              loading={loading.graficos}
+            />
+          </div>
+          <div>
+            <PatologiasPieChart
+              data={patologiasAgrupadas}
+              loading={loading.graficos}
+            />
           </div>
         </div>
 
         {/* Gráfico de Fisioterapeutas */}
         <div className="mb-8">
-          <FisioterapeutasBarChart data={sessoesPorFisioterapeuta} loading={loading.graficos} />
+          <FisioterapeutasBarChart
+            data={sessoesPorFisioterapeuta}
+            loading={loading.graficos}
+          />
         </div>
       </div>
     </>

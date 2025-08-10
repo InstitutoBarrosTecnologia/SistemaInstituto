@@ -33,6 +33,7 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
     unidadesDistribuicao: [],
     servicosMaisAgendados: [],
     sessoesPorFisioterapeuta: [],
+    patologiasAgrupadas: [],
     
     // Estados de loading
     loading: {
@@ -90,6 +91,7 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
         unidadesDistribuicao,
         servicosMaisAgendados,
         sessoesPorFisioterapeuta,
+        patologiasAgrupadas,
       ] = await Promise.all([
         DashboardService.getPacientesAtivos(filter),
         DashboardService.getAgendamentosMarcados({ ...filter, periodo: 'mes' }),
@@ -107,6 +109,7 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
         DashboardService.getUnidadesDistribuicao(filter),
         DashboardService.getServicosMaisAgendados(filter),
         DashboardService.getSessoesPorFisioterapeuta(filter),
+        DashboardService.getPatologiasAgrupadas(filter),
       ]);
 
       setState(prev => ({
@@ -137,6 +140,7 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
         unidadesDistribuicao,
         servicosMaisAgendados,
         sessoesPorFisioterapeuta,
+        patologiasAgrupadas,
         
         // Estados de loading
         loading: {

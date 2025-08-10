@@ -169,6 +169,25 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
     { value: "0", label: "Masculino" },
     { value: "1", label: "Feminino" }
   ];
+
+  const patologiasOptions = [
+    { value: "", label: "Selecione uma patologia" },
+    { value: "Artrite Reumatoide", label: "Artrite Reumatoide" },
+    { value: "Bursite Subacromial", label: "Bursite Subacromial" },
+    { value: "Cervicalgia", label: "Cervicalgia" },
+    { value: "Ciatalgia", label: "Ciatalgia" },
+    { value: "Cifose Torácica", label: "Cifose Torácica" },
+    { value: "Discopatia Lombar", label: "Discopatia Lombar" },
+    { value: "Distensão Muscular", label: "Distensão Muscular" },
+    { value: "Escoliose Idiopática", label: "Escoliose Idiopática" },
+    { value: "Entorse de Tornozelo", label: "Entorse de Tornozelo" },
+    { value: "Epicondilite Lateral", label: "Epicondilite Lateral" },
+    { value: "Fibromialgia", label: "Fibromialgia" },
+    { value: "Hérnia de Disco Lombar", label: "Hérnia de Disco Lombar" },
+    { value: "Lombalgia", label: "Lombalgia" },
+    { value: "Tendinite Patelar", label: "Tendinite Patelar" },
+    { value: "Tendinopatia do Supraespinhal", label: "Tendinopatia do Supraespinhal" }
+  ];
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -293,7 +312,13 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                   /></div>
                 <div>
                   <Label>Patologia</Label>
-                  <Input type="text" placeholder="Patologia identificada" value={formData.patologia ?? ""} onChange={(e) => setFormData({ ...formData, patologia: e.target.value })} />
+                  <Select
+                    options={patologiasOptions}
+                    value={formData.patologia ?? ""}
+                    placeholder="Selecione uma patologia"
+                    onChange={(value) => setFormData(prev => ({ ...prev, patologia: value || undefined }))}
+                    className="dark:bg-dark-900"
+                  />
                 </div>
               </div>
               <div className="mt-4">

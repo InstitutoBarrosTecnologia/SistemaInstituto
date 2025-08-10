@@ -10,6 +10,7 @@ import {
   DashboardTopServicesResponse,
   DashboardPhysiotherapistSessionsResponse,
 } from '../model/dashboard.types';
+import { DashboardPathologyResponseDto } from '../model/Dto/Response/DashboardPathologyResponseDto';
 
 class DashboardService {
   private baseUrl = '/Dashboard';
@@ -231,6 +232,26 @@ class DashboardService {
   }
 
   /**
+   * Retorna as patologias dos clientes agrupadas por quantidade
+   */
+  async getPatologiasAgrupadas(
+    filter: DashboardFilterRequestDto = {}
+  ): Promise<DashboardPathologyResponseDto[]> {
+    const params = new URLSearchParams();
+    
+    if (filter.periodo) params.append('periodo', filter.periodo);
+    if (filter.dataInicio) params.append('dataInicio', filter.dataInicio);
+    if (filter.dataFim) params.append('dataFim', filter.dataFim);
+    if (filter.filialId) params.append('filialId', filter.filialId);
+    if (filter.funcionarioId) params.append('funcionarioId', filter.funcionarioId);
+
+    const response = await instanceApi.get(
+      `${this.baseUrl}/patologias-agrupadas?${params.toString()}`
+    );
+    return response.data || [];
+  }
+
+  /**
    * Carrega todos os dados do dashboard de uma só vez
    */
   async carregarTodosDados(
@@ -246,6 +267,7 @@ class DashboardService {
     unidadesDistribuicao: DashboardUnitDistributionResponse[];
     servicosMaisAgendados: DashboardTopServicesResponse[];
     sessoesPorFisioterapeuta: DashboardPhysiotherapistSessionsResponse[];
+    patologiasAgrupadas: DashboardPathologyResponseDto[];
   }> {
     const [
       pacientesAtivos,
@@ -258,6 +280,7 @@ class DashboardService {
       unidadesDistribuicao,
       servicosMaisAgendados,
       sessoesPorFisioterapeuta,
+      patologiasAgrupadas,
     ] = await Promise.all([
       this.getPacientesAtivos(filter),
       this.getAgendamentosMarcados(filter),
@@ -269,6 +292,7 @@ class DashboardService {
       this.getUnidadesDistribuicao(filter),
       this.getServicosMaisAgendados(filter),
       this.getSessoesPorFisioterapeuta(filter),
+      this.getPatologiasAgrupadas(filter),
     ]);
 
     return {
@@ -282,6 +306,7 @@ class DashboardService {
       unidadesDistribuicao,
       servicosMaisAgendados,
       sessoesPorFisioterapeuta,
+      patologiasAgrupadas,
     };
   }
 }
