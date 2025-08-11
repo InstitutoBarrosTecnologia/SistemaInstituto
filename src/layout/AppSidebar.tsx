@@ -96,7 +96,7 @@ const allNavItems: NavItem[] = [
   },
   {
     icon: <UserCircleIcon />,
-    name: "Funcionários",
+    name: "Perfil",
     path: "/profile",
     permissions: MENU_PERMISSIONS.FUNCIONARIOS,
   },
