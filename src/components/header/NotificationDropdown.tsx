@@ -1,21 +1,51 @@
 import { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
+import { Modal } from "../ui/modal";
+import { useNotifications } from "../../hooks/useNotifications";
 import { useSessionNotifications } from "../../hooks/useSessionNotifications";
+import { NotificationResponseDto } from "../../services/model/Dto/Response/NotificationResponseDto";
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const [viewedNotifications, setViewedNotifications] = useState<Set<string>>(new Set());
+  const [viewedSessions, setViewedSessions] = useState<Set<string>>(new Set());
+  const [selectedNotification, setSelectedNotification] = useState<NotificationResponseDto | null>(null);
+  const [selectedSession, setSelectedSession] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Hook para notificações do sistema
+  const {
+    notifications,
+    loading: notificationsLoading,
+    error: notificationsError,
+    loadNotifications,
+  } = useNotifications({ 
+    page: 1, 
+    pageSize: 10 
+  });
+
+  // Hook para notificações de sessões
   const {
     notificationSessions,
     newSessionsCount,
-    hasNewNotifications,
-    isLoading,
-    error,
+    hasNewNotifications: hasNewSessions,
+    isLoading: sessionsLoading,
+    error: sessionsError,
     markAsRead,
-    refetch,
-    totalSessions,
+    refetch: refetchSessions,
   } = useSessionNotifications();
+
+  // Combinar as duas fontes de notificações e filtrar as visualizadas
+  const activeNotifications = notifications.filter(notif => notif.ativo);
+  const unviewedSystemNotifications = activeNotifications.filter(notif => !viewedNotifications.has(notif.id));
+  const unviewedSessions = notificationSessions.filter(session => !viewedSessions.has(session.sessionId));
+  
+  const totalSystemNotifications = unviewedSystemNotifications.length;
+  const totalUnviewedSessions = unviewedSessions.length;
+  const totalNotifications = totalSystemNotifications + totalUnviewedSessions;
+  const hasNewNotifications = totalSystemNotifications > 0 || hasNewSessions;
+  const isLoading = notificationsLoading || sessionsLoading;
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -27,9 +57,41 @@ export default function NotificationDropdown() {
 
   const handleClick = () => {
     toggleDropdown();
-    if (hasNewNotifications) {
+    // Marcar sessões como lidas se houver sessões novas
+    if (hasNewSessions) {
       markAsRead();
     }
+  };
+
+  // Função para atualizar ambas as fontes
+  const handleRefresh = () => {
+    loadNotifications();
+    refetchSessions();
+  };
+
+  // Função para lidar com clique em notificação do sistema
+  const handleNotificationClick = (notification: NotificationResponseDto) => {
+    setSelectedNotification(notification);
+    setSelectedSession(null);
+    setViewedNotifications(prev => new Set(prev).add(notification.id));
+    setIsModalOpen(true);
+    closeDropdown();
+  };
+
+  // Função para lidar com clique em notificação de sessão
+  const handleSessionClick = (session: any) => {
+    setSelectedSession(session);
+    setSelectedNotification(null);
+    setViewedSessions(prev => new Set(prev).add(session.sessionId));
+    setIsModalOpen(true);
+    closeDropdown();
+  };
+
+  // Função para fechar modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedNotification(null);
+    setSelectedSession(null);
   };
 
   // Função para formatar horário
@@ -81,9 +143,9 @@ export default function NotificationDropdown() {
         </span>
 
         {/* Contador de notificações */}
-        {newSessionsCount > 0 && (
+        {(totalSystemNotifications > 0 || newSessionsCount > 0) && (
           <span className="absolute -top-1 -right-1 z-20 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-            {newSessionsCount > 9 ? "9+" : newSessionsCount}
+            {totalNotifications > 9 ? "9+" : totalNotifications}
           </span>
         )}
 
@@ -110,12 +172,12 @@ export default function NotificationDropdown() {
       >
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Notificações ({totalSessions})
+            Notificações ({totalNotifications})
           </h5>
           <div className="flex items-center gap-2">
             {/* Botão de refresh */}
             <button
-              onClick={refetch}
+              onClick={handleRefresh}
               className="text-gray-500 transition dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
               title="Atualizar"
             >
@@ -161,18 +223,18 @@ export default function NotificationDropdown() {
             <li className="flex items-center justify-center py-8">
               <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
               <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                Carregando sessões...
+                Carregando notificações...
               </span>
             </li>
           )}
 
-          {!!error && (
+          {(!!notificationsError || !!sessionsError) && (
             <li className="p-4 text-center">
               <div className="text-red-500 text-sm">
-                Erro ao carregar sessões
+                Erro ao carregar notificações
               </div>
               <button
-                onClick={refetch}
+                onClick={handleRefresh}
                 className="mt-2 text-xs text-blue-500 hover:text-blue-700"
               >
                 Tentar novamente
@@ -180,7 +242,7 @@ export default function NotificationDropdown() {
             </li>
           )}
 
-          {!isLoading && !error && notificationSessions.length === 0 && (
+          {!isLoading && !notificationsError && !sessionsError && activeNotifications.length === 0 && notificationSessions.length === 0 && (
             <li className="p-4 text-center">
               <div className="text-gray-500 dark:text-gray-400 text-sm">
                 Nenhuma notificação
@@ -188,19 +250,78 @@ export default function NotificationDropdown() {
             </li>
           )}
 
+          {/* Notificações do Sistema */}
           {!isLoading &&
-            !error &&
-            notificationSessions.map((session) => (
-              <li key={session.sessionId}>
+            !notificationsError &&
+            activeNotifications.map((notification) => (
+              <li key={`system-${notification.id}`}>
                 <DropdownItem
-                  onItemClick={closeDropdown}
-                  className={`flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${
+                  onItemClick={() => handleNotificationClick(notification)}
+                  className="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 cursor-pointer"
+                >
+                  {/* Ícone de notificação */}
+                  <span className="relative block w-full h-10 rounded-full z-1 max-w-10">
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
+                        />
+                      </svg>
+                    </div>
+                    <span className="absolute bottom-0 right-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white bg-green-500 dark:border-gray-900"></span>
+                  </span>
+
+                  <span className="block flex-1">
+                    <span className="mb-1.5 block text-theme-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium text-gray-800 dark:text-white/90">
+                        {notification.titulo}
+                      </span>
+                    </span>
+
+                    <span className="mb-1 block text-theme-xs text-gray-600 dark:text-gray-300">
+                      {notification.mensagem}
+                    </span>
+
+                    <span className="flex items-center gap-2 text-gray-500 text-theme-xs dark:text-gray-400">
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-blue-500 text-white">
+                        Sistema
+                      </span>
+                      <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                      <span>
+                        {new Date(notification.dataCriacao).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </span>
+                  </span>
+                </DropdownItem>
+              </li>
+            ))}
+
+          {/* Notificações de Sessões */}
+          {!isLoading &&
+            !sessionsError &&
+            notificationSessions.map((session) => (
+              <li key={`session-${session.sessionId}`}>
+                <DropdownItem
+                  onItemClick={() => handleSessionClick(session)}
+                  className={`flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 cursor-pointer ${
                     session.isNew ? "bg-blue-50 dark:bg-blue-900/20" : ""
                   }`}
                 >
                   {/* Avatar com iniciais */}
                   <span className="relative block w-full h-10 rounded-full z-1 max-w-10">
-                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    <div className="w-full h-full bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
                       {getInitials(session.nomeCliente)}
                     </div>
                     <span
@@ -252,6 +373,169 @@ export default function NotificationDropdown() {
             ))}
         </ul>
       </Dropdown>
+
+      {/* Modal para exibir detalhes da notificação */}
+      <Modal isOpen={isModalOpen} onClose={closeModal} className="max-w-[600px] m-4">
+        <div className="no-scrollbar relative w-full max-w-[600px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-8">
+          {selectedNotification && (
+            <>
+              <div className="px-2 pr-14 mb-6">
+                <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+                  {selectedNotification.titulo}
+                </h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Notificação do Sistema
+                </p>
+              </div>
+
+              <div className="space-y-4 px-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Mensagem:
+                  </label>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-gray-900 dark:text-white">
+                      {selectedNotification.mensagem}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Status:
+                    </label>
+                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                      selectedNotification.ativo 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+                    }`}>
+                      {selectedNotification.ativo ? 'Ativa' : 'Inativa'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Criado em:
+                    </label>
+                    <p className="text-gray-900 dark:text-white text-sm">
+                      {new Date(selectedNotification.dataCriacao).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                </div>
+
+                {selectedNotification.dataExpiracao && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Expira em:
+                    </label>
+                    <p className="text-gray-900 dark:text-white text-sm">
+                      {new Date(selectedNotification.dataExpiracao).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                )}
+
+                {selectedNotification.usrDescricaoCadastro && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Criado por:
+                    </label>
+                    <p className="text-gray-900 dark:text-white text-sm">
+                      {selectedNotification.usrDescricaoCadastro}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {selectedSession && (
+            <>
+              <div className="px-2 pr-14 mb-6">
+                <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+                  Check-in de Sessão
+                </h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Notificação de Fisioterapia
+                </p>
+              </div>
+
+              <div className="space-y-4 px-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Fisioterapeuta:
+                    </label>
+                    <p className="text-gray-900 dark:text-white font-medium">
+                      {selectedSession.nomeFuncionario}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Paciente:
+                    </label>
+                    <p className="text-gray-900 dark:text-white font-medium">
+                      {selectedSession.nomeCliente}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Horário da Sessão:
+                    </label>
+                    <p className="text-gray-900 dark:text-white">
+                      {formatTime(selectedSession.horaSessao)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Status:
+                    </label>
+                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(selectedSession.statusSessao)}`}>
+                      {selectedSession.statusSessao}
+                    </span>
+                  </div>
+                </div>
+
+                {selectedSession.observacaoSessao && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Observações:
+                    </label>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-gray-900 dark:text-white italic">
+                        "{selectedSession.observacaoSessao}"
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Recebido:
+                  </label>
+                  <p className="text-gray-900 dark:text-white text-sm">
+                    {selectedSession.timeAgo}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="flex items-center justify-end gap-3 px-2 mt-6">
+            <button
+              onClick={closeModal}
+              className="bg-gray-500 text-white shadow-theme-xs hover:bg-gray-600 disabled:bg-gray-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

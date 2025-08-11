@@ -27,7 +27,7 @@ import OrdemServiceTables from "./pages/Tables/OrderServiceTable/OrderServiceTab
 import EmployeeTables from "./pages/Tables/EmployeeTable/EmployeeTables";
 import BranchOfficeTables from "./pages/Tables/BranchOfficeTable/BranchOfficeTables";
 import { Despesas } from "./pages/Financeiro";
-import Enviar from "./pages/Notificacoes/Enviar";
+import Notifications from "./pages/Notificacoes/Notifications";
 
 export default function App() {
   return (
@@ -59,7 +59,7 @@ export default function App() {
           <Route path="/financeiro/despesas" element={<Despesas />} />
           
           {/* Notificações - Apenas para Administradores */}
-          <Route path="/notificacoes/enviar" element={<Enviar />} />
+          <Route path="/notificacoes/enviar" element={<Notifications />} />
           
 
 
