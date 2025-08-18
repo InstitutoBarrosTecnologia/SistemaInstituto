@@ -88,8 +88,8 @@ export default function ModalNovaDespesa({
 
   // Opções para campos select
   const tipoOptions = [
+    { label: "Entrada", value: "entrada" },
     { label: "Saída", value: "saida" },
-    { label: "Recebimento", value: "recebimento" },
   ];
 
   const formaPagamentoOptions = [
@@ -102,10 +102,9 @@ export default function ModalNovaDespesa({
   ];
 
   const contaOptions = [
-    { label: "Conta Corrente", value: "corrente" },
-    { label: "Conta Poupança", value: "poupanca" },
-    { label: "Conta Empresarial", value: "empresarial" },
-    { label: "Caixa", value: "caixa" },
+    { label: "Corrente", value: "corrente" },
+    { label: "Poupança", value: "poupanca" },
+    { label: "Empresarial", value: "empresarial" },
   ];
 
   const tipoDocumentoOptions = [
@@ -593,6 +592,7 @@ export default function ModalNovaDespesa({
                     onChange={handleChange}
                     min="0"
                     required
+                    disabled={formData.formaPagamento !== "credito"}
                   />
                 </div>
 

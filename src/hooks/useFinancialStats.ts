@@ -46,12 +46,12 @@ export function useFinancialStats(): FinancialStats {
 
         // Calcular receitas do mês (tipo = recebimento)
         const receitasMes = transacoesDoMes
-            .filter(t => t.tipo === ETipoTransacao.Recebimento)
+            .filter(t => t.tipo === ETipoTransacao.Recebimento && (t.status == EDespesaStatus.Aprovada || t.status == EDespesaStatus.Concluida))
             .reduce((sum, t) => sum + (t.valores || 0), 0);
 
         // Calcular despesas do mês (tipo = despesa)
         const despesasMes = transacoesDoMes
-            .filter(t => t.tipo === ETipoTransacao.Despesa)
+            .filter(t => t.tipo === ETipoTransacao.Despesa && (t.status == EDespesaStatus.Aprovada || t.status == EDespesaStatus.Concluida))
             .reduce((sum, t) => sum + (t.valores || 0), 0);
 
         // Calcular saldo líquido

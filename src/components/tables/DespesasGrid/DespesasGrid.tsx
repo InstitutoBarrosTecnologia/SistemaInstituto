@@ -186,7 +186,7 @@ export default function DespesasGrid() {
                         <div className="font-medium">
                           {transaction.nomeDespesa}
                         </div>
-                        <div className="text-xs text-gray-400">
+                        <div className="text-xs text-gray-400 dark:text-white">
                           {transaction.nomeUnidade || "N/A"}
                         </div>
                       </div>
@@ -209,25 +209,25 @@ export default function DespesasGrid() {
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                       <div>
                         {transaction.funcionario && (
-                          <div className="text-blue-600">
+                          <div className="text-blue-600 dark:text-blue-400">
                             {transaction.funcionario.nome}
                           </div>
                         )}
                         {transaction.cliente && (
-                          <div className="text-gray-600">
+                          <div className="text-gray-600 dark:text-white">
                             {transaction.cliente.nome}
                           </div>
                         )}
                         {!transaction.funcionario &&
                           !transaction.cliente && (
-                            <span className="text-gray-400">N/A</span>
+                            <span className="text-gray-400 dark:text-white">N/A</span>
                           )}
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                       <div>
                         <div>{transaction.formaPagamento || "N/A"}</div>
-                        <div className="text-xs text-gray-400">
+                        <div className="text-xs text-gray-400 dark:text-white">
                           {transaction.conta}
                         </div>
                       </div>
@@ -259,7 +259,7 @@ export default function DespesasGrid() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenModalStatus(transaction)}
-                          disabled={isUpdatingStatus}
+                          disabled={isUpdatingStatus || transaction.status === EDespesaStatus.Aprovada || transaction.status === EDespesaStatus.Cancelada}
                         >
                           Status
                         </Button>
@@ -267,7 +267,7 @@ export default function DespesasGrid() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenModalDelete(transaction.id!)}
-                          disabled={isDeleting}
+                          disabled={isDeleting || transaction.status === EDespesaStatus.Aprovada || transaction.status === EDespesaStatus.Cancelada}
                         >
                           Excluir
                         </Button>
