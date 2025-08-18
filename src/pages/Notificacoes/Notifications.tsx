@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { toast, Toaster } from "react-hot-toast";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Input from "../../components/form/input/InputField";
@@ -69,7 +70,7 @@ export default function Notifications() {
         text: funcionario.nome,
         preco: "", // Campo obrigatório no MultiSelect mas não usado aqui
       }));
-      
+
       // Adicionar a opção "Todos" no início da lista
       const optionsWithTodos = [
         {
@@ -77,15 +78,26 @@ export default function Notifications() {
           text: "Todos os funcionários",
           preco: "",
         },
-        ...mappedFuncionarios
+        ...mappedFuncionarios,
       ];
-      
+
       setFuncionariosOptions(optionsWithTodos);
     }
   }, [funcionarios]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validação da data de expiração
+    if (formData.dataExpiracao) {
+      const dataExpiracao = new Date(formData.dataExpiracao);
+      const agora = new Date();
+
+      if (dataExpiracao <= agora) {
+        toast.error("Data de expiração deve ser maior que a data atual");
+        return;
+      }
+    }
 
     const notificationData: NotificationRequestDto = {
       titulo: formData.titulo,
@@ -95,21 +107,55 @@ export default function Notifications() {
       dataExpiracao: formData.dataExpiracao || undefined,
     };
 
-    let success = false;
+    try {
+      let success = false;
 
-    if (editingId) {
-      // Atualizar notificação existente
-      success = await updateNotification(editingId, notificationData);
-      if (success) {
-        setEditingId(null);
+      if (editingId) {
+        // Atualizar notificação existente
+        success = await updateNotification(editingId, notificationData);
+        if (success) {
+          toast.success("Notificação atualizada com sucesso! 🎉");
+          setEditingId(null);
+        }
+      } else {
+        // Criar nova notificação
+        success = await createNotification(notificationData);
+        if (success) {
+          toast.success("Notificação criada com sucesso! 🎉");
+        }
       }
-    } else {
-      // Criar nova notificação
-      success = await createNotification(notificationData);
-    }
 
-    if (success) {
-      handleClear();
+      if (success) {
+        handleClear();
+      }
+    } catch (error: any) {
+      // Tratar erros da API
+      let errorMessage = "Erro desconhecido";
+
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+
+        // Se for um array de erros da API
+        if (
+          Array.isArray(errorData) &&
+          errorData.length > 0 &&
+          errorData[0].errorMensagem
+        ) {
+          errorMessage = errorData[0].errorMensagem;
+        }
+        // Se for um objeto com message
+        else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+        // Se for string direta
+        else if (typeof errorData === "string") {
+          errorMessage = errorData;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(`Erro: ${errorMessage}`);
     }
   };
 
@@ -197,29 +243,101 @@ export default function Notifications() {
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir esta notificação?")) {
-      const success = await deleteNotification(id);
-      if (!success && error) {
-        alert(`Erro: ${error}`);
+      try {
+        const success = await deleteNotification(id);
+        if (success) {
+          toast.success("Notificação excluída com sucesso! 🗑️");
+        }
+      } catch (error: any) {
+        let errorMessage = "Erro ao excluir notificação";
+
+        if (error?.response?.data) {
+          const errorData = error.response.data;
+
+          if (
+            Array.isArray(errorData) &&
+            errorData.length > 0 &&
+            errorData[0].errorMensagem
+          ) {
+            errorMessage = errorData[0].errorMensagem;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (typeof errorData === "string") {
+            errorMessage = errorData;
+          }
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+
+        toast.error(`Erro: ${errorMessage}`);
       }
     }
   };
 
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
-    const success = await toggleStatus(id, !currentStatus);
-    if (!success && error) {
-      alert(`Erro: ${error}`);
+    try {
+      const success = await toggleStatus(id, !currentStatus);
+      if (success) {
+        const statusText = !currentStatus ? "ativada" : "desativada";
+        toast.success(`Notificação ${statusText} com sucesso! 🔄`);
+      }
+    } catch (error: any) {
+      let errorMessage = "Erro ao alterar status da notificação";
+
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+
+        if (
+          Array.isArray(errorData) &&
+          errorData.length > 0 &&
+          errorData[0].errorMensagem
+        ) {
+          errorMessage = errorData[0].errorMensagem;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (typeof errorData === "string") {
+          errorMessage = errorData;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(`Erro: ${errorMessage}`);
     }
   };
 
   const handleSend = async (id: string) => {
     if (window.confirm("Tem certeza que deseja enviar esta notificação?")) {
-      const result = await sendNotification(id);
-      if (result) {
-        alert(
-          `Notificação enviada para ${result.destinatariosEnviados} destinatário(s)!`
-        );
-      } else if (error) {
-        alert(`Erro: ${error}`);
+      try {
+        const result = await sendNotification(id);
+        if (result) {
+          toast.success(
+            `Notificação enviada para ${result.destinatariosEnviados} destinatário(s)! 📨`,
+            { duration: 4000 }
+          );
+        }
+      } catch (error: any) {
+        let errorMessage = "Erro ao enviar notificação";
+
+        if (error?.response?.data) {
+          const errorData = error.response.data;
+
+          if (
+            Array.isArray(errorData) &&
+            errorData.length > 0 &&
+            errorData[0].errorMensagem
+          ) {
+            errorMessage = errorData[0].errorMensagem;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (typeof errorData === "string") {
+            errorMessage = errorData;
+          }
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+
+        toast.error(`Erro: ${errorMessage}`);
       }
     }
   };
@@ -610,6 +728,9 @@ export default function Notifications() {
           )}
         </div>
       </div>
+
+      {/* Toast Container */}
+      <Toaster position="bottom-right" />
     </>
   );
 }

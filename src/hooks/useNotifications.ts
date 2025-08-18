@@ -60,9 +60,9 @@ export const useNotifications = (params: NotificationFilterParams = {}) => {
       await loadNotifications(); // Recarrega a lista
       return true;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao criar notificação';
-      setError(errorMessage);
-      return false;
+      setLoading(false);
+      // Lança o erro para ser tratado no componente
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -76,9 +76,9 @@ export const useNotifications = (params: NotificationFilterParams = {}) => {
       await loadNotifications(); // Recarrega a lista
       return true;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao atualizar notificação';
-      setError(errorMessage);
-      return false;
+      setLoading(false);
+      // Lança o erro para ser tratado no componente
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -92,9 +92,9 @@ export const useNotifications = (params: NotificationFilterParams = {}) => {
       await loadNotifications(); // Recarrega a lista
       return true;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao excluir notificação';
-      setError(errorMessage);
-      return false;
+      setLoading(false);
+      // Lança o erro para ser tratado no componente
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -108,9 +108,9 @@ export const useNotifications = (params: NotificationFilterParams = {}) => {
       await loadNotifications(); // Recarrega a lista
       return true;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao alterar status';
-      setError(errorMessage);
-      return false;
+      setLoading(false);
+      // Lança o erro para ser tratado no componente
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -124,9 +124,9 @@ export const useNotifications = (params: NotificationFilterParams = {}) => {
       await loadNotifications(); // Recarrega a lista
       return response;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao enviar notificação';
-      setError(errorMessage);
-      return null;
+      setLoading(false);
+      // Lança o erro para ser tratado no componente
+      throw err;
     } finally {
       setLoading(false);
     }

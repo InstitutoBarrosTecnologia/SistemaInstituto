@@ -250,7 +250,10 @@ export default function FormSubCategoryService({ data, edit, closeModal }: FormC
                     </div>
                 </form>
             </div>
-            <Toaster position="bottom-right" />
+            <Toaster 
+                position="bottom-right"
+                
+            />
         </>
     );
 }

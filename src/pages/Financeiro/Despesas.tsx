@@ -1,7 +1,9 @@
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import { DollarLineIcon, PlusIcon } from "../../icons";
+import { DollarLineIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
+import { useFinancialStats } from "../../hooks/useFinancialStats";
+import { FinancialTransactionUtils } from "../../services/financialTransactions";
 import ModalNovaDespesa from "./components/ModalNovaDespesa";
 import DespesasGrid from "../../components/tables/DespesasGrid/DespesasGrid";
 
@@ -11,6 +13,18 @@ export default function Despesas() {
     openModal: openModal,
     closeModal: closeModal,
   } = useModal();
+
+  // Buscar estatísticas financeiras da API
+  const { 
+    receitasMes, 
+    despesasMes, 
+    saldoLiquido, 
+    pendentes,
+    totalTransacoes,
+    isLoading: isLoadingStats 
+  } = useFinancialStats();
+
+  const currentMonthName = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   return (
     <>
       <PageMeta
@@ -34,13 +48,17 @@ export default function Despesas() {
                 <p className="text-gray-500 dark:text-gray-400">
                   Controle todas as despesas e recebimentos do instituto
                 </p>
+                {!isLoadingStats && (
+                  <p className="text-sm text-gray-400 mt-1">
+                    {totalTransacoes} transação(ões) • {currentMonthName}
+                  </p>
+                )}
               </div>
             </div>
             <button
               onClick={openModal}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
-              <PlusIcon className="size-4" />
               Novo Lançamento
             </button>
           </div>
@@ -52,23 +70,40 @@ export default function Despesas() {
                 Receitas do Mês
               </h3>
               <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                R$ 28.750,00
+                {isLoadingStats ? (
+                  <span className="animate-pulse bg-gray-300 h-8 w-32 rounded block"></span>
+                ) : (
+                  FinancialTransactionUtils.formatCurrency(receitasMes)
+                )}
               </p>
+              <p className="text-xs text-gray-400 mt-1">Recebimentos em {currentMonthName}</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800/50">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Despesas do Mês
               </h3>
               <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-                R$ 12.450,00
+                {isLoadingStats ? (
+                  <span className="animate-pulse bg-gray-300 h-8 w-32 rounded block"></span>
+                ) : (
+                  FinancialTransactionUtils.formatCurrency(despesasMes)
+                )}
               </p>
+              <p className="text-xs text-gray-400 mt-1">Gastos em {currentMonthName}</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800/50">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Saldo Líquido
               </h3>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                R$ 16.300,00
+              <p className={`text-2xl font-bold mt-1 ${saldoLiquido >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
+                {isLoadingStats ? (
+                  <span className="animate-pulse bg-gray-300 h-8 w-32 rounded block"></span>
+                ) : (
+                  FinancialTransactionUtils.formatCurrency(saldoLiquido)
+                )}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {saldoLiquido >= 0 ? 'Lucro' : 'Déficit'} do mês
               </p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800/50">
@@ -76,8 +111,13 @@ export default function Despesas() {
                 Pendentes
               </h3>
               <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-                R$ 3.890,00
+                {isLoadingStats ? (
+                  <span className="animate-pulse bg-gray-300 h-8 w-32 rounded block"></span>
+                ) : (
+                  FinancialTransactionUtils.formatCurrency(pendentes)
+                )}
               </p>
+              <p className="text-xs text-gray-400 mt-1">Aguardando aprovação</p>
             </div>
           </div>
 

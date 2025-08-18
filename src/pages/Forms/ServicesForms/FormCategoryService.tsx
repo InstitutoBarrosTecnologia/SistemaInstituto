@@ -171,7 +171,17 @@ export default function FormCategoryService({ data, edit, closeModal }: FormCate
                     </div>
                 </form>
             </div>
-            <Toaster position="bottom-right" />
+            <Toaster 
+                position="bottom-right"
+                toastOptions={{
+                    style: {
+                        zIndex: 99999,
+                    },
+                }}
+                containerStyle={{
+                    zIndex: 99999,
+                }}
+            />
         </>
     );
 }
