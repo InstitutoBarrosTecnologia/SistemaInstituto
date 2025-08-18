@@ -8,6 +8,7 @@ import {
 import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
+import ModalParcelasContent from "../../../pages/Financeiro/components/ModalParcelas";
 
 import {
   EDespesaStatus,
@@ -18,10 +19,17 @@ import { useFinancialTransactions } from "../../../hooks/useFinancialTransaction
 import Badge from "../../ui/badge/Badge";
 import Button from "../../ui/button/Button";
 import Select from "../../form/Select";
+import { TransactionFilters } from "../../../services/financialTransactions";
 
-export default function DespesasGrid() {
+interface DespesasGridProps {
+  filters?: TransactionFilters;
+}
+
+export default function DespesasGrid({ filters }: DespesasGridProps) {
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
   const [selectedDespesa, setSelectedDespesa] = useState<any>(undefined);
+  const [selectedTransactionId, setSelectedTransactionId] =
+    useState<string>("");
   const [statusToUpdate, setStatusToUpdate] = useState<EDespesaStatus>(
     EDespesaStatus.Pendente
   );
@@ -36,6 +44,11 @@ export default function DespesasGrid() {
     openModal: openModalStatus,
     closeModal: closeModalStatus,
   } = useModal();
+  const {
+    isOpen: isOpenParcelas,
+    openModal: openModalParcelas,
+    closeModal: closeModalParcelas,
+  } = useModal();
 
   // Usar o hook da nova API
   const {
@@ -46,7 +59,7 @@ export default function DespesasGrid() {
     deleteTransaction,
     isUpdatingStatus,
     isDeleting,
-  } = useFinancialTransactions();
+  } = useFinancialTransactions(filters);
 
   const handleOpenModalDelete = (id: string) => {
     setIdDeleteRegister(id);
@@ -57,6 +70,11 @@ export default function DespesasGrid() {
     setSelectedDespesa(despesa);
     setStatusToUpdate(despesa.status);
     openModalStatus();
+  };
+
+  const handleOpenModalParcelas = (id: string) => {
+    setSelectedTransactionId(id);
+    openModalParcelas();
   };
 
   const handleDeleteRegister = () => {
@@ -170,18 +188,16 @@ export default function DespesasGrid() {
                           transaction.tipo
                         ) === "recebimento"
                           ? "Recebimento"
-                          : "Despesa"}
+                          : "Saída"}
                       </Badge>
                     </TableCell>
-                    <TableCell
-                      className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400"
-                    >
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                       <div>
                         <div className="font-medium">
                           {transaction.nomeDespesa}
                         </div>
                         <div className="text-xs text-gray-400 dark:text-white">
-                          {transaction.nomeUnidade || "N/A"}
+                          {transaction.descricao || "N/A"}
                         </div>
                       </div>
                     </TableCell>
@@ -212,10 +228,11 @@ export default function DespesasGrid() {
                             {transaction.cliente.nome}
                           </div>
                         )}
-                        {!transaction.funcionario &&
-                          !transaction.cliente && (
-                            <span className="text-gray-400 dark:text-white">N/A</span>
-                          )}
+                        {!transaction.funcionario && !transaction.cliente && (
+                          <span className="text-gray-400 dark:text-white">
+                            N/A
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
@@ -253,7 +270,11 @@ export default function DespesasGrid() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenModalStatus(transaction)}
-                          disabled={isUpdatingStatus || transaction.status === EDespesaStatus.Aprovada || transaction.status === EDespesaStatus.Cancelada}
+                          disabled={
+                            isUpdatingStatus ||
+                            transaction.status === EDespesaStatus.Aprovada ||
+                            transaction.status === EDespesaStatus.Cancelada
+                          }
                         >
                           Status
                         </Button>
@@ -261,9 +282,23 @@ export default function DespesasGrid() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenModalDelete(transaction.id!)}
-                          disabled={isDeleting || transaction.status === EDespesaStatus.Aprovada || transaction.status === EDespesaStatus.Cancelada}
+                          disabled={
+                            isDeleting ||
+                            transaction.status === EDespesaStatus.Aprovada ||
+                            transaction.status === EDespesaStatus.Cancelada
+                          }
                         >
                           Excluir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            handleOpenModalParcelas(transaction.id!)
+                          }
+                          disabled={transaction.parcelas.length === 0}
+                        >
+                          Parcelas
                         </Button>
                       </div>
                     </TableCell>
@@ -370,6 +405,20 @@ export default function DespesasGrid() {
               </Button>
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* Modal de Parcelas */}
+      <Modal
+        isOpen={isOpenParcelas}
+        onClose={closeModalParcelas}
+        className="max-w-[900px] m-4"
+      >
+        <div className="no-scrollbar relative w-full max-w-[900px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <ModalParcelasContent
+            transactionId={selectedTransactionId}
+            onClose={closeModalParcelas}
+          />
         </div>
       </Modal>
     </>

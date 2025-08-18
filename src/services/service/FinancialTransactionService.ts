@@ -1,6 +1,7 @@
 import { instanceApi } from "./AxioService";
 import { FinancialTransactionRequestDto } from "../model/Dto/Request/FinancialTransactionRequestDto";
 import { UpdateStatusRequestDto } from "../model/Dto/Request/UpdateStatusRequestDto";
+import { UpdateInstallmentsStatusRequestDto } from "../model/Dto/Request/UpdateInstallmentsStatusRequestDto";
 import { FinancialTransactionResponseDto } from "../model/Dto/Response/FinancialTransactionResponseDto";
 import { ETipoTransacao } from "../model/Enum/ETipoTransacao";
 import { EDespesaStatus } from "../model/Enum/EDespesaStatus";
@@ -117,6 +118,17 @@ export const FinancialTransactionService = {
                 throw new Error(error.response.data || "Erro de validação");
             }
             throw new Error("Erro ao excluir transação financeira");
+        }
+    },
+
+    /**
+     * Atualizar status de uma parcela
+     */
+    async updateParcelaStatus(transacaoId: string, numeroParcela: number, data: UpdateInstallmentsStatusRequestDto): Promise<void> {
+        try {
+            await instanceApi.put(`/Installments/transacao/${transacaoId}/parcela/${numeroParcela}/status`, data);
+        } catch (error: any) {
+            throw error;
         }
     }
 };

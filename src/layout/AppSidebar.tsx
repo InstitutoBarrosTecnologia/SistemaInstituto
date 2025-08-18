@@ -106,7 +106,7 @@ const allNavItems: NavItem[] = [
     permissions: MENU_PERMISSIONS.FINANCEIRO,
     subItems: [
       { 
-        name: "Despesas", 
+        name: "Gestão Financeira", 
         path: "/financeiro/despesas", 
         pro: false,
         permissions: MENU_PERMISSIONS.FINANCEIRO_DESPESAS,

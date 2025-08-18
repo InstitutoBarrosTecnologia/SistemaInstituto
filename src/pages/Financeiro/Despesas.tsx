@@ -1,11 +1,18 @@
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import { DollarLineIcon } from "../../icons";
+import { DollarLineIcon, ChevronUpIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { useFinancialStats } from "../../hooks/useFinancialStats";
-import { FinancialTransactionUtils } from "../../services/financialTransactions";
+import { FinancialTransactionUtils, TransactionFilters } from "../../services/financialTransactions";
+import { BranchOfficeService } from "../../services/service/BranchOfficeService";
 import ModalNovaDespesa from "./components/ModalNovaDespesa";
 import DespesasGrid from "../../components/tables/DespesasGrid/DespesasGrid";
+import Input from "../../components/form/input/InputField";
+import Select from "../../components/form/Select";
+import Button from "../../components/ui/button/Button";
+import Label from "../../components/form/Label";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Despesas() {
   const {
@@ -13,6 +20,59 @@ export default function Despesas() {
     openModal: openModal,
     closeModal: closeModal,
   } = useModal();
+
+  const {
+    isOpen: showFilters,
+    openModal: openFilters,
+    closeModal: closeFilters,
+  } = useModal();
+
+  // Estados dos filtros
+  const [filterInputs, setFilterInputs] = useState({
+    unidadeId: "",
+    dataInicio: "",
+    dataFim: "",
+  });
+
+  const [appliedFilters, setAppliedFilters] = useState<TransactionFilters | undefined>(undefined);
+
+  // Buscar unidades para o select
+  const { data: unidades = [] } = useQuery({
+    queryKey: ["allBranchOffice"],
+    queryFn: BranchOfficeService.getAll,
+  });
+
+  const unidadeOptions = unidades.map((unidade) => ({
+    label: unidade.nomeFilial || "Sem nome",
+    value: unidade.id || "",
+  }));
+
+  // Função para aplicar filtros
+  const handleApplyFilters = () => {
+    const filters: TransactionFilters = {};
+    
+    if (filterInputs.unidadeId) {
+      filters.unidadeId = filterInputs.unidadeId;
+    }
+    if (filterInputs.dataInicio) {
+      filters.dataInicio = filterInputs.dataInicio;
+    }
+    if (filterInputs.dataFim) {
+      filters.dataFim = filterInputs.dataFim;
+    }
+
+    setAppliedFilters(Object.keys(filters).length > 0 ? filters : undefined);
+  };
+
+  // Função para limpar filtros
+  const handleClearFilters = () => {
+    setFilterInputs({
+      unidadeId: "",
+      dataInicio: "",
+      dataFim: "",
+    });
+    setAppliedFilters(undefined);
+  };
 
   // Buscar estatísticas financeiras da API
   const { 
@@ -46,7 +106,7 @@ export default function Despesas() {
                   Gestão Financeira
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400">
-                  Controle todas as despesas e recebimentos do instituto
+                  Controle todas as saídas e recebimentos do instituto
                 </p>
                 {!isLoadingStats && (
                   <p className="text-sm text-gray-400 mt-1">
@@ -121,9 +181,78 @@ export default function Despesas() {
             </div>
           </div>
 
-          {/* Grid de Transações Financeiras */}
+          {/* Filtros */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <DespesasGrid />
+            <div className="mb-6">
+              <button
+                onClick={showFilters ? closeFilters : openFilters}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+              >
+                <span>Filtros</span>
+                <ChevronUpIcon 
+                  className={`w-4 h-4 transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {showFilters && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg dark:bg-gray-800/50">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="unidade">Unidade</Label>
+                      <Select
+                        options={unidadeOptions}
+                        value={filterInputs.unidadeId}
+                        placeholder="Selecione uma unidade"
+                        onChange={(value) =>
+                          setFilterInputs((prev) => ({ ...prev, unidadeId: value }))
+                        }
+                        className="dark:bg-gray-900"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dataInicio">Data Cad. Início</Label>
+                      <Input
+                        type="date"
+                        id="dataInicio"
+                        value={filterInputs.dataInicio}
+                        onChange={(e) =>
+                          setFilterInputs((prev) => ({ ...prev, dataInicio: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dataFim">Data Cad. Fim</Label>
+                      <Input
+                        type="date"
+                        id="dataFim"
+                        value={filterInputs.dataFim}
+                        onChange={(e) =>
+                          setFilterInputs((prev) => ({ ...prev, dataFim: e.target.value }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-4">
+                    <Button
+                      onClick={handleApplyFilters}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                    >
+                      Aplicar Filtros
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleClearFilters}
+                      className="px-4 py-2 text-sm"
+                    >
+                      Limpar Filtros
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Grid de Transações Financeiras */}
+            <DespesasGrid filters={appliedFilters} />
           </div>
         </div>
       </div>

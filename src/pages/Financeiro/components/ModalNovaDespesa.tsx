@@ -32,7 +32,7 @@ interface Parcela {
 }
 
 interface TransacaoFormData {
-  tipo: "despesa" | "recebimento";
+  tipo: "saida" | "recebimento";
   nomeDespesa: string;
   descricao: string;
   unidadeId: string;
@@ -52,7 +52,7 @@ export default function ModalNovaDespesa({
   onClose,
 }: ModalNovaDespesaProps) {
   const [formData, setFormData] = useState<TransacaoFormData>({
-    tipo: "despesa",
+    tipo: "saida",
     nomeDespesa: "",
     descricao: "",
     unidadeId: "",
@@ -172,7 +172,7 @@ export default function ModalNovaDespesa({
         filialId: data.unidadeId || undefined, // Enviar undefined se for string vazia
         valores: data.valores,
         tipo:
-          data.tipo === "despesa"
+          data.tipo === "saida"
             ? ETipoTransacao.Despesa
             : ETipoTransacao.Recebimento,
         funcionarioId: data.fisioterapeutaId || undefined, // Enviar undefined se for string vazia
@@ -190,7 +190,7 @@ export default function ModalNovaDespesa({
     },
     onSuccess: () => {
       toast.success(
-        formData.tipo === "despesa"
+        formData.tipo === "saida"
           ? "Despesa cadastrada com sucesso! 🎉"
           : "Recebimento cadastrado com sucesso! 🎉",
         {
@@ -233,8 +233,8 @@ export default function ModalNovaDespesa({
       } else {
         // Fallback para mensagem genérica
         toast.error(
-          formData.tipo === "despesa"
-            ? "Erro ao cadastrar despesa! Sentimos muito pelo transtorno."
+          formData.tipo === "saida"
+            ? "Erro ao cadastrar saida! Sentimos muito pelo transtorno."
             : "Erro ao cadastrar recebimento! Sentimos muito pelo transtorno.",
           {
             duration: 4000,
@@ -247,11 +247,11 @@ export default function ModalNovaDespesa({
   // Função para resetar o formulário
   const resetForm = () => {
     setFormData({
-      tipo: "despesa",
+      tipo: "saida",
       nomeDespesa: "",
       descricao: "",
       unidadeId: "",
-      numeroParcelas: 1,
+      numeroParcelas: 0,
       valores: 0,
       fisioterapeutaId: "",
       clienteId: "",
