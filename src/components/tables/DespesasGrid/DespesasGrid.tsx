@@ -20,8 +20,12 @@ import Button from "../../ui/button/Button";
 import Select from "../../form/Select";
 
 export default function DespesasGrid() {
+  const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
   const [selectedDespesa, setSelectedDespesa] = useState<any>(undefined);
-  const { isOpen, openModal, closeModal } = useModal();
+  const [statusToUpdate, setStatusToUpdate] = useState<EDespesaStatus>(
+    EDespesaStatus.Pendente
+  );
+
   const {
     isOpen: isOpenDelete,
     openModal: openModalDelete,
@@ -32,10 +36,6 @@ export default function DespesasGrid() {
     openModal: openModalStatus,
     closeModal: closeModalStatus,
   } = useModal();
-  const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
-  const [statusToUpdate, setStatusToUpdate] = useState<EDespesaStatus>(
-    EDespesaStatus.Pendente
-  );
 
   // Usar o hook da nova API
   const {
@@ -47,11 +47,6 @@ export default function DespesasGrid() {
     isUpdatingStatus,
     isDeleting,
   } = useFinancialTransactions();
-
-  const handleOpenModal = (despesa: any) => {
-    setSelectedDespesa(despesa);
-    openModal();
-  };
 
   const handleOpenModalDelete = (id: string) => {
     setIdDeleteRegister(id);
@@ -179,8 +174,7 @@ export default function DespesasGrid() {
                       </Badge>
                     </TableCell>
                     <TableCell
-                      className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 cursor-pointer hover:text-blue-600"
-                      onClick={() => handleOpenModal(transaction)}
+                      className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400"
                     >
                       <div>
                         <div className="font-medium">
@@ -307,190 +301,6 @@ export default function DespesasGrid() {
           </Table>
         </div>
       </div>
-
-      {/* Modal de Detalhes */}
-      <Modal isOpen={isOpen} onClose={closeModal}>
-        {selectedDespesa && (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold mb-4">
-              Detalhes da Transação
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Tipo:
-                </label>
-                <Badge
-                  size="sm"
-                  color={
-                    FinancialTransactionUtils.convertTipoTransacaoToString(
-                      selectedDespesa.tipo
-                    ) === "recebimento"
-                      ? "success"
-                      : "error"
-                  }
-                >
-                  {FinancialTransactionUtils.convertTipoTransacaoToString(
-                    selectedDespesa.tipo
-                  ) === "recebimento"
-                    ? "Recebimento"
-                    : "Despesa"}
-                </Badge>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Valor:
-                </label>
-                <p
-                  className={`font-semibold ${
-                    FinancialTransactionUtils.convertTipoTransacaoToString(
-                      selectedDespesa.tipo
-                    ) === "recebimento"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {FinancialTransactionUtils.formatCurrency(
-                    selectedDespesa.valores
-                  )}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Status:
-                </label>
-                <Badge
-                  size="sm"
-                  color={
-                    selectedDespesa.status === EDespesaStatus.Aprovada
-                      ? "success"
-                      : selectedDespesa.status === EDespesaStatus.Cancelada
-                      ? "error"
-                      : "warning"
-                  }
-                >
-                  {getDespesaStatusLabel(selectedDespesa.status)}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nome da Transação:
-                </label>
-                <p className="text-gray-900 dark:text-white font-medium">
-                  {selectedDespesa.nomeDespesa}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Unidade:
-                </label>
-                <p className="text-gray-900 dark:text-white">
-                  {selectedDespesa.nomeFilial || "N/A"}
-                </p>
-              </div>
-            </div>
-
-            {(selectedDespesa.fisioterapeuta || selectedDespesa.cliente) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {selectedDespesa.fisioterapeuta && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Fisioterapeuta:
-                    </label>
-                    <p className="text-blue-600 dark:text-blue-400">
-                      {selectedDespesa.fisioterapeuta}
-                    </p>
-                  </div>
-                )}
-
-                {selectedDespesa.cliente && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Cliente:
-                    </label>
-                    <p className="text-gray-900 dark:text-white">
-                      {selectedDespesa.cliente}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Forma de Pagamento:
-                </label>
-                <p className="text-gray-900 dark:text-white">
-                  {selectedDespesa.formaPagamento || "N/A"}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Conta:
-                </label>
-                <p className="text-gray-900 dark:text-white">
-                  {selectedDespesa.conta || "N/A"}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Tipo Documento:
-                </label>
-                <p className="text-gray-900 dark:text-white">
-                  {selectedDespesa.tipoDocumento || "N/A"}
-                </p>
-              </div>
-            </div>
-
-            {selectedDespesa.descricao && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Descrição:
-                </label>
-                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <p className="text-gray-900 dark:text-white">
-                    {selectedDespesa.descricao}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {selectedDespesa.arquivo && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Arquivo:
-                </label>
-                <p className="text-blue-600 dark:text-blue-400 break-all">
-                  📎 {selectedDespesa.arquivo}
-                </p>
-              </div>
-            )}
-
-            {selectedDespesa.observacoes && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Observações:
-                </label>
-                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <p className="text-gray-900 dark:text-white">
-                    {selectedDespesa.observacoes}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
 
       {/* Modal de Atualização de Status */}
       <Modal
