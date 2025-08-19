@@ -2,7 +2,26 @@ import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import ChartTab from "../common/ChartTab";
 
-export default function StatisticsChart() {
+interface SeriesData {
+  name: string;
+  data: number[];
+}
+
+interface StatisticsChartProps {
+  series?: SeriesData[];
+  categories?: string[];
+  loading?: boolean;
+  error?: string | null;
+  onRefresh?: () => void;
+}
+
+export default function StatisticsChart({ 
+  series = [], 
+  categories = [],
+  loading = false,
+  error = null,
+  onRefresh
+}: StatisticsChartProps) {
   const options: ApexOptions = {
     legend: {
       show: false, // Hide legend
@@ -61,19 +80,19 @@ export default function StatisticsChart() {
     },
     xaxis: {
       type: "category", // Category-based x-axis
-      categories: [
+      categories: categories.length > 0 ? categories : [
         "Jan",
         "Feb",
         "Mar",
-        "Apr",
-        "May",
+        "Abr",
+        "Mai",
         "Jun",
         "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
+        "Ago",
+        "Set",
+        "Out",
         "Nov",
-        "Dec",
+        "Dez",
       ],
       axisBorder: {
         show: false, // Hide x-axis border
@@ -101,16 +120,6 @@ export default function StatisticsChart() {
     },
   };
 
-  const series = [
-    {
-      name: "Sales",
-      data: [180, 190, 170, 160, 175, 165, 170, 205, 230, 210, 240, 235],
-    },
-    {
-      name: "Revenue",
-      data: [40, 30, 50, 40, 55, 40, 70, 100, 110, 120, 150, 140],
-    },
-  ];
   return (
     <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
       <div className="flex flex-col gap-5 mb-6 sm:flex-row sm:justify-between">
@@ -127,11 +136,31 @@ export default function StatisticsChart() {
         </div>
       </div>
 
-      <div className="max-w-full overflow-x-auto custom-scrollbar">
-        <div className="min-w-[1000px] xl:min-w-full">
-          <Chart options={options} series={series} type="area" height={310} />
+      {error ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600 text-sm mb-2">Erro ao carregar dados de comparação</p>
+          {onRefresh && (
+            <button 
+              onClick={onRefresh}
+              className="text-red-700 hover:text-red-800 text-sm underline"
+            >
+              Tentar novamente
+            </button>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="max-w-full overflow-x-auto custom-scrollbar">
+          <div className="min-w-[1000px] xl:min-w-full">
+            {loading ? (
+              <div className="flex items-center justify-center h-[310px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+              </div>
+            ) : (
+              <Chart options={options} series={series} type="area" height={310} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

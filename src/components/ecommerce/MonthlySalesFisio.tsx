@@ -1,15 +1,11 @@
 import BarChartGeneric from "./BarChartGeneric";
 
-export default function MonthlySalesChart() {
-  // Dados das séries
+export default function MonthlySalesFisio() {
+  // Dados das séries (apenas uma série para fisioterapia)
   const series = [
     {
-      name: "Rec. Mensal",
+      name: "Sessões Fisio",
       data: [168, 385, 201, 298, 187, 195, 291, 110, 215, 390, 280, 112],
-    },
-    {
-      name: "Saída Mensal",
-      data: [120, 250, 180, 220, 150, 165, 200, 90, 180, 320, 200, 100],
     },
   ];
 
@@ -19,23 +15,23 @@ export default function MonthlySalesChart() {
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
 
-  // Cores diferenciadas para cada série
-  const colors = ["#10B981", "#EF4444"]; // Verde para receita, vermelho para saída
+  // Cor específica para fisioterapia
+  const colors = ["#06B6D4"]; // Azul ciano para fisioterapia
 
   // Função para lidar com ações do dropdown
   const handleDropdownAction = (action: string) => {
     switch (action) {
       case "export":
-        console.log("Exportando dados do faturamento mensal...");
-        alert("Exportando dados do faturamento mensal");
+        console.log("Exportando dados do faturamento fisio...");
+        alert("Exportando dados do faturamento fisio");
         break;
       case "details":
-        console.log("Visualizando detalhes do faturamento mensal...");
-        alert("Visualizando detalhes do faturamento mensal");
+        console.log("Visualizando detalhes do faturamento fisio...");
+        alert("Visualizando detalhes do faturamento fisio");
         break;
       case "refresh":
-        console.log("Atualizando dados do faturamento mensal...");
-        alert("Atualizando dados do faturamento mensal");
+        console.log("Atualizando dados do faturamento fisio...");
+        alert("Atualizando dados do faturamento fisio");
         break;
       default:
         break;
@@ -44,19 +40,19 @@ export default function MonthlySalesChart() {
 
   // Formatter personalizado para tooltip
   const tooltipFormatter = (val: number) => {
-    return `R$ ${val.toLocaleString('pt-BR')}`;
+    return `${val} sessões`;
   };
 
   return (
     <BarChartGeneric
-      title="Faturamento Mensal"
+      title="Faturamento Fisio"
       series={series}
       categories={categories}
       colors={colors}
       height={180}
       onDropdownAction={handleDropdownAction}
       tooltipFormatter={tooltipFormatter}
-      yAxisTitle="Valor (R$)"
+      yAxisTitle="Sessões"
       columnWidth="39%"
     />
   );

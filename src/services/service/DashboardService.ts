@@ -9,6 +9,13 @@ import {
   DashboardUnitDistributionResponse,
   DashboardTopServicesResponse,
   DashboardPhysiotherapistSessionsResponse,
+  DashboardFaturamentoResponseDto,
+  DashboardDespesasResponseDto,
+  DashboardEntradaSaidaResponseDto,
+  DashboardTipoPagamentoResponseDto,
+  DashboardUnidadeTransacaoResponseDto,
+  DashboardFaturamentoMensalResponseDto,
+  DashboardFaturamentoComparativoResponseDto,
 } from '../model/dashboard.types';
 import { DashboardPathologyResponseDto } from '../model/Dto/Response/DashboardPathologyResponseDto';
 
@@ -252,6 +259,149 @@ class DashboardService {
   }
 
   /**
+   * Retorna dados de faturamento para o dashboard
+   */
+  async getFaturamento(
+    filter: DashboardFilterRequestDto = {}
+  ): Promise<DashboardFaturamentoResponseDto | null> {
+    const params = new URLSearchParams();
+    
+    if (filter.periodo) params.append('periodo', filter.periodo);
+    if (filter.dataInicio) params.append('dataInicio', filter.dataInicio);
+    if (filter.dataFim) params.append('dataFim', filter.dataFim);
+    if (filter.filialId) params.append('filialId', filter.filialId);
+
+    try {
+      const response = await instanceApi.get(
+        `${this.baseUrl}/faturamento?${params.toString()}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar dados de faturamento:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Retorna dados de despesas para o dashboard
+   */
+  async getDespesas(
+    filter: DashboardFilterRequestDto = {}
+  ): Promise<DashboardDespesasResponseDto | null> {
+    const params = new URLSearchParams();
+    
+    if (filter.periodo) params.append('periodo', filter.periodo);
+    if (filter.dataInicio) params.append('dataInicio', filter.dataInicio);
+    if (filter.dataFim) params.append('dataFim', filter.dataFim);
+    if (filter.filialId) params.append('filialId', filter.filialId);
+
+    try {
+      const response = await instanceApi.get(
+        `${this.baseUrl}/despesas?${params.toString()}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar dados de despesas:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Retorna a distribuição de entrada e saída para gráfico de pizza
+   */
+  async getEntradaSaida(
+    filter: DashboardFilterRequestDto = {}
+  ): Promise<DashboardEntradaSaidaResponseDto[]> {
+    const params = new URLSearchParams();
+    
+    if (filter.periodo) params.append('periodo', filter.periodo);
+    if (filter.dataInicio) params.append('dataInicio', filter.dataInicio);
+    if (filter.dataFim) params.append('dataFim', filter.dataFim);
+    if (filter.filialId) params.append('filialId', filter.filialId);
+
+    try {
+      const response = await instanceApi.get(
+        `${this.baseUrl}/entrada-saida?${params.toString()}`
+      );
+      return response.data || [];
+    } catch (error) {
+      console.error('Erro ao buscar dados de entrada e saída:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Retorna a distribuição por tipos de pagamento
+   */
+  async getTiposPagamento(
+    filter: DashboardFilterRequestDto = {}
+  ): Promise<DashboardTipoPagamentoResponseDto[]> {
+    const params = new URLSearchParams();
+    
+    if (filter.periodo) params.append('periodo', filter.periodo);
+    if (filter.dataInicio) params.append('dataInicio', filter.dataInicio);
+    if (filter.dataFim) params.append('dataFim', filter.dataFim);
+    if (filter.filialId) params.append('filialId', filter.filialId);
+
+    try {
+      const response = await instanceApi.get(
+        `${this.baseUrl}/tipos-pagamento?${params.toString()}`
+      );
+      return response.data || [];
+    } catch (error) {
+      console.error('Erro ao buscar dados de tipos de pagamento:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Retorna a quantidade de transações por unidade/filial
+   */
+  async getTransacoesPorUnidade(
+    filter: DashboardFilterRequestDto = {}
+  ): Promise<DashboardUnidadeTransacaoResponseDto[]> {
+    const params = new URLSearchParams();
+    
+    if (filter.periodo) params.append('periodo', filter.periodo);
+    if (filter.dataInicio) params.append('dataInicio', filter.dataInicio);
+    if (filter.dataFim) params.append('dataFim', filter.dataFim);
+    if (filter.filialId) params.append('filialId', filter.filialId);
+
+    try {
+      const response = await instanceApi.get(
+        `${this.baseUrl}/transacoes-por-unidade?${params.toString()}`
+      );
+      return response.data || [];
+    } catch (error) {
+      console.error('Erro ao buscar dados de transações por unidade:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Retorna o faturamento e despesas mensais do ano
+   */
+  async getFaturamentoMensal(
+    ano?: number,
+    filialId?: string
+  ): Promise<DashboardFaturamentoMensalResponseDto[]> {
+    const params = new URLSearchParams();
+    
+    if (ano) params.append('ano', ano.toString());
+    if (filialId) params.append('filialId', filialId);
+
+    try {
+      const response = await instanceApi.get(
+        `${this.baseUrl}/faturamento-mensal?${params.toString()}`
+      );
+      return response.data || [];
+    } catch (error) {
+      console.error('Erro ao buscar dados de faturamento mensal:', error);
+      return [];
+    }
+  }
+
+  /**
    * Carrega todos os dados do dashboard de uma só vez
    */
   async carregarTodosDados(
@@ -308,6 +458,36 @@ class DashboardService {
       sessoesPorFisioterapeuta,
       patologiasAgrupadas,
     };
+  }
+
+  /**
+   * Retorna a comparação de faturamento entre o ano anterior e o ano atual
+   */
+  async getFaturamentoComparativo(params: { filialId?: string } = {}): Promise<DashboardFaturamentoComparativoResponseDto> {
+    try {
+      const urlParams = new URLSearchParams();
+      
+      if (params.filialId) {
+        urlParams.append('filialId', params.filialId);
+      }
+
+      const queryString = urlParams.toString();
+      const url = `${this.baseUrl}/faturamento-comparativo${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await instanceApi.get<DashboardFaturamentoComparativoResponseDto>(url);
+      
+      if (response.status === 204) {
+        return {
+          series: [],
+          categories: []
+        };
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar faturamento comparativo:', error);
+      throw new Error('Falha ao carregar dados de faturamento comparativo');
+    }
   }
 }
 

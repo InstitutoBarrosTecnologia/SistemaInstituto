@@ -104,3 +104,65 @@ export interface DashboardState {
   // Erros
   error: string | null;
 }
+
+// Resposta para dados de faturamento
+export interface DashboardFaturamentoResponseDto {
+  faturamentoEsperado: number;
+  faturamentoReal: number;
+  percentualRecebido: number;
+  periodo: string;
+  dataInicio?: string;
+  dataFim?: string;
+}
+
+// Resposta para dados de despesas
+export interface DashboardDespesasResponseDto {
+  totalDespesas: number;
+  despesasPagas: number;
+  despesasPendentes: number;
+  percentualPago: number;
+  periodo: string;
+  dataInicio?: string;
+  dataFim?: string;
+  quantidadeDespesas: number;
+  quantidadeDespesasPagas: number;
+}
+
+// Resposta para dados de entrada e saída
+export interface DashboardEntradaSaidaResponseDto {
+  tipo: string;
+  quantidade: number;
+  percentual: number;
+}
+
+// Resposta para tipos de pagamento
+export interface DashboardTipoPagamentoResponseDto {
+  tipoPagamento: string;
+  total: number;
+}
+
+// Resposta para transações por unidade
+export interface DashboardUnidadeTransacaoResponseDto {
+  servico: string;
+  total: number;
+}
+
+// Resposta para faturamento mensal
+export interface DashboardFaturamentoMensalResponseDto {
+  ano: number;
+  mes: number;
+  nomeMes: string;
+  totalReceita: number;
+  totalDespesa: number;
+}
+
+// Resposta para faturamento comparativo
+export interface DashboardFaturamentoComparativoResponseDto {
+  series: DashboardSerieComparativaDto[];
+  categories: string[];
+}
+
+export interface DashboardSerieComparativaDto {
+  name: string;
+  data: number[];
+}
