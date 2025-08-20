@@ -25,6 +25,8 @@ import EmployeeService from "../../../services/service/EmployeeService";
 import { ScheduleRequestDto } from "../../../services/model/Dto/Request/ScheduleRequestDto";
 import { postScheduleAsync } from "../../../services/service/ScheduleService";
 import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
+import { FinancialTransactionService } from "../../../services/service/FinancialTransactionService";
+import { FinancialTransactionRequestDto } from "../../../services/model/Dto/Request/FinancialTransactionRequestDto";
 
 interface FormOrderServiceProps {
   data?: OrderServiceResponseDto;
@@ -69,6 +71,7 @@ export default function FormOrderService({
     servicos: [],
     sessoes: [],
   });
+  const [observacao, setObservacao] = useState<string>("");
   const [customersOptions, setCustomersOptions] = useState<
     { value: string; label: string }[]
   >([]);
@@ -178,6 +181,60 @@ export default function FormOrderService({
     }
   };
 
+  // Função para criar transação financeira automaticamente
+  const createFinancialTransaction = async (orderServiceData: OrderServiceResponseDto) => {
+    try {
+      console.log("💰 Criando transação financeira para tratamento:", orderServiceData);
+      
+      // Calcular valor total dos serviços
+      const valorTotal = orderServiceData.servicos?.reduce((total, servico) => {
+        return total + (servico.valor || 0);
+      }, 0) || 0;
+
+      if (valorTotal <= 0) {
+        console.warn("⚠️ Valor total é 0, não criando transação financeira");
+        return;
+      }
+
+      // Buscar o nome do cliente usando o clienteId
+      let nomeCliente = "Cliente";
+      if (orderServiceData.clienteId) {
+        const clienteEncontrado = customersOptions.find(c => c.value === orderServiceData.clienteId);
+        nomeCliente = clienteEncontrado?.label || orderServiceData.cliente?.nome || "Cliente";
+      }
+
+      // Mapear forma de pagamento do enum
+      const formaPagamentoMap: { [key: number]: string } = {
+        [EFormaPagamento.AvistaPix]: "PIX",
+        [EFormaPagamento.AvistaBoleto]: "BOLETO", 
+        [EFormaPagamento.ParceladoBoleto]: "BOLETO",
+        [EFormaPagamento.CartaoCreditoAvista]: "CARTAO_CREDITO",
+        [EFormaPagamento.CartaoCreditoParcelado]: "CARTAO_CREDITO",
+        [EFormaPagamento.CartaoDebito]: "CARTAO_DEBITO",
+      };
+
+      const transactionData: FinancialTransactionRequestDto = {
+        nomeDespesa: `Tratamento: ${nomeCliente}`,
+        descricao: observacao ? `${observacao}` : "",
+        valores: valorTotal,
+        tipo: 2, // ETipoTransacao.Recebimento
+        formaPagamento: formaPagamentoMap[orderServiceData.formaPagamento] || "PIX",
+        conta: "CONTA_CORRENTE",
+        dataVencimento: new Date().toISOString().split('T')[0], // Data atual
+        filialId: selectedFilial, // Usar a filial selecionada no formulário
+        observacoes: "",
+      };
+
+      const result = await FinancialTransactionService.create(transactionData);
+      console.log("✅ Transação financeira criada com sucesso:", result);
+      toast.success("Transação financeira criada automaticamente!");
+      
+    } catch (error) {
+      console.error("❌ Erro ao criar transação financeira:", error);
+      toast.error("Erro ao criar transação financeira automática");
+    }
+  };
+
   const mutation = useMutation({
     mutationFn: createOrderServiceAsync,
     onSuccess: async (response) => {
@@ -188,6 +245,14 @@ export default function FormOrderService({
         // Criar agendamentos recorrentes se configurado
         if (userConfig && response.data?.id) {
           await createRecurrentSchedules(response.data.id);
+        }
+
+        // Criar transação financeira automaticamente
+        if (response.data) {
+          console.log("💰 Chamando createFinancialTransaction com:", response.data);
+          await createFinancialTransaction(response.data);
+        } else {
+          console.warn("⚠️ response.data está vazio:", response);
         }
 
         setTimeout(() => {
@@ -820,8 +885,8 @@ export default function FormOrderService({
                   <Input
                     type="text"
                     placeholder="Observação"
-                    // onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
-                    // value={formData?.desc}
+                    onChange={(e) => setObservacao(e.target.value)}
+                    value={observacao}
                   />
                 </div>
               </div>

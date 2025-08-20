@@ -47,15 +47,17 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
     const [sessions, setSessions] = useState<OrderServiceSessionResponseDto[]>([]);
     const [ordensServico, setOrdensServico] = useState<OrderServiceResponseDto[]>([]);
 
-
     const mutation = useMutation({
         mutationFn: createSessionAsync,
-        onSuccess: (response) => {
+        onSuccess: async (response) => {
+            console.log("🎯 onSuccess chamado:", response);
             if (response.status === 200) {
                 toast.success("Sessão registrada com sucesso!");
-queryClient.invalidateQueries<CustomerResponseDto[]>({
-          queryKey: ["allCustomer"],
-        });
+                
+                // Invalidar queries do cliente
+                queryClient.invalidateQueries<CustomerResponseDto[]>({
+                    queryKey: ["allCustomer"],
+                });
 
                 setTimeout(() => {
                     if (closeModal) closeModal();
