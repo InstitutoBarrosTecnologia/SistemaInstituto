@@ -15,11 +15,13 @@ import {
   getDespesaStatusLabel,
   FinancialTransactionUtils,
 } from "../../../services/financialTransactions";
+import { EStatusParcela } from "../../../services/model/Enum/EStatusParcela";
 import { useFinancialTransactions } from "../../../hooks/useFinancialTransactions";
 import Badge from "../../ui/badge/Badge";
 import Button from "../../ui/button/Button";
 import Select from "../../form/Select";
 import { TransactionFilters } from "../../../services/financialTransactions";
+import { toast } from "react-hot-toast";
 
 interface DespesasGridProps {
   filters?: TransactionFilters;
@@ -86,7 +88,28 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
 
   const handlePostUpdateStatus = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (selectedDespesa?.id) {
+      // Validação especial para status "Concluída" + forma de pagamento "credito"
+      if (statusToUpdate === EDespesaStatus.Concluida && 
+          selectedDespesa.formaPagamento === "credito" && 
+          selectedDespesa.parcelas && 
+          selectedDespesa.parcelas.length > 0) {
+        
+        // Verificar se todas as parcelas estão pagas
+        const todasParcelasPagas = selectedDespesa.parcelas.every(
+          (parcela: any) => parcela.status === EStatusParcela.Paga
+        );
+        
+        if (!todasParcelasPagas) {
+          toast.error("Não é possível concluir uma transação de crédito com parcelas pendentes. Todas as parcelas devem estar pagas.", {
+            duration: 5000,
+          });
+          return; // Impedir a atualização
+        }
+      }
+      
+      // Se passou na validação ou não precisa validar, prosseguir com a atualização
       updateTransactionStatus({
         id: selectedDespesa.id,
         data: { status: statusToUpdate },
@@ -276,7 +299,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                           onClick={() => handleOpenModalStatus(transaction)}
                           disabled={
                             isUpdatingStatus ||
-                            transaction.status === EDespesaStatus.Aprovada ||
+                            transaction.status === EDespesaStatus.Concluida ||
                             transaction.status === EDespesaStatus.Cancelada
                           }
                         >
@@ -288,7 +311,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                           onClick={() => handleOpenModalDelete(transaction.id!)}
                           disabled={
                             isDeleting ||
-                            transaction.status === EDespesaStatus.Aprovada ||
+                            transaction.status === EDespesaStatus.Concluida ||
                             transaction.status === EDespesaStatus.Cancelada
                           }
                         >
@@ -300,7 +323,9 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                           onClick={() =>
                             handleOpenModalParcelas(transaction.id!)
                           }
-                          disabled={transaction.parcelas.length === 0}
+                          disabled={transaction.parcelas.length === 0 ||
+                            transaction.status === EDespesaStatus.Concluida ||
+                            transaction.status === EDespesaStatus.Cancelada}
                         >
                           Parcelas
                         </Button>

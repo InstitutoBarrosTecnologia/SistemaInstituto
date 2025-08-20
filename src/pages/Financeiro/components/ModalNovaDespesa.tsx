@@ -56,7 +56,7 @@ export default function ModalNovaDespesa({
     nomeDespesa: "",
     descricao: "",
     unidadeId: "",
-    numeroParcelas: 1,
+    numeroParcelas: 0,
     valores: 0,
     fisioterapeutaId: "",
     clienteId: "",
@@ -373,10 +373,30 @@ export default function ModalNovaDespesa({
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const updatedData = {
+        ...prev,
+        [name]: value,
+      };
+
+      // Se a forma de pagamento for alterada
+      if (name === "formaPagamento") {
+        if (value === "credito") {
+          // Se for crédito, definir 1 parcela automaticamente
+          updatedData.numeroParcelas = 1;
+          // Regenerar parcelas se o valor já estiver definido
+          if (prev.valores > 0) {
+            updatedData.parcelas = gerarParcelas(1, prev.valores);
+          }
+        } else {
+          // Se não for crédito, definir 0 parcelas
+          updatedData.numeroParcelas = 0;
+          updatedData.parcelas = [];
+        }
+      }
+
+      return updatedData;
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

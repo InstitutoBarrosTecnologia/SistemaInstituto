@@ -127,7 +127,7 @@ export default function Despesas() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4 mb-6">
             <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800/50">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Receitas do Mês
+                Recebimento esperado
               </h3>
               <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
                 {isLoadingStats ? (
@@ -136,11 +136,11 @@ export default function Despesas() {
                   FinancialTransactionUtils.formatCurrency(receitasMes)
                 )}
               </p>
-              <p className="text-xs text-gray-400 mt-1">Recebimentos em {currentMonthName}</p>
+              <p className="text-xs text-gray-400 mt-1">Transações esperados em {currentMonthName}</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800/50">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Despesas do Mês
+                Despesas
               </h3>
               <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
                 {isLoadingStats ? (
@@ -149,7 +149,7 @@ export default function Despesas() {
                   FinancialTransactionUtils.formatCurrency(despesasMes)
                 )}
               </p>
-              <p className="text-xs text-gray-400 mt-1">Gastos em {currentMonthName}</p>
+              <p className="text-xs text-gray-400 mt-1">Gastos aprovados em {currentMonthName}</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800/50">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -163,7 +163,7 @@ export default function Despesas() {
                 )}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                {saldoLiquido >= 0 ? 'Lucro' : 'Déficit'} do mês
+                {saldoLiquido >= 0 ? 'Lucro' : 'Déficit'} esperado do mês
               </p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800/50">
