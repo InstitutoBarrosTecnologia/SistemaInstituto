@@ -77,6 +77,12 @@ export default function FormOrderService({
   >([]);
   const [servicesOptions, setServicesOptions] = useState<Option[]>([]);
   const [selectedServices, setSelectedServices] = useState<Option[]>([]);
+
+  // Função wrapper para debug do setSelectedServices
+  const handleSelectedServicesChange = (newServices: Option[]) => {
+    console.log('chamou a função')
+    setSelectedServices(newServices);
+  };
   const queryClient = useQueryClient();
 
   // Função para calcular as próximas datas baseado no dia da semana
@@ -395,16 +401,33 @@ export default function FormOrderService({
         servicos: data.servicos,
         sessoes: data.sessoes,
       });
+
+      // Populer os serviços selecionados quando estiver editando
+      if (data.servicos && servicesOptions.length > 0) {
+        const servicosSelecionados = data.servicos.map(servico => {
+          return {
+            value: servico.subServicoId || "",
+            text: servico.descricao || "",
+            preco: servico.valor?.toString() || "0"
+          };
+        }).filter(servico => servico.value); // Filtrar apenas serviços válidos
+
+        setSelectedServices(servicosSelecionados);
+      }
     }
-  }, [edit, data]);
+  }, [edit, data, servicesOptions]);
 
   const totalPrice = useMemo(() => {
     const selectedTotal = selectedServices.reduce(
-      (acc, cur) => acc + parseFloat(cur.preco || "0"),
+      (acc, cur) => {
+        const preco = parseFloat(cur.preco || "0");
+        return acc + preco;
+      },
       0
     );
     const extraTotal = 0;
-    return selectedTotal + extraTotal;
+    const total = selectedTotal + extraTotal;
+    return total;
   }, [selectedServices]);
   const totalComDesconto =
     totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
@@ -416,15 +439,14 @@ export default function FormOrderService({
       totalPrice *
       (1 - (formData.descontoPercentual ?? 0) / 100) *
       (1 + (formData.percentualGanho ?? 0) / 100);
-
-    if (precoFinalComGanho > 0 && formData.precoOrdem !== precoFinalComGanho) {
-      setFormData((prev) => ({
-        ...prev,
-        precoOrdem: precoFinalComGanho,
-        precoDescontado:
-          totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100),
-      }));
-    }
+    
+    // Atualizar formData com os novos valores calculados
+    setFormData((prev) => ({
+      ...prev,
+      precoOrdem: precoFinalComGanho,
+      precoDescontado:
+        totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100),
+    }));
   }, [totalPrice, formData.descontoPercentual, formData.percentualGanho]);
 
   useEffect(() => {
@@ -627,7 +649,8 @@ export default function FormOrderService({
                   <MultiSelect
                     label="Serviços"
                     options={servicesOptions}
-                    onChangeFull={setSelectedServices}
+                    onChangeFull={handleSelectedServicesChange}
+                    defaultSelected={selectedServices.map(s => s.value)}
                     disabled={edit}
                   />
                 </div>
@@ -811,7 +834,7 @@ export default function FormOrderService({
                     value={new Intl.NumberFormat("pt-BR", {
                       style: "currency",
                       currency: "BRL",
-                    }).format(totalPrice)}
+                    }).format(formData.precoOrdem || 0)}
                     disabled
                   />
                 </div>
