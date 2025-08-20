@@ -71,6 +71,7 @@ export default function FormOrderService({
     servicos: [],
     sessoes: [],
   });
+  const [numeroParcelas, setNumeroParcelas] = useState<number>(1);
   const [observacao, setObservacao] = useState<string>("");
   const [customersOptions, setCustomersOptions] = useState<
     { value: string; label: string }[]
@@ -245,6 +246,7 @@ export default function FormOrderService({
         ordemServicoId: orderServiceData.id, // ID da ordem de serviço
         observacoes: "",
         clienteId: orderServiceData.clienteId,
+        numeroParcelas: orderServiceData.formaPagamento === EFormaPagamento.CartaoCreditoParcelado ? numeroParcelas : 1,
       };
 
       const result = await FinancialTransactionService.create(transactionData);
@@ -434,6 +436,14 @@ export default function FormOrderService({
 
         setSelectedServices(servicosSelecionados);
       }
+
+      // Inicializar número de parcelas para edição
+      if (data.formaPagamento === EFormaPagamento.CartaoCreditoParcelado) {
+        // Se não tivermos o valor do banco, assume 2 parcelas como padrão para cartão parcelado
+        setNumeroParcelas(2);
+      } else {
+        setNumeroParcelas(1);
+      }
     }
   }, [edit, data, servicesOptions]);
 
@@ -514,6 +524,18 @@ export default function FormOrderService({
         toast.error(
           "Defina a quantidade de sessões máxima para criar os agendamentos."
         );
+        return;
+      }
+    }
+
+    // Validação para número de parcelas
+    if (formData.formaPagamento === EFormaPagamento.CartaoCreditoParcelado) {
+      if (!numeroParcelas || numeroParcelas < 1) {
+        toast.error("Informe o número de parcelas para cartão de crédito parcelado.");
+        return;
+      }
+      if (numeroParcelas > 24) {
+        toast.error("O número máximo de parcelas é 24.");
         return;
       }
     }
@@ -914,18 +936,44 @@ export default function FormOrderService({
                   <Select
                     options={optionsPayment}
                     placeholder="Tipo de Pagamento"
-                    onChange={(selectedOption) =>
+                    onChange={(selectedOption) => {
+                      const novaFormaPagamento = Number(selectedOption);
                       setFormData((prev) => ({
                         ...prev,
-                        formaPagamento: Number(selectedOption),
-                      }))
-                    }
+                        formaPagamento: novaFormaPagamento,
+                      }));
+                      
+                      // Resetar número de parcelas se não for cartão parcelado
+                      if (novaFormaPagamento !== EFormaPagamento.CartaoCreditoParcelado) {
+                        setNumeroParcelas(1);
+                      }
+                    }}
                     value={String(formData.formaPagamento)}
                     className="dark:bg-dark-900"
                     disabled={edit}
                     required={true}
                   />
                 </div>
+                
+                {/* Campo de Número de Parcelas - só aparece quando é Cartão de Crédito Parcelado */}
+                {formData.formaPagamento === EFormaPagamento.CartaoCreditoParcelado && (
+                  <div>
+                    <Label>
+                      Número de Parcelas<span className="text-red-300">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      value={numeroParcelas.toString()}
+                      onChange={(e) => setNumeroParcelas(Number(e.target.value))}
+                      min="1"
+                      max="24"
+                      placeholder="Ex: 3"
+                      className="dark:bg-dark-900"
+                      required={true}
+                    />
+                  </div>
+                )}
+                
                 <div>
                   <Label>
                     Data pagamento<span className="text-red-300">*</span>
