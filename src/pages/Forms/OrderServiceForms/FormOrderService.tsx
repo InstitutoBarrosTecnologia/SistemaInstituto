@@ -228,6 +228,7 @@ export default function FormOrderService({
         conta: "CONTA_CORRENTE",
         dataVencimento: new Date().toISOString().split('T')[0], // Data atual
         filialId: selectedFilial, // Usar a filial selecionada no formulário
+        ordemServicoId: orderServiceData.id, // ID da ordem de serviço
         observacoes: "",
       };
 

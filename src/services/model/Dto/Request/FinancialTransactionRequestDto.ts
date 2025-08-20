@@ -14,6 +14,7 @@ export interface FinancialTransactionRequestDto extends BaseRequestDto {
     observacoes?: string;
     numeroParcelas?: number;
     dataVencimento: string;
+    ordemServicoId?: string;
     usrDescricaoCadastro?: string;
     usrCadastro?: string;
     dataCadastro?: string;
