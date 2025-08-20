@@ -73,9 +73,42 @@ export default function StatisticsChart({
       enabled: false, // Disable data labels
     },
     tooltip: {
-      enabled: true, // Enable tooltip
-      x: {
-        format: "dd MMM yyyy", // Format for x-axis tooltip
+      enabled: true,
+      followCursor: true,
+      intersect: false,
+      shared: false,
+      fixed: {
+        enabled: false,
+      },
+      custom: function({ series, seriesIndex, dataPointIndex, w }: any) {
+        const categoryName = w.config.xaxis.categories[dataPointIndex] || '';
+        const seriesName = w.config.series[seriesIndex]?.name || '';
+        const value = series[seriesIndex][dataPointIndex];
+        const formattedValue = new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        }).format(value);
+        
+        return `
+          <div style="
+            padding: 10px 12px; 
+            background-color: #070d18; 
+            color: #ffffff; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-family: Outfit, sans-serif;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 999;
+          ">
+            <div style="font-weight: 600; margin-bottom: 4px;">${seriesName}</div>
+            <div style="margin-bottom: 2px;">${categoryName}</div>
+            <div style="font-weight: 500;">${formattedValue}</div>
+          </div>
+        `;
+      },
+      marker: {
+        show: true,
       },
     },
     xaxis: {

@@ -168,7 +168,7 @@ export default function Despesas() {
             </div>
             <div className="p-4 bg-gray-50 rounded-lg dark:bg-gray-800/50">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Pendentes
+                Transações Pendentes
               </h3>
               <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
                 {isLoadingStats ? (

@@ -104,11 +104,39 @@ export default function BarChartGeneric({
       opacity: 1,
     },
     tooltip: {
-      x: {
-        show: false,
+      enabled: true,
+      followCursor: true,
+      intersect: false,
+      shared: false,
+      fixed: {
+        enabled: false,
       },
-      y: {
-        formatter: tooltipFormatter,
+      custom: function({ series, seriesIndex, dataPointIndex, w }: any) {
+        const categoryName = w.config.xaxis.categories[dataPointIndex] || '';
+        const seriesName = w.config.series[seriesIndex]?.name || '';
+        const value = series[seriesIndex][dataPointIndex];
+        const formattedValue = tooltipFormatter ? tooltipFormatter(value, seriesName) : `${value}`;
+        
+        return `
+          <div style="
+            padding: 10px 12px; 
+            background-color: #070d18; 
+            color: #ffffff; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-family: Outfit, sans-serif;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 999;
+          ">
+            ${seriesName ? `<div style="font-weight: 600; margin-bottom: 4px;">${seriesName}</div>` : ''}
+            <div style="margin-bottom: 2px;">${categoryName}</div>
+            <div style="font-weight: 500;">${formattedValue}</div>
+          </div>
+        `;
+      },
+      marker: {
+        show: true,
       },
     },
     responsive: [
@@ -131,7 +159,7 @@ export default function BarChartGeneric({
   const hasData = series.length > 0 && series.some(s => s.data.length > 0);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
+    <div className="rounded-2xl border border-gray-200 bg-white px-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
           {title}

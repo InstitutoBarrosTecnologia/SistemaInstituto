@@ -308,7 +308,12 @@ layer(base);
 }
 
 .apexcharts-tooltip.apexcharts-theme-light {
-  @apply gap-1 rounded-lg! border-gray-200! p-3 shadow-theme-sm! dark:border-gray-800! dark:bg-gray-900!;
+  @apply gap-1 rounded-lg! p-3 shadow-theme-sm! dark:bg-gray-900!;
+}
+
+/* Custom tooltip styles for overriding default ApexCharts styles */
+.apexcharts-tooltip.apexcharts-theme-light.apexcharts-active {
+  @apply p-0! bg-transparent! border-none! shadow-none!;
 }
 
 .apexcharts-tooltip-marker {

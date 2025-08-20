@@ -80,14 +80,36 @@ export default function PatologiasPieChart({ data, loading = false }: Patologias
     },
     tooltip: {
       enabled: true,
-      y: {
-        formatter: function (val: number) {
-          return val + " pacientes";
-        },
+      followCursor: true,
+      intersect: false,
+      shared: false,
+      fixed: {
+        enabled: false,
       },
-      style: {
-        fontSize: "14px",
-        fontFamily: "Outfit, sans-serif",
+      custom: function({ series, seriesIndex, dataPointIndex, w }: any) {
+        const index = dataPointIndex !== null ? dataPointIndex : seriesIndex;
+        const patologiaName = w.config.labels[index] || labels[index] || 'Patologia';
+        const quantidade = series[seriesIndex];
+        
+        return `
+          <div style="
+            padding: 10px 12px; 
+            background-color: #070d18; 
+            color: #ffffff; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-family: Outfit, sans-serif;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 999;
+          ">
+            <div style="font-weight: 600; margin-bottom: 4px;">${patologiaName}</div>
+            <div style="font-weight: 500;">${quantidade} pacientes</div>
+          </div>
+        `;
+      },
+      marker: {
+        show: true,
       },
     },
     stroke: {
