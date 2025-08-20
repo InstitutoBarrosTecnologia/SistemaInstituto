@@ -14,6 +14,7 @@ import { useModal } from "../../../hooks/useModal";
 import { useModal as useModelDelete } from "../../../hooks/useModal";
 import { useModal as useModalInfo } from "../../../hooks/useModal";
 import { useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import Alert, { AlertProps } from "../../ui/alert/Alert";
 import { getAllOrderServicesAsync, getOrderServiceByIdAsync, deleteOrderServiceAsync } from "../../../services/service/OrderServiceService";
 import FormOrderService from "../../../pages/Forms/OrderServiceForms/FormOrderService";
@@ -95,8 +96,34 @@ export default function OrdemServiceGrid() {
     const mutationDelete = useMutation({
         mutationFn: deleteOrderServiceAsync,
         onSuccess: () => {
+            toast.success("Ordem de serviço deletada com sucesso!", {
+                duration: 3000,
+            });
+
             queryClient.invalidateQueries({ queryKey: ["getAllOrderService"] });
-            closeModalDelete();
+
+            // setTimeout(() => {
+                closeModalDelete();
+            // }, 3000);
+        },
+        onError: async (error: any) => {
+            console.error("Erro ao deletar ordem de serviço:", error);
+            
+            const response = error.response?.data;
+
+            if (Array.isArray(response)) {
+                response.forEach((err: { errorMensagem: string }) => {
+                    toast.error(err.errorMensagem, { duration: 4000 });
+                });
+            } else if (typeof response === "string") {
+                toast.error(response, { duration: 4000 });
+            } else if (response?.message) {
+                toast.error(response.message, { duration: 4000 });
+            } else {
+                toast.error("Erro ao deletar ordem de serviço. Verifique os dados e tente novamente.", {
+                    duration: 4000,
+                });
+            }
         },
     });
 
@@ -349,8 +376,8 @@ export default function OrdemServiceGrid() {
                                     </h5>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 items-center text-center">
-                                <div className="flex items-center gap-3 px-2 mt-6 lg:justify-center">
+                            <div className="flex justify-center items-center mt-6">
+                                <div className="flex items-center gap-3">
                                     <Button size="sm" variant="outline" onClick={closeModalDelete}>
                                         Cancelar
                                     </Button>
@@ -363,9 +390,11 @@ export default function OrdemServiceGrid() {
                                 </div>
                             </div>
                         </form>
+                        <Toaster position="bottom-right" />
                     </div>
                 </Modal>
             </div>
+            <Toaster position="bottom-right" />
         </>
     );
 }

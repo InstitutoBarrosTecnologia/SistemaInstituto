@@ -6,6 +6,7 @@ import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import { Modal } from "../../../components/ui/modal";
 import OrdemServiceGrid from "../../../components/tables/OrderServiceGrid/OrdemServiceGrid";
 import FormOrderService from "../../Forms/OrderServiceForms/FormOrderService";
+import { Toaster } from "react-hot-toast";
 
 export default function OrdemServiceTables() {
 
@@ -85,6 +86,7 @@ export default function OrdemServiceTables() {
                 <OrdemServiceGrid />
             </div>
 
+            <Toaster position="bottom-right" />
         </>
     );
 }
