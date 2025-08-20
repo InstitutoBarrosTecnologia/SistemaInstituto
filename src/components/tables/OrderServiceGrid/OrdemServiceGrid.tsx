@@ -15,8 +15,7 @@ import { useModal as useModelDelete } from "../../../hooks/useModal";
 import { useModal as useModalInfo } from "../../../hooks/useModal";
 import { useState } from "react";
 import Alert, { AlertProps } from "../../ui/alert/Alert";
-import { desativarCategoriaAsync } from "../../../services/service/ServiceCategoryService";
-import { getAllOrderServicesAsync, getOrderServiceByIdAsync } from "../../../services/service/OrderServiceService";
+import { getAllOrderServicesAsync, getOrderServiceByIdAsync, deleteOrderServiceAsync } from "../../../services/service/OrderServiceService";
 import FormOrderService from "../../../pages/Forms/OrderServiceForms/FormOrderService";
 import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/OrderServiceResponseDto";
 import FormMetaDataOrderService from "../../../pages/Forms/OrderServiceForms/FormMetaDataOrderService";
@@ -94,9 +93,9 @@ export default function OrdemServiceGrid() {
     });
 
     const mutationDelete = useMutation({
-        mutationFn: desativarCategoriaAsync,
+        mutationFn: deleteOrderServiceAsync,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["getAllCategory"] });
+            queryClient.invalidateQueries({ queryKey: ["getAllOrderService"] });
             closeModalDelete();
         },
     });
