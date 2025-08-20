@@ -4,5 +4,7 @@ export enum EFormaPagamento {
     ParceladoBoleto = 2,
     CartaoCreditoAvista = 3,
     CartaoCreditoParcelado = 4,
-    CartaoDebito = 5
+    CartaoDebito = 5,
+    Dinheiro = 6,
+    Transferencia = 7
   }

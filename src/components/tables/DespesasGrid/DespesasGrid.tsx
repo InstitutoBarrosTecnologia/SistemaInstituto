@@ -249,9 +249,13 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                         color={
                           transaction.status === EDespesaStatus.Aprovada
                             ? "success"
+                            : transaction.status === EDespesaStatus.Concluida
+                            ? "success"
                             : transaction.status === EDespesaStatus.Cancelada
                             ? "error"
-                            : "warning"
+                            : transaction.status === EDespesaStatus.Pendente
+                            ? "warning"
+                            : "error"
                         }
                       >
                         {getDespesaStatusLabel(transaction.status)}
@@ -415,10 +419,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
         className="max-w-[900px] m-4"
       >
         <div className="no-scrollbar relative w-full max-w-[900px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
-          <ModalParcelasContent
-            transactionId={selectedTransactionId}
-            onClose={closeModalParcelas}
-          />
+          <ModalParcelasContent transactionId={selectedTransactionId} />
         </div>
       </Modal>
     </>

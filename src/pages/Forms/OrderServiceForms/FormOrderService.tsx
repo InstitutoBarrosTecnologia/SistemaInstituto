@@ -77,10 +77,11 @@ export default function FormOrderService({
   >([]);
   const [servicesOptions, setServicesOptions] = useState<Option[]>([]);
   const [selectedServices, setSelectedServices] = useState<Option[]>([]);
+  const [selectedConta, setSelectedConta] = useState<string>("corrente");
 
   // Função wrapper para debug do setSelectedServices
   const handleSelectedServicesChange = (newServices: Option[]) => {
-    console.log('chamou a função')
+    console.log("chamou a função");
     setSelectedServices(newServices);
   };
   const queryClient = useQueryClient();
@@ -188,14 +189,20 @@ export default function FormOrderService({
   };
 
   // Função para criar transação financeira automaticamente
-  const createFinancialTransaction = async (orderServiceData: OrderServiceResponseDto) => {
+  const createFinancialTransaction = async (
+    orderServiceData: OrderServiceResponseDto
+  ) => {
     try {
-      console.log("💰 Criando transação financeira para tratamento:", orderServiceData);
-      
+      console.log(
+        "💰 Criando transação financeira para tratamento:",
+        orderServiceData
+      );
+
       // Calcular valor total dos serviços
-      const valorTotal = orderServiceData.servicos?.reduce((total, servico) => {
-        return total + (servico.valor || 0);
-      }, 0) || 0;
+      const valorTotal =
+        orderServiceData.servicos?.reduce((total, servico) => {
+          return total + (servico.valor || 0);
+        }, 0) || 0;
 
       if (valorTotal <= 0) {
         console.warn("⚠️ Valor total é 0, não criando transação financeira");
@@ -205,18 +212,25 @@ export default function FormOrderService({
       // Buscar o nome do cliente usando o clienteId
       let nomeCliente = "Cliente";
       if (orderServiceData.clienteId) {
-        const clienteEncontrado = customersOptions.find(c => c.value === orderServiceData.clienteId);
-        nomeCliente = clienteEncontrado?.label || orderServiceData.cliente?.nome || "Cliente";
+        const clienteEncontrado = customersOptions.find(
+          (c) => c.value === orderServiceData.clienteId
+        );
+        nomeCliente =
+          clienteEncontrado?.label ||
+          orderServiceData.cliente?.nome ||
+          "Cliente";
       }
 
       // Mapear forma de pagamento do enum
       const formaPagamentoMap: { [key: number]: string } = {
-        [EFormaPagamento.AvistaPix]: "PIX",
-        [EFormaPagamento.AvistaBoleto]: "BOLETO", 
-        [EFormaPagamento.ParceladoBoleto]: "BOLETO",
-        [EFormaPagamento.CartaoCreditoAvista]: "CARTAO_CREDITO",
-        [EFormaPagamento.CartaoCreditoParcelado]: "CARTAO_CREDITO",
-        [EFormaPagamento.CartaoDebito]: "CARTAO_DEBITO",
+        [EFormaPagamento.AvistaPix]: "pix",
+        [EFormaPagamento.AvistaBoleto]: "boleto",
+        [EFormaPagamento.ParceladoBoleto]: "boleto",
+        [EFormaPagamento.CartaoCreditoAvista]: "credito",
+        [EFormaPagamento.CartaoCreditoParcelado]: "credito",
+        [EFormaPagamento.CartaoDebito]: "debito",
+        [EFormaPagamento.Dinheiro]: "dinheiro",
+        [EFormaPagamento.Transferencia]: "transferencia",
       };
 
       const transactionData: FinancialTransactionRequestDto = {
@@ -224,18 +238,18 @@ export default function FormOrderService({
         descricao: observacao ? `${observacao}` : "",
         valores: valorTotal,
         tipo: 2, // ETipoTransacao.Recebimento
-        formaPagamento: formaPagamentoMap[orderServiceData.formaPagamento] || "PIX",
-        conta: "CONTA_CORRENTE",
-        dataVencimento: new Date().toISOString().split('T')[0], // Data atual
+        formaPagamento: formaPagamentoMap[orderServiceData.formaPagamento],
+        conta: selectedConta,
+        dataVencimento: new Date().toISOString().split("T")[0], // Data atual
         filialId: selectedFilial, // Usar a filial selecionada no formulário
         ordemServicoId: orderServiceData.id, // ID da ordem de serviço
         observacoes: "",
+        clienteId: orderServiceData.clienteId,
       };
 
       const result = await FinancialTransactionService.create(transactionData);
       console.log("✅ Transação financeira criada com sucesso:", result);
       toast.success("Transação financeira criada automaticamente!");
-      
     } catch (error) {
       console.error("❌ Erro ao criar transação financeira:", error);
       toast.error("Erro ao criar transação financeira automática");
@@ -256,7 +270,10 @@ export default function FormOrderService({
 
         // Criar transação financeira automaticamente
         if (response.data) {
-          console.log("💰 Chamando createFinancialTransaction com:", response.data);
+          console.log(
+            "💰 Chamando createFinancialTransaction com:",
+            response.data
+          );
           await createFinancialTransaction(response.data);
         } else {
           console.warn("⚠️ response.data está vazio:", response);
@@ -405,13 +422,15 @@ export default function FormOrderService({
 
       // Populer os serviços selecionados quando estiver editando
       if (data.servicos && servicesOptions.length > 0) {
-        const servicosSelecionados = data.servicos.map(servico => {
-          return {
-            value: servico.subServicoId || "",
-            text: servico.descricao || "",
-            preco: servico.valor?.toString() || "0"
-          };
-        }).filter(servico => servico.value); // Filtrar apenas serviços válidos
+        const servicosSelecionados = data.servicos
+          .map((servico) => {
+            return {
+              value: servico.subServicoId || "",
+              text: servico.descricao || "",
+              preco: servico.valor?.toString() || "0",
+            };
+          })
+          .filter((servico) => servico.value); // Filtrar apenas serviços válidos
 
         setSelectedServices(servicosSelecionados);
       }
@@ -419,13 +438,10 @@ export default function FormOrderService({
   }, [edit, data, servicesOptions]);
 
   const totalPrice = useMemo(() => {
-    const selectedTotal = selectedServices.reduce(
-      (acc, cur) => {
-        const preco = parseFloat(cur.preco || "0");
-        return acc + preco;
-      },
-      0
-    );
+    const selectedTotal = selectedServices.reduce((acc, cur) => {
+      const preco = parseFloat(cur.preco || "0");
+      return acc + preco;
+    }, 0);
     const extraTotal = 0;
     const total = selectedTotal + extraTotal;
     return total;
@@ -440,7 +456,7 @@ export default function FormOrderService({
       totalPrice *
       (1 - (formData.descontoPercentual ?? 0) / 100) *
       (1 + (formData.percentualGanho ?? 0) / 100);
-    
+
     // Atualizar formData com os novos valores calculados
     setFormData((prev) => ({
       ...prev,
@@ -512,6 +528,12 @@ export default function FormOrderService({
     mutation.mutate(payload);
   };
 
+  const contaOptions = [
+    { label: "Corrente", value: "corrente" },
+    { label: "Poupança", value: "poupanca" },
+    { label: "Empresarial", value: "empresarial" },
+  ];
+
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -545,6 +567,12 @@ export default function FormOrderService({
       ...prev,
       clienteId: value,
     }));
+  };
+
+  const handleSelectChange = (field: string, value: string) => {
+    if (field === "conta") {
+      setSelectedConta(value);
+    }
   };
 
   // const handleChangeGanho = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -651,7 +679,7 @@ export default function FormOrderService({
                     label="Serviços"
                     options={servicesOptions}
                     onChangeFull={handleSelectedServicesChange}
-                    defaultSelected={selectedServices.map(s => s.value)}
+                    defaultSelected={selectedServices.map((s) => s.value)}
                     disabled={edit}
                   />
                 </div>
@@ -866,6 +894,19 @@ export default function FormOrderService({
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
+                <div>
+                  <Label>
+                    Conta<span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    options={contaOptions}
+                    value={selectedConta}
+                    placeholder="Selecione uma conta"
+                    onChange={(value) => handleSelectChange("conta", value)}
+                    className="dark:bg-dark-900"
+                    required
+                  />
+                </div>
                 <div>
                   <Label>
                     Forma de pagamento<span className="text-red-300">*</span>

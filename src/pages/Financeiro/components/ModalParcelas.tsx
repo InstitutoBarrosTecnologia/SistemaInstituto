@@ -11,12 +11,10 @@ import { EStatusParcela } from "../../../services/model/Enum/EStatusParcela";
 
 interface ModalParcelasContentProps {
   transactionId: string | null;
-  onClose: () => void;
 }
 
 const ModalParcelasContent = ({
   transactionId,
-  onClose,
 }: ModalParcelasContentProps) => {
   const [transaction, setTransaction] =
     useState<FinancialTransactionResponseDto | null>(null);

@@ -9,6 +9,7 @@ import { useTiposPagamento } from "../../hooks/useTiposPagamento";
 import { useTransacoesPorUnidade } from "../../hooks/useTransacoesPorUnidade";
 import { useFaturamentoMensal } from "../../hooks/useFaturamentoMensal";
 import { useFaturamentoComparativo } from "../../hooks/useFaturamentoComparativo";
+import { useFaturamentoPorCategoriaServico } from "../../hooks/useFaturamentoPorCategoriaServico";
 
 export default function Home() {
   // Estado de loading
@@ -48,6 +49,14 @@ export default function Home() {
     refetch: refetchFaturamentoMensal,
   } = useFaturamentoMensal(new Date().getFullYear());
 
+  // Hook para dados de faturamento por categoria de serviço
+  const {
+    data: faturamentoCategoriaData,
+    loading: loadingCategoria,
+    error: errorCategoria,
+    refetch: refetchCategoria,
+  } = useFaturamentoPorCategoriaServico({ periodo: "mes" });
+
   // Hook para dados de faturamento comparativo da API
   const {
     data: faturamentoComparativoData,
@@ -74,6 +83,11 @@ export default function Home() {
   // Função para atualizar dados de faturamento mensal
   const handleRefreshFaturamentoMensal = () => {
     refetchFaturamentoMensal();
+  };
+
+  // Função para atualizar dados de faturamento por categoria
+  const handleChartCategoriaAction = () => {
+    refetchCategoria();
   };
 
   // Processamento dos dados de faturamento mensal para o gráfico
@@ -143,6 +157,41 @@ export default function Home() {
               tooltipSuffix="transações"
               colors={["#EF4444", "#10B981"]}
               onDropdownAction={handleRefreshEntradaSaida}
+            />
+          )}
+        </div>
+        <div>
+          {errorCategoria ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-800 dark:bg-red-900/20">
+              <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+                ❌ Erro ao carregar faturamento por categoria
+              </h3>
+              <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+                {errorCategoria}
+              </p>
+              <button
+                onClick={refetchCategoria}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+              >
+                🔄 Tentar Novamente
+              </button>
+            </div>
+          ) : (
+            <PieChartGeneric
+              title="Faturamento por Categoria"
+              series={faturamentoCategoriaData.map((item) => item.valorReceita)}
+              labels={faturamentoCategoriaData.map((item) => item.tipo)}
+              loading={loadingCategoria}
+              tooltipSuffix=""
+              colors={[
+                "#3B82F6",
+                "#8B5CF6",
+                "#F59E0B",
+                "#EF4444",
+                "#10B981",
+                "#F97316",
+              ]} // Cores variadas para categorias
+              onDropdownAction={handleChartCategoriaAction}
             />
           )}
         </div>

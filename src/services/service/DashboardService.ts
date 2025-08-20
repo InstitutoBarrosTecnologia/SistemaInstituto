@@ -16,6 +16,7 @@ import {
   DashboardUnidadeTransacaoResponseDto,
   DashboardFaturamentoMensalResponseDto,
   DashboardFaturamentoComparativoResponseDto,
+  DashboardServicoReceitaResponseDto,
 } from '../model/dashboard.types';
 import { DashboardPathologyResponseDto } from '../model/Dto/Response/DashboardPathologyResponseDto';
 
@@ -487,6 +488,47 @@ class DashboardService {
     } catch (error) {
       console.error('Erro ao buscar faturamento comparativo:', error);
       throw new Error('Falha ao carregar dados de faturamento comparativo');
+    }
+  }
+
+  /**
+   * Retorna o faturamento agrupado por categoria de serviço
+   */
+  async getFaturamentoPorCategoriaServico(
+    params: DashboardFilterRequestDto = {}
+  ): Promise<DashboardServicoReceitaResponseDto[]> {
+    try {
+      const urlParams = new URLSearchParams();
+      
+      if (params.periodo) {
+        urlParams.append('periodo', params.periodo);
+      }
+      
+      if (params.dataInicio) {
+        urlParams.append('dataInicio', params.dataInicio);
+      }
+      
+      if (params.dataFim) {
+        urlParams.append('dataFim', params.dataFim);
+      }
+      
+      if (params.filialId) {
+        urlParams.append('filialId', params.filialId);
+      }
+
+      const queryString = urlParams.toString();
+      const url = `${this.baseUrl}/faturamento-por-categoria-servico${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await instanceApi.get<DashboardServicoReceitaResponseDto[]>(url);
+      
+      if (response.status === 204) {
+        return [];
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      console.error('Erro ao buscar faturamento por categoria de serviço:', error);
+      throw new Error('Falha ao carregar dados de faturamento por categoria de serviço');
     }
   }
 }

@@ -166,3 +166,11 @@ export interface DashboardSerieComparativaDto {
   name: string;
   data: number[];
 }
+
+// Resposta para faturamento por categoria de serviço
+export interface DashboardServicoReceitaResponseDto {
+  tipo: string;
+  quantidade: number;
+  percentual: number;
+  valorReceita: number;
+}
