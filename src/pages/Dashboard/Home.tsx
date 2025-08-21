@@ -107,6 +107,10 @@ export default function Home() {
           name: "Faturamento",
           data: sortedData.map((item) => item.totalReceita),
         },
+        {
+          name: "Despesas",
+          data: sortedData.map((item) => item.totalDespesa),
+        },
       ],
       categories: sortedData.map((item) => item.nomeMes),
     };
@@ -271,10 +275,10 @@ export default function Home() {
             </div>
           ) : (
             <BarChartGeneric
-              title="Faturamento Mensal"
+              title="Faturamento e Despesas Mensais"
               series={processedFaturamentoMensal.series}
               categories={processedFaturamentoMensal.categories}
-              colors={["#10B981"]} // Verde para receita
+              colors={["#10B981", "#EF4444"]} // Verde para receita, vermelho para despesas
               height={180}
               loading={loadingFaturamentoMensal}
               tooltipFormatter={(val) => `R$ ${val.toLocaleString("pt-BR")}`}
