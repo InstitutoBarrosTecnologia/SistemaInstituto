@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 import { BranchOfficeResponseDto } from "../../../services/model/Dto/Response/BranchOfficeResponseDto";
 import FormBranchOffice from "../../../pages/Forms/BranchOffice/FormBranchOffice";
 import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
+import EmployeeService from "../../../services/service/EmployeeService";
 import Badge from "../../ui/badge/Badge";
 import Button from "../../ui/button/Button";
 
@@ -29,6 +30,21 @@ export default function BranchOfficeGrid() {
         queryKey: ["allBranchOffice"],
         queryFn: BranchOfficeService.getAll,
     });
+
+    // Buscar funcionários para resolver o nome do gerente
+    const { data: funcionarios = [], isLoading: isLoadingFuncionarios } = useQuery({
+        queryKey: ["allEmployee"],
+        queryFn: EmployeeService.getAll,
+    });
+
+    // Função para encontrar o nome do gerente pelo ID
+    const getGerenteName = (idGerenteFilial: string | undefined) => {
+        if (!idGerenteFilial) return "Não informado";
+        if (isLoadingFuncionarios) return "Carregando...";
+        
+        const funcionario = funcionarios.find(func => func.id === idGerenteFilial);
+        return funcionario?.nome || "Gerente não encontrado";
+    };
 
     const mutationDelete = useMutation({
         mutationFn: BranchOfficeService.disable,
@@ -57,7 +73,7 @@ export default function BranchOfficeGrid() {
         mutationDelete.mutate(idDeleteRegister);
     };
 
-    if (isLoading) return <p className="text-dark dark:text-white">Carregando unidades...</p>;
+    if (isLoading || isLoadingFuncionarios) return <p className="text-dark dark:text-white">Carregando unidades...</p>;
     if (isError) return <p className="text-dark dark:text-white">Erro ao carregar unidades!</p>;
 
     return (
@@ -93,7 +109,7 @@ export default function BranchOfficeGrid() {
                                     <TableCell
                                         className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{branch.matriz ? "Sim" : "Não"}</TableCell>
                                     <TableCell
-                                        className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{branch.nomeGerente ?? "Não informado"}</TableCell>
+                                        className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{getGerenteName(branch.idGerenteFilial)}</TableCell>
                                     <TableCell
                                         className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{branch.observacao}</TableCell>
                                     <TableCell className="px-4 py-3 text-start">
