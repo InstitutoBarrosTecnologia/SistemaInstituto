@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface Option {
   value: string;
@@ -27,6 +27,11 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   const [selectedOptions, setSelectedOptions] =
     useState<string[]>(defaultSelected);
   const [isOpen, setIsOpen] = useState(false);
+
+  // Sincronizar estado interno com defaultSelected quando ele mudar
+  useEffect(() => {
+    setSelectedOptions(defaultSelected);
+  }, [defaultSelected]);
 
   const toggleDropdown = () => {
     if (!disabled) setIsOpen((prev) => !prev);

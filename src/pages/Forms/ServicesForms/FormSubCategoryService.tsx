@@ -149,7 +149,7 @@ export default function FormSubCategoryService({ data, edit, closeModal }: FormC
     }, []);
 
     const handleSelectChangeEdit = (value: string) => {
-        formData.categoriaId = value;
+        setFormData(prev => ({ ...prev, categoriaId: value }));
     };
 
     const handleSave = async (e: React.FormEvent) => {
