@@ -246,7 +246,7 @@ export default function FormOrderService({
         ordemServicoId: orderServiceData.id, // ID da ordem de serviço
         observacoes: "",
         clienteId: orderServiceData.clienteId,
-        numeroParcelas: orderServiceData.formaPagamento === EFormaPagamento.CartaoCreditoParcelado ? numeroParcelas : 1,
+        numeroParcelas: orderServiceData.formaPagamento === EFormaPagamento.CartaoCreditoParcelado ? numeroParcelas : 0,
       };
 
       const result = await FinancialTransactionService.create(transactionData);

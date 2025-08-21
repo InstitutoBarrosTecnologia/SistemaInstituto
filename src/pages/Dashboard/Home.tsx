@@ -159,7 +159,7 @@ export default function Home() {
               labels={entradaSaidaData?.map((item) => item.tipo) || []}
               loading={loading.graficos || loadingEntradaSaida}
               tooltipSuffix="transações"
-              colors={["#EF4444", "#10B981"]}
+              colors={["#10B981", "#EF4444"]}
               onDropdownAction={handleRefreshEntradaSaida}
             />
           )}
