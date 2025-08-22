@@ -29,6 +29,7 @@ import {
   getUserFuncionarioIdFromToken,
   shouldApplyAgendaFilter,
 } from "../services/util/rolePermissions";
+import { EScheduleStatus, ScheduleStatusLabels } from "../services/model/Enum/EScheduleStatus";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -83,6 +84,15 @@ const Calendar: React.FC = () => {
   const [selectedHorarioRecorrente, setSelectedHorarioRecorrente] =
     useState<string>("");
   const [qtdSessoes, setQtdSessoes] = useState<number>(1);
+
+  // Estado para status do agendamento
+  const [selectedStatus, setSelectedStatus] = useState<number>(EScheduleStatus.AConfirmar);
+
+  // Opções para o select de status
+  const statusOptions = Object.entries(ScheduleStatusLabels).map(([value, label]) => ({
+    label,
+    value: value.toString()
+  }));
 
   // Função para calcular as próximas datas baseado no dia da semana
   const getNextDatesForWeekday = (dayOfWeek: string, count: number): Date[] => {
@@ -170,7 +180,7 @@ const Calendar: React.FC = () => {
           index + 1
         } de ${qtdSessoes}`,
         notificar: false,
-        status: 1,
+        status: selectedStatus,
       });
     });
 
@@ -254,6 +264,7 @@ const Calendar: React.FC = () => {
             funcionario: funcionario?.nome || "Não informado",
             filial: filial?.nomeFilial || "Não informado",
             observacao: schedule.observacao || "Sem observação",
+            status: schedule.status,
           },
         };
       });
@@ -386,6 +397,7 @@ const Calendar: React.FC = () => {
       setSelectedCliente(schedule.clienteId?.toString() || undefined);
       setSelectedFuncionario(schedule.funcionarioId?.toString() || undefined);
       setSelectedFilial(schedule.filialId?.toString() || undefined);
+      setSelectedStatus(schedule.status || EScheduleStatus.AConfirmar);
       setIsChecked(!!schedule.diaTodo);
     }
     openModal();
@@ -426,7 +438,7 @@ const Calendar: React.FC = () => {
         diaTodo: isChecked,
         observacao: eventTitle,
         notificar: false,
-        status: 1,
+        status: selectedStatus,
         clienteId: selectedCliente,
         funcionarioId: selectedFuncionario,
         filialId: selectedFilial,
@@ -444,7 +456,7 @@ const Calendar: React.FC = () => {
         diaTodo: isChecked,
         observacao: eventTitle,
         notificar: false,
-        status: 1,
+        status: selectedStatus,
       });
     }
   };
@@ -474,6 +486,7 @@ const Calendar: React.FC = () => {
     setSelectedCliente(undefined);
     setSelectedFuncionario(undefined);
     setSelectedFilial(undefined);
+    setSelectedStatus(EScheduleStatus.AConfirmar);
     setIsChecked(false);
 
     setIsRecurrent(false);
@@ -512,7 +525,7 @@ const Calendar: React.FC = () => {
     // Define cor do texto baseada no fundo
     const textColor = isLightColor(cor) ? "#000000" : "#ffffff";
 
-    const { cliente, funcionario, filial, observacao } = eventInfo.event.extendedProps;
+    const { cliente, funcionario, filial, observacao, status } = eventInfo.event.extendedProps;
 
     // Função para truncar o nome do cliente
     const truncateText = (text: string, maxLength: number = 15) => {
@@ -564,6 +577,10 @@ const Calendar: React.FC = () => {
             <div className="flex items-start gap-2">
               <span className="text-gray-300 font-medium">Observação:</span>
               <span className="text-white">{observacao}</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-gray-300 font-medium">Status:</span>
+              <span className="text-white">{ScheduleStatusLabels[status as keyof typeof ScheduleStatusLabels] || "Status desconhecido"}</span>
             </div>
           </div>
           {/* Seta do tooltip */}
@@ -818,6 +835,18 @@ const Calendar: React.FC = () => {
                     onChange={(value) =>
                       setSelectedFilial(value === "" ? undefined : value)
                     }
+                    className="dark:bg-dark-900"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Status do Agendamento <span className="text-red-300">*</span>
+                  </Label>
+                  <Select
+                    options={statusOptions}
+                    value={selectedStatus.toString()}
+                    placeholder="Selecione o status"
+                    onChange={(value) => setSelectedStatus(parseInt(value))}
                     className="dark:bg-dark-900"
                   />
                 </div>
