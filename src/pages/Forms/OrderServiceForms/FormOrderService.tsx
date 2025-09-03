@@ -458,6 +458,7 @@ export default function FormOrderService({
   }, [selectedServices]);
   const totalComDesconto =
     totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
+  const valorDesconto = totalPrice - totalComDesconto;
   const totalComGanho =
     totalComDesconto * (1 + (formData.percentualGanho ?? 0) / 100);
 
@@ -905,12 +906,12 @@ export default function FormOrderService({
                   <Label>Desconto R$</Label>
                   <Input
                     type="text"
-                    placeholder="Valor com Desconto"
+                    placeholder="Valor do Desconto"
                     disabled
                     value={new Intl.NumberFormat("pt-BR", {
                       style: "currency",
                       currency: "BRL",
-                    }).format(totalComDesconto)}
+                    }).format(valorDesconto)}
                     className="text-black"
                   />
                 </div>
