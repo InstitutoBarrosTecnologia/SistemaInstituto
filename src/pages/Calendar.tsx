@@ -94,6 +94,34 @@ const Calendar: React.FC = () => {
     value: value.toString()
   }));
 
+  // Função para mapear status para ícones
+  const getStatusIcon = (status: number): string => {
+    switch (status) {
+      case EScheduleStatus.AConfirmar:
+        return "❓"; // interrogação
+      case EScheduleStatus.Finalizado:
+        return "✅"; // check verde
+      case EScheduleStatus.ConfirmadoPeloPaciente:
+        return "👍"; // polegar para cima
+      case EScheduleStatus.EmEspera:
+        return "⏳"; // ampulheta
+      case EScheduleStatus.CanceladoPeloProfissional:
+        return "❌"; // X vermelho
+      case EScheduleStatus.CanceladoPeloPaciente:
+        return "✖️"; // X cinza
+      case EScheduleStatus.Faltou:
+        return "⚠️"; // alerta
+      case EScheduleStatus.PreAtendimento:
+        return "🔄"; // setas circulares
+      case EScheduleStatus.Reagendar:
+        return "📅"; // calendário
+      case EScheduleStatus.Pagamento:
+        return "💰"; // dinheiro
+      default:
+        return "❓"; // padrão
+    }
+  };
+
   // Função para calcular as próximas datas baseado no dia da semana
   const getNextDatesForWeekday = (dayOfWeek: string, count: number): Date[] => {
     const days = {
@@ -544,6 +572,15 @@ const Calendar: React.FC = () => {
           className="fc-daygrid-event-dot"
           style={{ background: textColor }}
         ></div>
+        <div className="fc-event-status-icon" style={{ 
+          fontSize: '12px', 
+          marginRight: '4px',
+          marginLeft: '2px',
+          display: 'flex',
+          alignItems: 'center'
+        }}>
+          {getStatusIcon(status)}
+        </div>
         <div className="fc-event-time" style={{ color: textColor }}>
           {eventInfo.timeText}
         </div>
