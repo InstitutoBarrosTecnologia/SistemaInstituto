@@ -46,7 +46,7 @@ export default function FormOrderService({
     { label: string; value: string }[]
   >([]);
   const [userConfig, setUserConfig] = useState<boolean>(false);
-  const [selectedDiaSemana, setSelectedDiaSemana] = useState<string>("");
+  const [selectedDiasSemana, setSelectedDiasSemana] = useState<string[]>([]);
   const [optionsFilial, setOptionsFilial] = useState<
     { label: string; value: string }[]
   >([]);
@@ -87,8 +87,8 @@ export default function FormOrderService({
   };
   const queryClient = useQueryClient();
 
-  // Função para calcular as próximas datas baseado no dia da semana
-  const getNextDatesForWeekday = (dayOfWeek: string, count: number): Date[] => {
+  // Função para calcular as próximas datas baseado em múltiplos dias da semana
+  const getNextDatesForMultipleWeekdays = (daysOfWeek: string[], count: number): Date[] => {
     const days = {
       "Segunda-Feira": 1,
       "Terça-Feira": 2,
@@ -99,38 +99,59 @@ export default function FormOrderService({
       Domingo: 0,
     };
 
-    const targetDay = days[dayOfWeek as keyof typeof days];
-    if (targetDay === undefined) return [];
+    if (daysOfWeek.length === 0) return [];
+
+    // Converter dias selecionados para números e ordenar
+    const selectedDayNumbers = daysOfWeek
+      .map(day => days[day as keyof typeof days])
+      .filter(day => day !== undefined)
+      .sort((a, b) => a - b);
+
+    if (selectedDayNumbers.length === 0) return [];
 
     const dates: Date[] = [];
     const today = new Date();
-
-    // Encontrar a próxima ocorrência do dia da semana
-    let nextDate = new Date(today);
-    const currentDay = today.getDay();
-    const daysUntilTarget = (targetDay - currentDay + 7) % 7;
-
-    // Se for hoje e ainda não passou do horário, usar hoje, senão próxima semana
-    if (daysUntilTarget === 0) {
+    
+    // Começar da semana atual
+    let currentWeekStart = new Date(today);
+    currentWeekStart.setDate(today.getDate() - today.getDay()); // Início da semana (domingo)
+    
+    let dayIndex = 0;
+    let sessionsCreated = 0;
+    
+    while (sessionsCreated < count) {
+      const targetDayNumber = selectedDayNumbers[dayIndex];
+      const targetDate = new Date(currentWeekStart);
+      targetDate.setDate(currentWeekStart.getDate() + targetDayNumber);
+      
+      // Verificar se a data é válida (hoje ou futuro)
+      let isValidDate = targetDate >= today;
+      
       // Se for hoje, verificar se já passou do horário
-      if (selectedHorario) {
+      if (targetDate.toDateString() === today.toDateString() && selectedHorario) {
         const [hours, minutes] = selectedHorario.split(":").map(Number);
         const targetTime = new Date(today);
         targetTime.setHours(hours, minutes, 0, 0);
-
-        if (today > targetTime) {
-          // Já passou do horário hoje, começar na próxima semana
-          nextDate.setDate(today.getDate() + 7);
+        
+        // Se já passou do horário hoje, não é válido
+        if (today >= targetTime) {
+          isValidDate = false;
         }
       }
-    } else {
-      nextDate.setDate(today.getDate() + daysUntilTarget);
-    }
-
-    // Gerar as próximas 'count' datas
-    for (let i = 0; i < count; i++) {
-      dates.push(new Date(nextDate));
-      nextDate.setDate(nextDate.getDate() + 7); // Próxima semana
+      
+      // Se a data for válida, adicionar à lista
+      if (isValidDate) {
+        dates.push(new Date(targetDate));
+        sessionsCreated++;
+      }
+      
+      // Avançar para o próximo dia da lista
+      dayIndex = (dayIndex + 1) % selectedDayNumbers.length;
+      
+      // Se completou um ciclo pelos dias da semana, avançar para próxima semana
+      if (dayIndex === 0) {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+      }
     }
 
     return dates;
@@ -140,7 +161,8 @@ export default function FormOrderService({
   const createRecurrentSchedules = async (orderServiceId: string) => {
     if (
       !userConfig ||
-      !selectedDiaSemana ||
+      !selectedDiasSemana ||
+      selectedDiasSemana.length === 0 ||
       !selectedHorario ||
       !selectedFuncionario
     ) {
@@ -150,10 +172,10 @@ export default function FormOrderService({
     const qtdSessoes = formData.qtdSessaoTotal || 0;
     if (qtdSessoes <= 0) return;
 
-    const dates = getNextDatesForWeekday(selectedDiaSemana, qtdSessoes);
+    const dates = getNextDatesForMultipleWeekdays(selectedDiasSemana, qtdSessoes);
     const [hours, minutes] = selectedHorario.split(":").map(Number);
 
-    const schedulePromises = dates.map((date, index) => {
+    const schedulePromises = dates.map((date: Date, index: number) => {
       const startDateTime = new Date(date);
       startDateTime.setHours(hours, minutes, 0, 0);
 
@@ -504,13 +526,24 @@ export default function FormOrderService({
     }));
   }, [selectedServices]);
 
+  // Desmarcar recorrência automaticamente quando sessões <= 1
+  useEffect(() => {
+    if ((formData.qtdSessaoTotal || 0) <= 1 && userConfig) {
+      setUserConfig(false);
+      setFormData((prev) => ({
+        ...prev,
+        createUser: false,
+      }));
+    }
+  }, [formData.qtdSessaoTotal, userConfig]);
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validação específica para recorrência
     if (userConfig) {
-      if (!selectedDiaSemana) {
-        toast.error("Selecione o dia da semana para a recorrência.");
+      if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
+        toast.error("Selecione pelo menos um dia da semana para a recorrência.");
         return;
       }
       if (!selectedHorario) {
@@ -562,8 +595,8 @@ export default function FormOrderService({
 
     // Validação específica para recorrência (mesma validação do handleSave)
     if (userConfig) {
-      if (!selectedDiaSemana) {
-        toast.error("Selecione o dia da semana para a recorrência.");
+      if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
+        toast.error("Selecione pelo menos um dia da semana para a recorrência.");
         return;
       }
       if (!selectedHorario) {
@@ -748,25 +781,40 @@ export default function FormOrderService({
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
-                <div>
+                <div className="flex items-center gap-3">
                   <Checkbox
-                    checked={userConfig}
+                    checked={userConfig && (formData.qtdSessaoTotal || 0) > 1}
                     onChange={(checked) => {
-                      setUserConfig(checked);
-                      setFormData((prev) => ({
-                        ...prev,
-                        createUser: checked,
-                      }));
+                      if ((formData.qtdSessaoTotal || 0) > 1) {
+                        setUserConfig(checked);
+                        setFormData((prev) => ({
+                          ...prev,
+                          createUser: checked,
+                        }));
+                      }
                     }}
+                    disabled={(formData.qtdSessaoTotal || 0) <= 1}
                     className="dark:bg-dark-900"
                   />
-
-                  <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  <span className={`text-sm font-medium ${(formData.qtdSessaoTotal || 0) <= 1 
+                    ? 'text-gray-400 dark:text-gray-600' 
+                    : 'text-gray-700 dark:text-gray-400'}`}>
                     Configurar recorrência
                   </span>
+                  {(formData.qtdSessaoTotal || 0) <= 1 && (
+                    <div className="relative group">
+                      <div className="w-4 h-4 rounded-full bg-gray-400 hover:bg-gray-500 text-white flex items-center justify-center cursor-help transition-colors duration-200 text-xs font-medium">
+                        ?
+                      </div>
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                        Disponível apenas para tratamentos com mais de 1 sessão
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-              {userConfig && (
+              {userConfig && (formData.qtdSessaoTotal || 0) > 1 && (
                 <>
                   <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
                     Configuração de recorrência (Agendamento de Sessões)
@@ -774,12 +822,13 @@ export default function FormOrderService({
 
                   {formData.qtdSessaoTotal &&
                     formData.qtdSessaoTotal > 0 &&
-                    selectedDiaSemana && (
+                    selectedDiasSemana &&
+                    selectedDiasSemana.length > 0 && (
                       <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                         <p className="text-sm text-blue-800 dark:text-blue-200">
                           <strong>Informação:</strong> Serão criados{" "}
-                          {formData.qtdSessaoTotal} agendamentos todas as{" "}
-                          {selectedDiaSemana.toLowerCase()}s
+                          {formData.qtdSessaoTotal} agendamentos alternando entre:{" "}
+                          {selectedDiasSemana.map(dia => dia.toLowerCase()).join(", ")}
                           {selectedHorario && ` às ${selectedHorario}`}.
                         </p>
                       </div>
@@ -787,23 +836,21 @@ export default function FormOrderService({
 
                   <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
                     <div>
-                      <Label>
-                        Dias semana<span className="text-red-300">*</span>
-                      </Label>
-                      <Select
+                      <MultiSelect
+                        label="Dias da semana*"
                         options={[
-                          { label: "Segunda-Feira", value: "Segunda-Feira" },
-                          { label: "Terça-Feira", value: "Terça-Feira" },
-                          { label: "Quarta-Feira", value: "Quarta-Feira" },
-                          { label: "Quinta-Feira", value: "Quinta-Feira" },
-                          { label: "Sexta-Feira", value: "Sexta-Feira" },
-                          { label: "Sábado", value: "Sábado" },
-                          { label: "Domingo", value: "Domingo" },
+                          { text: "Segunda-Feira", value: "Segunda-Feira" },
+                          { text: "Terça-Feira", value: "Terça-Feira" },
+                          { text: "Quarta-Feira", value: "Quarta-Feira" },
+                          { text: "Quinta-Feira", value: "Quinta-Feira" },
+                          { text: "Sexta-Feira", value: "Sexta-Feira" },
+                          { text: "Sábado", value: "Sábado" },
+                          { text: "Domingo", value: "Domingo" },
                         ]}
-                        value={selectedDiaSemana}
-                        onChange={(value) => setSelectedDiaSemana(value)}
-                        placeholder="Selecione o dia da semana"
-                        required={userConfig}
+                        defaultSelected={selectedDiasSemana}
+                        onChange={(selectedDays) => {
+                          setSelectedDiasSemana(selectedDays);
+                        }}
                       />
                     </div>
                     <div>
