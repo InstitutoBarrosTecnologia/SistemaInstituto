@@ -21,7 +21,7 @@ export const useSessionNotifications = () => {
     data: sessionsData, 
     isLoading, 
     error,
-    dataUpdatedAt 
+    dataUpdatedAt  
   } = useQuery<DailySessionsSummaryResponseDto>({
     queryKey: ['daily-sessions-summary-notifications'],
     queryFn: () => getDailySessionsSummaryAsync(),
