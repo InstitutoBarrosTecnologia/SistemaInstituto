@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
+import AccessDenied from "./pages/OtherPage/AccessDenied";
 import UserProfiles from "./pages/UserProfiles";
 import Videos from "./pages/UiElements/Videos";
 import Images from "./pages/UiElements/Images";
@@ -20,6 +21,8 @@ import Home from "./pages/Dashboard/Home";
 import DashboardOperacao from "./pages/Dashboard/DashboardOperacao";
 import DashboardLead from "./pages/Dashboard/DashboardLead";
 import ProtectedRoute from "./ProtectedRoute";
+import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
+import { MENU_PERMISSIONS } from "./services/util/rolePermissions";
 import CustomerTables from "./pages/Tables/CustomerTable/CustomerTables";
 import ServiceCategoryTables from "./pages/Tables/ServicesTable/ServiceCategoryTables";
 import SubServiceCategoryTable from "./pages/Tables/ServicesTable/SubServiceCategoryTable";
@@ -45,7 +48,16 @@ export default function App() {
         >
           <Route index path="/" element={<Home />} />
           <Route path="/dashboard-operacao" element={<DashboardOperacao />} />
-          <Route path="/dashboard-lead" element={<DashboardLead />} />
+          
+          {/* Dashboard Lead - Sem acesso para Fisioterapeuta e Coordenador Fisioterapeuta */}
+          <Route 
+            path="/dashboard-lead" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.DASHBOARD_LEAD}>
+                <DashboardLead />
+              </RoleProtectedRoute>
+            } 
+          />
 
           {/* Others Page */}
           <Route path="/profile" element={<UserProfiles />} />
@@ -56,19 +68,69 @@ export default function App() {
           <Route path="/customer" element={<CustomerTables />} />
 
           {/* Financeiro - Apenas para Administradores */}
-          <Route path="/financeiro/despesas" element={<Despesas />} />
+          <Route 
+            path="/financeiro/despesas" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.FINANCEIRO_DESPESAS}>
+                <Despesas />
+              </RoleProtectedRoute>
+            } 
+          />
           
           {/* Notificações - Apenas para Administradores */}
-          <Route path="/notificacoes/enviar" element={<Notifications />} />
+          <Route 
+            path="/notificacoes/enviar" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.NOTIFICACOES_ENVIAR}>
+                <Notifications />
+              </RoleProtectedRoute>
+            } 
+          />
           
 
 
           {/* Tables */}
           <Route path="/basic-tables" element={<BasicTables />} />
-          <Route path="/form-employee" element={<EmployeeTables />} />
-          <Route path="/form-branch" element={<BranchOfficeTables />} />
-          <Route path="/form-cat-servico" element={<ServiceCategoryTables />} />
-          <Route path="/form-sub-cat-servico" element={<SubServiceCategoryTable />} />
+          
+          {/* Form Funcionários - Administrador, Administrativo, Comercial, Funcionário */}
+          <Route 
+            path="/form-employee" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.FORM_FUNCIONARIOS}>
+                <EmployeeTables />
+              </RoleProtectedRoute>
+            } 
+          />
+          
+          {/* Form Filiais - Apenas Administrador e Administrativo */}
+          <Route 
+            path="/form-branch" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.UNIDADES}>
+                <BranchOfficeTables />
+              </RoleProtectedRoute>
+            } 
+          />
+          
+          {/* Form Categoria Serviços - Apenas Administrador e Administrativo */}
+          <Route 
+            path="/form-cat-servico" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.CATEGORIA_SERVICO}>
+                <ServiceCategoryTables />
+              </RoleProtectedRoute>
+            } 
+          />
+          
+          {/* Form Sub Categoria Serviços - Administrador, Administrativo, Comercial */}
+          <Route 
+            path="/form-sub-cat-servico" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.SUB_CATEGORIA_SERVICO}>
+                <SubServiceCategoryTable />
+              </RoleProtectedRoute>
+            } 
+          />
           <Route path="/ordem-servico" element={<OrdemServiceTables />} />
 
 

@@ -64,6 +64,12 @@ const Calendar: React.FC = () => {
   const [selectedFuncionario, setSelectedFuncionario] = useState<
     string | undefined
   >(undefined);
+  const [modalFuncionario, setModalFuncionario] = useState<
+    string | undefined
+  >(undefined);
+  const [modalFilial, setModalFilial] = useState<string | undefined>(
+    undefined
+  );
   const [isChecked, setIsChecked] = useState(false);
   const [optionsFilial, setOptionsFilial] = useState<
     { label: string; value: string }[]
@@ -201,8 +207,8 @@ const Calendar: React.FC = () => {
         dataFim: endDateTime.toISOString(),
         diaTodo: false,
         clienteId: selectedCliente,
-        funcionarioId: selectedFuncionario,
-        filialId: selectedFilial,
+        funcionarioId: modalFuncionario,
+        filialId: modalFilial,
         localizacao: eventLocation || "Clínica",
         observacao: `Agendamento recorrente - Sessão ${
           index + 1
@@ -423,8 +429,10 @@ const Calendar: React.FC = () => {
       setEventEndDate(schedule.dataFim ? schedule.dataFim.slice(0, 16) : "");
       setEventLevel("Primary");
       setSelectedCliente(schedule.clienteId?.toString() || undefined);
-      setSelectedFuncionario(schedule.funcionarioId?.toString() || undefined);
-      setSelectedFilial(schedule.filialId?.toString() || undefined);
+      // Usar modalFuncionario para não interferir com o filtro
+      setModalFuncionario(schedule.funcionarioId?.toString() || undefined);
+      // Usar modalFilial para não interferir com o filtro
+      setModalFilial(schedule.filialId?.toString() || undefined);
       setSelectedStatus(schedule.status || EScheduleStatus.AConfirmar);
       setIsChecked(!!schedule.diaTodo);
     }
@@ -468,14 +476,14 @@ const Calendar: React.FC = () => {
         notificar: false,
         status: selectedStatus,
         clienteId: selectedCliente,
-        funcionarioId: selectedFuncionario,
-        filialId: selectedFilial,
+        funcionarioId: modalFuncionario,
+        filialId: modalFilial,
       });
     } else {
       mutateAddEvent({
         clienteId: selectedCliente,
-        funcionarioId: selectedFuncionario,
-        filialId: selectedFilial,
+        funcionarioId: modalFuncionario,
+        filialId: modalFilial,
         titulo: eventTitle,
         descricao: eventDescription,
         localizacao: eventLocation,
@@ -512,8 +520,8 @@ const Calendar: React.FC = () => {
     setEventLocation("");
     setSelectedEvent(null);
     setSelectedCliente(undefined);
-    setSelectedFuncionario(undefined);
-    setSelectedFilial(undefined);
+    setModalFuncionario(undefined);
+    setModalFilial(undefined);
     setSelectedStatus(EScheduleStatus.AConfirmar);
     setIsChecked(false);
 
@@ -566,7 +574,6 @@ const Calendar: React.FC = () => {
       <div
         className="event-fc-color flex fc-event-main p-1 rounded-sm relative group cursor-pointer"
         style={{ background: cor, borderColor: cor }}
-        title={`Cliente: ${cliente} | Funcionário: ${funcionario} | Observação: ${observacao}`}
       >
         <div
           className="fc-daygrid-event-dot"
@@ -613,7 +620,7 @@ const Calendar: React.FC = () => {
             </div>
             <div className="flex items-start gap-2">
               <span className="text-gray-300 font-medium">Observação:</span>
-              <span className="text-white">{observacao}</span>
+              <span className="text-white">{truncateText(observacao, 23)}</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-gray-300 font-medium">Status:</span>
@@ -853,10 +860,10 @@ const Calendar: React.FC = () => {
                   </Label>
                   <Select
                     options={optionsFuncionario}
-                    value={selectedFuncionario}
+                    value={modalFuncionario}
                     placeholder="Selecione um fisioterapeuta"
                     onChange={(value) =>
-                      setSelectedFuncionario(value === "" ? undefined : value)
+                      setModalFuncionario(value === "" ? undefined : value)
                     }
                     className="dark:bg-dark-900"
                   />
@@ -867,10 +874,10 @@ const Calendar: React.FC = () => {
                   </Label>
                   <Select
                     options={optionsFilial}
-                    value={selectedFilial}
+                    value={modalFilial}
                     placeholder="Selecione uma filial"
                     onChange={(value) =>
-                      setSelectedFilial(value === "" ? undefined : value)
+                      setModalFilial(value === "" ? undefined : value)
                     }
                     className="dark:bg-dark-900"
                   />
