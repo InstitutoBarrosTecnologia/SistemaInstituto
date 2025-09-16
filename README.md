@@ -1,6 +1,22 @@
 # 🏥 Sistema Instituto Barros - Frontend
 
-> Sistema de gestão clínica e administrativa para o Instituto Barros, desenvolvido com tecnologias modernas para oferecer uma experiência completa na gestão de pacientes, funcionários, agendamentos e tratamentos.
+> Sistema completo de gestão clínica e administrativa para o Instituto Barros. Plataforma moderna desenvolvida com React e TypeScript que oferece gestão integrada de pacientes, funcionários, agendamentos, tratamentos e sistema avançado de recorrência para sessões de fisioterapia.
+
+## 🎯 Últimas Atualizações
+
+### 📅 Sistema de Agendamento com Recorrência Avançada
+- **Agendamento Recorrente Inteligente**: Criação automática de múltiplas sessões baseada em dias da semana
+- **Edição de Recorrência**: Atualização em lote de sessões futuras mantendo histórico de sessões passadas
+- **Cálculo Inteligente de Datas**: Sistema preciso que identifica corretamente a próxima ocorrência de cada dia da semana
+- **Status de Agendamento**: 10 diferentes status com ícones visuais (A Confirmar, Finalizado, Confirmado pelo Paciente, etc.)
+- **Filtros Avançados**: Filtragem por filial e fisioterapeuta com controle de acesso baseado em perfil
+- **Interface Otimizada**: Tooltips informativos, cores personalizadas por funcionário e visualização responsiva
+
+### 🔧 Melhorias Técnicas Implementadas
+- **Validação de Horários**: Sistema que respeita horários específicos dos campos de data/hora
+- **Correção de Fuso Horário**: Formatação manual de datas para evitar problemas de timezone
+- **Debug Avançado**: Sistema completo de logs para monitoramento de cálculos de data
+- **Otimização de Performance**: Uso de Promise.all para operações em lote
 
 ## 🚀 Tecnologias Embarcadas
 
@@ -95,18 +111,35 @@ O Sistema Instituto Barros é uma solução completa para gestão clínica que i
 - Configuração de acesso ao sistema
 - Gestão de filiais e departamentos
 
-### **📅 Sistema de Agendamento**
-- Calendário completo com visualizações (mês, semana, dia)
-- Agendamento de consultas e sessões
-- Controle de participantes
-- Notificações e lembretes
-- Gestão de conflitos de horário
+### **📅 Sistema de Agendamento Avançado**
+- **Calendário FullCalendar** com visualizações múltiplas (mês, semana, dia)
+- **Agendamento Recorrente Inteligente**:
+  - Criação automática de múltiplas sessões baseada em dias da semana selecionados
+  - Algoritmo inteligente que calcula corretamente a próxima ocorrência de cada dia
+  - Suporte a múltiplos dias (Ex: Segunda, Quarta e Sexta)
+  - Validação de horários para evitar agendamentos em horários passados
+- **Edição de Recorrência em Lote**:
+  - Atualização simultânea de sessões futuras
+  - Preservação do histórico de sessões já realizadas
+  - Alteração de horários respeitando campos de data/hora específicos
+- **Sistema de Status Avançado**:
+  - 10 diferentes status com ícones visuais: ❓ A Confirmar, ✅ Finalizado, 👍 Confirmado pelo Paciente, ⏳ Em Espera, ❌ Cancelado pelo Profissional, ✖️ Cancelado pelo Paciente, ⚠️ Faltou, 🔄 Pré-Atendimento, 📅 Reagendar, 💰 Pagamento
+  - Cores personalizadas por funcionário para identificação visual rápida
+  - Tooltips informativos com detalhes completos do agendamento
+- **Filtros Inteligentes**:
+  - Filtro por filial com acesso completo para administradores
+  - Filtro automático por fisioterapeuta baseado no perfil do usuário logado
+  - Auto-aplicação de filtros para perfis específicos (fisioterapeutas veem apenas seus agendamentos)
+- **Interface Otimizada**:
+  - Eventos truncados com tooltips para informações completas
+  - Responsividade total em dispositivos móveis
+  - Loading states e feedback visual em operações
 
-### **🔧 Gestão de Serviços**
-- Categorias e subcategorias de serviços
-- Ordens de serviço para tratamentos
-- Controle de sessões de fisioterapia
-- Acompanhamento de progresso
+### **🔧 Gestão de Serviços e Tratamentos**
+- **Categorias e Subcategorias**: Organização hierárquica de serviços oferecidos
+- **Ordens de Serviço**: Controle completo de tratamentos e acompanhamento
+- **Sessões de Fisioterapia**: Gestão individual e recorrente de sessões
+- **Acompanhamento de Progresso**: Histórico detalhado de evolução dos pacientes
 
 ### **💬 Atendimento WhatsApp**
 - Sistema integrado de atendimento
@@ -233,9 +266,9 @@ O sistema de dashboard implementa uma arquitetura robusta com integração compl
 - **Subcategorias** (`/form-sub-cat-servico`): Especialidades
 - **Ordens de Serviço** (`/ordem-servico`): Controle de tratamentos
 
-## �🛠️ Comandos de Desenvolvimento
+## 🛠️ Comandos de Desenvolvimento
 
-### **Instalação**
+### **📦 Instalação**
 ```bash
 # Instalar dependências
 npm install
@@ -244,43 +277,86 @@ npm install
 yarn install
 ```
 
-### **Desenvolvimento**
+### **⚡ Desenvolvimento**
 ```bash
 # Iniciar servidor de desenvolvimento
 npm run dev
+# ou
+yarn dev
 
 # Servidor estará disponível em http://localhost:5173
 ```
 
-### **Build**
+### **🏗️ Build e Deploy**
 ```bash
 # Build de produção
 npm run build
+# ou
+yarn build
 
 # Gera arquivos otimizados na pasta 'dist/'
 ```
 
-### **Lint e Qualidade**
+### **🔍 Lint e Qualidade de Código**
 ```bash
 # Executar ESLint
 npm run lint
+# ou
+yarn lint
 
 # Corrigir problemas automaticamente
 npm run lint -- --fix
 ```
 
-### **Preview**
+### **👀 Preview da Build**
 ```bash
-# Preview da build de produção
+# Preview da build de produção local
 npm run preview
+# ou  
+yarn preview
 
 # Testa a build localmente antes do deploy
 ```
 
-### **Deploy**
+### **🚀 Deploy Automático**
 ```bash
-# Deploy automático via Vercel (configurado)
+# Deploy via Vercel (configurado automaticamente)
 git push origin main
+
+# O sistema está configurado para deploy automático no Vercel
+# Toda push na branch main dispara um novo deploy
+```
+
+### **🧪 Comandos de Debug**
+```bash
+# Executar com debug de data/hora no agendamento
+yarn dev
+
+# Abra o console do navegador para ver logs detalhados
+# dos cálculos de recorrência e geração de datas
+```
+
+## 🔧 Configurações Técnicas
+
+### **Variáveis de Ambiente**
+```bash
+# .env.local
+VITE_API_BASE_URL=https://api.institutobarros.com
+VITE_APP_TITLE=Sistema Instituto Barros
+```
+
+### **Estrutura de Build**
+- **Vite**: Build tool moderna com hot-reload ultra-rápido
+- **TypeScript**: Compilação com verificação de tipos
+- **ESLint**: Análise estática de código
+- **Tailwind CSS**: CSS otimizado e purging automático
+- **Tree Shaking**: Eliminação automática de código não utilizado
+
+### **Performance**
+- **Code Splitting**: Divisão automática de código por rotas
+- **Lazy Loading**: Carregamento dinâmico de componentes
+- **React Query**: Cache inteligente de dados da API
+- **Otimização de Imagens**: Compressão automática de assets
 
 # Ou build manual para outros provedores
 npm run build && cp -r dist/* /seu/servidor/
@@ -580,85 +656,208 @@ enum CustomerStatus {
 }
 ```
 
-### **Tipos de Usuários**
-- **Administrativo** - Acesso completo ao sistema
-- **Comercial** - Gestão de leads e vendas
-- **Fisioterapeuta** - Atendimento e sessões
-- **Recepcionista** - Agendamentos e atendimento
+### **🔐 Controle de Acesso por Perfil**
+
+#### **Fisioterapeuta** 👨‍⚕️
+```typescript
+// Acesso limitado focado no atendimento
+rotas: [
+  '/dashboard-operacao',  // Dashboard especializado
+  '/calendar',           // Agenda (apenas seus agendamentos)
+  '/customer',          // Pacientes (visualização + check-in)
+  '/profile'            // Perfil pessoal
+]
+```
+
+#### **Comercial** 💼
+```typescript
+// Acesso focado em vendas e relacionamento
+rotas: [
+  '/',                   // Dashboard Financeiro
+  '/dashboard-operacao', // Dashboard Operação
+  '/dashboard-lead',     // Dashboard Lead
+  '/basic-tables',       // WhatsApp/Leads
+  '/calendar',           // Agenda completa
+  '/form-sub-cat-servico', // Subcategorias
+  '/profile'             // Funcionários
+]
+```
+
+#### **Administrativo** 👨‍💼
+```typescript
+// Acesso completo ao sistema
+rotas: [
+  '*'  // Todas as funcionalidades disponíveis
+]
+```
+
+### **🎯 Sistema de Status de Agendamento**
+
+```typescript
+enum EScheduleStatus {
+  AConfirmar = 0,                    // ❓ A Confirmar
+  Finalizado = 1,                    // ✅ Finalizado  
+  ConfirmadoPeloPaciente = 2,        // 👍 Confirmado pelo Paciente
+  EmEspera = 3,                      // ⏳ Em Espera
+  CanceladoPeloProfissional = 4,     // ❌ Cancelado pelo Profissional
+  CanceladoPeloPaciente = 5,         // ✖️ Cancelado pelo Paciente
+  Faltou = 6,                        // ⚠️ Faltou
+  PreAtendimento = 7,                // 🔄 Pré-Atendimento
+  Reagendar = 8,                     // 📅 Reagendar
+  Pagamento = 9                      // 💰 Pagamento
+}
+```
+
+### **📊 Sistema de Status de Paciente**
+
+```typescript
+enum ECustomerStatus {
+  Novo = 0,                    // 🆕 Novo (paciente recém-cadastrado)
+  PrimeiraConsulta = 1,        // 🏥 Primeira Consulta
+  Avaliacao = 2,               // 📋 Avaliação
+  EmTratamento = 3,            // 💊 Em Tratamento
+  EmAtendimento = 4,           // 🔄 Em Atendimento
+  FaltouAtendimento = 5,       // ⚠️ Faltou Atendimento
+  TratamentoConcluido = 6,     // ✅ Tratamento Concluído
+  Alta = 7,                    // 🎯 Alta
+  Cancelado = 8,               // ❌ Cancelado
+  Inativo = 9                  // 😴 Inativo
+}
+```
+
+### **🏗️ Algoritmo de Recorrência de Agendamentos**
+
+O sistema implementa um algoritmo inteligente para criação e edição de agendamentos recorrentes:
+
+```typescript
+// Algoritmo de busca sequencial para próximas datas
+function getNextDatesForMultipleWeekdays(daysOfWeek: string[], count: number): Date[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Zerar horário para comparação precisa
+  
+  let searchDate = new Date(today); // Começar a partir de hoje
+  
+  // Para cada sessão necessária
+  while (sessionsCreated < count) {
+    // Encontrar a próxima ocorrência do dia da semana desejado
+    while (searchDate.getDay() !== targetDayNumber) {
+      searchDate.setDate(searchDate.getDate() + 1);
+    }
+    
+    // Validar se não é um horário já passado no dia atual
+    if (isValidDateTime(searchDate, selectedHorario)) {
+      dates.push(new Date(searchDate));
+      sessionsCreated++;
+    }
+    
+    // Avançar para próximo dia
+    searchDate.setDate(searchDate.getDate() + 1);
+  }
+}
+```
+
+**Características do Algoritmo:**
+- ✅ **Busca Sequencial**: Não usa cálculos de semana, procura dia a dia
+- ✅ **Validação de Horário**: Evita agendamentos em horários já passados
+- ✅ **Múltiplos Dias**: Suporta recorrência em vários dias da semana
+- ✅ **Precisão de Data**: Calcula corretamente a próxima ocorrência
+
+**Exemplo Prático:**
+```
+Hoje: 15/09/2025 (segunda-feira)
+Dias selecionados: [Terça-feira, Quinta-feira]
+Quantidade: 4 sessões
+
+Resultado:
+- Sessão 1: 16/09/2025 (terça-feira) ✅
+- Sessão 2: 19/09/2025 (quinta-feira) ✅  
+- Sessão 3: 23/09/2025 (terça-feira) ✅
+- Sessão 4: 26/09/2025 (quinta-feira) ✅
+```
 
 ## 🌍 Ambiente e Deploy
 
-### **Variáveis de Ambiente**
-```bash
-# Desenvolvimento
-VITE_API_URL=http://localhost:5101/api
-
-# Produção
-VITE_API_URL=https://instituto-barros-sistema.azurewebsites.net/api
-```
-
-### **🛣️ Rotas da Aplicação**
-```
-📊 Dashboards:
-├── /                           # Dashboard Financeiro
-├── /dashboard-operacao         # Dashboard Operação (todos perfis)
-└── /dashboard-lead            # Dashboard Lead (sem fisioterapeuta)
-
-👥 Gestão de Pessoas:
-├── /customer                   # Listagem de Pacientes
-├── /profile                    # Perfil de Funcionários
-└── /form-employee             # Cadastro de Funcionários
-
-🗓️ Agendamento:
-└── /calendar                   # Sistema de Agenda
-
-💬 Atendimento:
-└── /basic-tables              # WhatsApp/Leads
-
-🏢 Configurações:
-├── /form-branch               # Unidades/Filiais
-├── /form-cat-servico          # Categorias de Serviço
-├── /form-sub-cat-servico      # Subcategorias
-└── /ordem-servico             # Ordens de Serviço
-
-🔐 Autenticação:
-├── /signin                    # Login
-└── /signup                    # Registro
-```
-
-### **URLs do Sistema**
-- **Frontend Produção**: Hospedado via Vercel
+### **🔗 URLs do Sistema**
+- **Frontend Produção**: Hospedado via Vercel (deploy automático)
 - **Backend Produção**: `https://instituto-barros-sistema.azurewebsites.net`
 - **API Base**: `/api`
+- **Ambiente Local**: `http://localhost:5173` (frontend) + `http://localhost:5101` (backend)
 
-### **Autenticação**
-- **Método**: JWT Bearer Token
-- **Storage**: localStorage
-- **Expiração**: Verificação automática
-- **Interceptador**: Axios com token automático
+### **🔐 Autenticação e Segurança**
+- **Método**: JWT Bearer Token com refresh automático
+- **Storage**: localStorage com verificação de expiração
+- **Interceptador Axios**: Token automático em todas as requisições
+- **Protected Routes**: Componente de proteção baseado em autenticação
+- **Role-Based Access**: Controle granular por perfil de usuário
 
-## 📱 Responsividade
+### **🎛️ Variáveis de Ambiente**
+```bash
+# .env.local (desenvolvimento)
+VITE_API_BASE_URL=http://localhost:5101/api
+VITE_APP_TITLE=Sistema Instituto Barros
+VITE_APP_VERSION=2.0.0
 
+# .env.production (produção)
+VITE_API_BASE_URL=https://instituto-barros-sistema.azurewebsites.net/api
+VITE_APP_TITLE=Sistema Instituto Barros
+VITE_APP_VERSION=2.0.0
+```
+
+## 🚀 Roadmap e Próximas Funcionalidades
+
+### **🎯 Em Desenvolvimento**
+- [ ] **Sistema de Relatórios Avançados**: Relatórios personalizáveis com exportação
+- [ ] **Integração WhatsApp Business API**: Automação de mensagens e campanhas
+- [ ] **Notificações Push**: Sistema de notificações em tempo real
+- [ ] **Backup Automático**: Backup incremental de dados críticos
+- [ ] **Filtros Avançados de Período**: Seleção customizada de datas nos dashboards
+
+### **✅ Funcionalidades Concluídas (Última Atualização)**
+- [x] **Sistema de Agendamento Recorrente**: Criação e edição inteligente de sessões
+- [x] **Dashboard Operação Multi-Perfil**: Métricas operacionais para todos os perfis
+- [x] **Dashboard Lead**: Funil de vendas e análise de conversão completa
+- [x] **Sistema de Controle de Acesso**: Permissões granulares baseadas em perfil
+- [x] **Gráficos Multi-Séries**: Visualização de sessões realizadas, canceladas e reagendadas
+- [x] **API Dashboard Completa**: 10+ endpoints especializados para analytics
+- [x] **Estados Vazios Elegantes**: UX otimizada quando não há dados
+- [x] **Service Layer Otimizada**: Requisições paralelas com Promise.all e cache automático
+- [x] **Algoritmo de Data Inteligente**: Cálculo preciso de próximas ocorrências por dia da semana
+- [x] **Sistema de Status Visual**: 10 status diferentes com ícones para agendamentos
+- [x] **Filtros por Perfil**: Auto-aplicação de filtros baseados no usuário logado
+
+### **🎯 Funcionalidades Planejadas (2025)**
+- [ ] **Sistema de Permissões Granular Avançado**: Controle por funcionalidade específica
+- [ ] **Módulo de Financeiro Completo**: Controle de receitas, despesas e fluxo de caixa
+- [ ] **Integração com Sistemas Externos**: APIs de laboratórios e convênios
+- [ ] **App Mobile Nativo**: Aplicativo React Native para fisioterapeutas
+- [ ] **IA para Otimização de Agenda**: Inteligência artificial para sugestão de horários
+- [ ] **Sistema de Teleconsulta**: Integração com plataformas de videochamada
+
+## 📱 Características Técnicas
+
+### **🎨 Responsividade e UX**
 - **Mobile First**: Design otimizado para dispositivos móveis
-- **Breakpoints**: Tailwind CSS padrão (sm, md, lg, xl, 2xl)
-- **Sidebar Adaptativa**: Collapsible em desktop, overlay em mobile
-- **Tabelas Responsivas**: Scroll horizontal e layout adaptativo
+- **Breakpoints Tailwind**: sm (640px), md (768px), lg (1024px), xl (1280px), 2xl (1536px)
+- **Sidebar Adaptativa**: Collapsible em desktop, overlay em mobile com backdrop
+- **Tabelas Responsivas**: Scroll horizontal automático e layout adaptativo
+- **Loading States**: Skeletons e spinners contextualizados
+- **Feedback Visual**: Toasts, tooltips e estados de sucesso/erro
 
-## 🎯 Próximas Funcionalidades
+### **⚡ Performance e Otimização**
+- **Code Splitting**: Divisão automática por rotas com React.lazy
+- **Tree Shaking**: Eliminação de código não utilizado no build
+- **Lazy Loading**: Carregamento dinâmico de componentes pesados
+- **React Query Cache**: Cache inteligente com invalidação automática
+- **Promise.all**: Requisições paralelas para otimização de carregamento
+- **Vite HMR**: Hot Module Replacement ultra-rápido para desenvolvimento
 
-- [ ] Sistema de relatórios avançados
-- [ ] Integração com WhatsApp Business API
-- [ ] Notificações push
-- [x] ✅ **Dashboard Operação** - Métricas operacionais para fisioterapeutas
-- [x] ✅ **Dashboard Lead** - Funil de vendas e análise de conversão
-- [x] ✅ **Sistema de Controle de Acesso** - Permissões baseadas em perfil
-- [x] ✅ **Gráficos Multi-Séries** - Sessões realizadas, canceladas e reagendadas
-- [x] ✅ **API Dashboard Completa** - 10+ endpoints especializados para analytics
-- [x] ✅ **Estados Vazios Elegantes** - UX otimizada quando sem dados
-- [x] ✅ **Service Layer Otimizada** - Requisições paralelas e cache automático
-- [ ] Backup automático de dados
-- [ ] Sistema de permissões granular avançado
-- [ ] Filtros avançados de período nos dashboards
+### **🔧 Arquitetura e Padrões**
+- **Component-Based Architecture**: Componentes reutilizáveis e modulares
+- **Service Layer Pattern**: Camada de abstração para APIs
+- **Custom Hooks**: Lógica reutilizável encapsulada
+- **DTO Pattern**: Data Transfer Objects tipados
+- **Error Boundaries**: Tratamento elegante de erros React
+- **TypeScript Strict**: Tipagem rigorosa em todo o projeto
 - [ ] Exportação de dados dos gráficos (PDF/Excel)
 
 ---
@@ -698,4 +897,83 @@ Este projeto é propriedade do **Instituto Barros** e está protegido por direit
 
 ---
 
-**Desenvolvido com ❤️ para o Instituto Barros**
+---
+
+## 📝 Changelog Recente
+
+### **v2.1.0** - Sistema de Agendamento Recorrente (Setembro 2025)
+- ✅ **Agendamento Recorrente Inteligente**: Algoritmo próprio para cálculo preciso de datas
+- ✅ **Edição de Recorrência em Lote**: Atualização simultânea de sessões futuras  
+- ✅ **10 Status de Agendamento**: Sistema visual completo com ícones
+- ✅ **Filtros por Perfil**: Auto-aplicação baseada no usuário logado
+- ✅ **Correção de Timezone**: Formatação manual para evitar problemas de fuso
+- ✅ **Debug Avançado**: Logs detalhados para monitoramento de cálculos
+
+### **v2.0.0** - Dashboard Multi-Perfil (Agosto 2025)
+- ✅ **Dashboard Operação**: Métricas especializadas para fisioterapeutas
+- ✅ **Dashboard Lead**: Funil de vendas completo  
+- ✅ **Gráficos Multi-Séries**: Visualização de sessões com múltiplas métricas
+- ✅ **API Dashboard**: 10+ endpoints especializados
+- ✅ **Controle de Acesso**: Permissões granulares por perfil
+
+### **v1.5.0** - Base do Sistema (Julho 2025)
+- ✅ **Gestão de Pacientes**: CRUD completo com filtros avançados
+- ✅ **Gestão de Funcionários**: Cadastro com especialidades e cores
+- ✅ **Sistema de Agenda**: FullCalendar com eventos personalizados
+- ✅ **Autenticação JWT**: Sistema completo de login/logout
+- ✅ **Arquitetura Base**: React + TypeScript + Tailwind
+
+---
+
+## 👥 Equipe de Desenvolvimento
+
+### **Frontend**
+- **Framework**: React 18.3.1 + TypeScript
+- **Build Tool**: Vite com HMR
+- **UI/UX**: Tailwind CSS + Design System personalizado
+- **Estado**: React Query + Context API
+
+### **Backend Integration**
+- **API**: RESTful com .NET Core
+- **Authentication**: JWT Bearer Token
+- **Database**: SQL Server com Entity Framework
+- **Deploy**: Azure App Service
+
+### **DevOps**
+- **CI/CD**: Vercel (frontend) + Azure DevOps (backend)
+- **Monitoramento**: Console logs + Azure Application Insights  
+- **Versionamento**: Git Flow com feature branches
+
+---
+
+## 🛡️ Licença e Uso
+
+Este sistema foi desenvolvido exclusivamente para o **Instituto Barros** e contém propriedade intelectual protegida. 
+
+**© 2025 Instituto Barros - Todos os direitos reservados**
+
+- ✅ **Uso Autorizado**: Funcionários e parceiros autorizados do Instituto Barros
+- ❌ **Uso Não Autorizado**: Distribuição, cópia ou modificação sem autorização
+- 🔒 **Dados Sensíveis**: Sistema contém informações médicas protegidas por LGPD
+
+---
+
+## 📞 Suporte e Contato
+
+### **🚨 Suporte Técnico**
+- **Issues**: Reporte bugs através do repositório Git
+- **Documentação**: README sempre atualizado com últimas funcionalidades
+- **Logs**: Console do navegador para debug em desenvolvimento
+
+### **📊 Métricas do Projeto**
+- **Linhas de Código**: ~15.000+ linhas (TypeScript/TSX)
+- **Componentes**: 50+ componentes reutilizáveis
+- **Páginas**: 15+ telas funcionais completas
+- **APIs Integradas**: 25+ endpoints do backend
+- **Tempo de Desenvolvimento**: 6+ meses de desenvolvimento contínuo
+
+---
+
+**🏥 Desenvolvido com ❤️ e ☕ para revolucionar a gestão clínica do Instituto Barros**
+
+*Sistema em constante evolução - Última atualização: Setembro 2025*
