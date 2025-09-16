@@ -163,18 +163,30 @@ const Calendar: React.FC = () => {
 
     const dates: Date[] = [];
     const today = new Date();
-
-    // Começar da semana atual
-    let currentWeekStart = new Date(today);
-    currentWeekStart.setDate(today.getDate() - today.getDay()); // Início da semana (domingo)
+    today.setHours(0, 0, 0, 0); // Zerar horário para comparação correta
 
     let dayIndex = 0;
     let sessionsCreated = 0;
+    let searchDate = new Date(today); // Começar a partir de hoje
 
     while (sessionsCreated < count) {
       const targetDayNumber = selectedDayNumbers[dayIndex];
-      const targetDate = new Date(currentWeekStart);
-      targetDate.setDate(currentWeekStart.getDate() + targetDayNumber);
+      
+      // Encontrar a próxima ocorrência do dia da semana desejado
+      while (searchDate.getDay() !== targetDayNumber) {
+        searchDate.setDate(searchDate.getDate() + 1);
+      }
+
+      const targetDate = new Date(searchDate);
+
+      console.log('Debug - Geração de data:', {
+        today: today.toISOString(),
+        searchDate: searchDate.toISOString(),
+        targetDayNumber,
+        calculatedDate: targetDate.toISOString(),
+        dayOfWeek: targetDate.getDay(),
+        dayName: Object.keys(days).find(key => days[key as keyof typeof days] === targetDate.getDay())
+      });
 
       // Verificar se a data é válida (hoje ou futuro)
       let isValidDate = targetDate >= today;
@@ -205,10 +217,8 @@ const Calendar: React.FC = () => {
       // Avançar para o próximo dia da lista
       dayIndex = (dayIndex + 1) % selectedDayNumbers.length;
 
-      // Se completou um ciclo pelos dias da semana, avançar para próxima semana
-      if (dayIndex === 0) {
-        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-      }
+      // Avançar searchDate para o próximo dia para continuar a busca
+      searchDate.setDate(searchDate.getDate() + 1);
     }
 
     return dates;
@@ -273,7 +283,7 @@ const Calendar: React.FC = () => {
       // Extrair horários dos campos de data/hora atualizados pelo usuário
       const originalStartDate = new Date(eventStartDate);
       const originalEndDate = new Date(eventEndDate);
-      
+
       const startHours = originalStartDate.getHours();
       const startMinutes = originalStartDate.getMinutes();
       const endHours = originalEndDate.getHours();
@@ -290,7 +300,9 @@ const Calendar: React.FC = () => {
 
       // Se há dias da semana selecionados, gerar novas datas baseadas na recorrência
       // Caso contrário, manter as datas existentes e apenas atualizar os horários
-      let updatedSessions;      if (selectedDiasSemana && selectedDiasSemana.length > 0) {
+      let updatedSessions;
+      if (selectedDiasSemana && selectedDiasSemana.length > 0) {
+        console.log("Entrando no caminho: NOVA RECORRÊNCIA com dias da semana");
         // Gerar novas datas baseadas na nova recorrência
         const newDates = getNextDatesForMultipleWeekdays(
           selectedDiasSemana,
@@ -307,37 +319,80 @@ const Calendar: React.FC = () => {
           (session: any, index: number) => {
             const newDate = newDates[index];
 
+            // Usar a NOVA data para criar os horários
             const startDateTime = new Date(newDate);
             startDateTime.setHours(startHours, startMinutes, 0, 0);
 
             const endDateTime = new Date(newDate);
             endDateTime.setHours(endHours, endMinutes, 0, 0);
 
-           
-            return {
+            console.log(`Sessão ${index + 1} - Nova recorrência:`, {
+              originalDate: session.dataInicio,
+              newDate: newDate.toISOString(),
+              startDateTime: startDateTime.toISOString(),
+              endDateTime: endDateTime.toISOString(),
+              startHours,
+              startMinutes,
+              endHours,
+              endMinutes,
+            });
+
+            // Atualizar os campos dataInicio e dataFim no objeto session
+            // Combinar a NOVA data com os horários extraídos dos campos
+            const newDateOnly = newDate.toISOString().split('T')[0]; // Apenas a data (YYYY-MM-DD)
+            const startTimeFormatted = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}:00`;
+            const endTimeFormatted = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:00`;
+            
+            const dataInicioFinal = `${newDateOnly}T${startTimeFormatted}`;
+            const dataFimFinal = `${newDateOnly}T${endTimeFormatted}`;
+
+            const updatedSession = {
               ...session,
-              dataInicio: startDateTime.toISOString(),
-              dataFim: endDateTime.toISOString(),
+              dataInicio: dataInicioFinal,
+              dataFim: dataFimFinal,
             };
+
+            return updatedSession;
           }
         );
       } else {
+        console.log("Entrando no caminho: APENAS ATUALIZAR HORÁRIOS");
         // Apenas atualizar os horários nas datas existentes
-        updatedSessions = sessionsToUpdate.map((session: any) => {
-          const existingDate = new Date(session.dataInicio);
+        updatedSessions = sessionsToUpdate.map(
+          (session: any, index: number) => {
+            const existingDate = new Date(session.dataInicio);
 
-          const startDateTime = new Date(existingDate);
-          startDateTime.setHours(startHours, startMinutes, 0, 0);
+            const startDateTime = new Date(existingDate);
+            startDateTime.setHours(startHours, startMinutes, 0, 0);
 
-          const endDateTime = new Date(existingDate);
-          endDateTime.setHours(endHours, endMinutes, 0, 0);
+            const endDateTime = new Date(existingDate);
+            endDateTime.setHours(endHours, endMinutes, 0, 0);
 
-          return {
-            ...session,
-            dataInicio: startDateTime.toISOString(),
-            dataFim: endDateTime.toISOString(),
-          };
-        });
+            console.log(`Sessão ${index + 1} - Apenas horários:`, {
+              originalDate: session.dataInicio,
+              existingDate: existingDate.toISOString(),
+              startDateTime: startDateTime.toISOString(),
+              endDateTime: endDateTime.toISOString(),
+            });
+
+            // Atualizar os campos dataInicio e dataFim no objeto session
+            // Combinar a data EXISTENTE com os horários extraídos dos campos
+            const existingDateOnly = existingDate.toISOString().split('T')[0]; // Apenas a data (YYYY-MM-DD)
+            const startTimeFormatted = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}:00`;
+            const endTimeFormatted = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:00`;
+            
+            const dataInicioFinal = `${existingDateOnly}T${startTimeFormatted}`;
+            const dataFimFinal = `${existingDateOnly}T${endTimeFormatted}`;
+
+            const updatedSession = {
+              ...session,
+              dataInicio: dataInicioFinal,
+              dataFim: dataFimFinal,
+            };
+
+            return updatedSession;
+          }
+        );
       }
 
       // Atualizar cada sessão
@@ -345,19 +400,19 @@ const Calendar: React.FC = () => {
         (session: any, index: number) => {
           console.log("Dados da sessão antes do PUT:", {
             sessionId: session.id,
-            dataInicioOriginal: session.dataInicio,
-            dataFimOriginal: session.dataFim,
+            dataInicioAtualizada: session.dataInicio,
+            dataFimAtualizada: session.dataFim,
             eventStartDate,
             eventEndDate,
           });
-          
+
           return putScheduleAsync({
             id: session.id,
             titulo: session.titulo, // Manter o título original da sessão
             descricao: session.descricao || eventDescription,
             localizacao: session.localizacao || eventLocation,
-            dataInicio: session.dataInicio, // Deve ter os horários atualizados
-            dataFim: session.dataFim, // Deve ter os horários atualizados
+            dataInicio: session.dataInicio, // Agora tem os horários corretos calculados
+            dataFim: session.dataFim, // Agora tem os horários corretos calculados
             diaTodo: false,
             observacao: `Recorrência atualizada - Sessão ${index + 1} de ${
               updatedSessions.length
