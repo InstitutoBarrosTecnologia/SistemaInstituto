@@ -60,6 +60,7 @@ export default function Notifications() {
   } = useNotifications({
     page: currentPage,
     pageSize,
+    admin: true,
   });
 
   // Mapear funcionários para options do MultiSelect

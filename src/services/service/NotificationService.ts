@@ -10,10 +10,12 @@ export interface NotificationFilterParams {
   pageSize?: number;
   ativo?: boolean;
   destinatarios?: string;
+  admin?: boolean;
 }
 
 export class NotificationService {
   private static baseUrl = "/Notifications";
+  private static adminBaseUrl = "/Notifications/admin";
 
   // Criar notificação
   static async createNotification(data: NotificationRequestDto): Promise<NotificationResponseDto> {
@@ -27,8 +29,8 @@ export class NotificationService {
   // Listar notificações com paginação
   static async getNotifications(params: NotificationFilterParams = {}): Promise<NotificationListResponseDto> {
     try {
-      const { page = 1, pageSize = 10, ativo, destinatarios } = params;
-      
+      const { page = 1, pageSize = 10, ativo, destinatarios, admin } = params;
+
       const queryParams = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
@@ -43,7 +45,7 @@ export class NotificationService {
       }
 
       const response = await instanceApi.get<NotificationListResponseDto>(
-        `${this.baseUrl}?${queryParams.toString()}`
+        `${(admin ? this.adminBaseUrl : this.baseUrl)}?${queryParams.toString()}`
       );
       
       // Verificação de segurança para garantir resposta válida

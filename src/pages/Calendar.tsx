@@ -14,6 +14,7 @@ import EmployeeService from "../services/service/EmployeeService";
 import { getAllCustomersAsync } from "../services/service/CustomerService";
 import Label from "../components/form/Label";
 import Select from "../components/form/Select";
+import MultiSelect from "../components/form/MultiSelect";
 import Checkbox from "../components/form/input/Checkbox";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -29,6 +30,10 @@ import {
   getUserFuncionarioIdFromToken,
   shouldApplyAgendaFilter,
 } from "../services/util/rolePermissions";
+import {
+  EScheduleStatus,
+  ScheduleStatusLabels,
+} from "../services/model/Enum/EScheduleStatus";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -63,6 +68,10 @@ const Calendar: React.FC = () => {
   const [selectedFuncionario, setSelectedFuncionario] = useState<
     string | undefined
   >(undefined);
+  const [modalFuncionario, setModalFuncionario] = useState<string | undefined>(
+    undefined
+  );
+  const [modalFilial, setModalFilial] = useState<string | undefined>(undefined);
   const [isChecked, setIsChecked] = useState(false);
   const [optionsFilial, setOptionsFilial] = useState<
     { label: string; value: string }[]
@@ -79,13 +88,59 @@ const Calendar: React.FC = () => {
 
   // Estados para recorrência
   const [isRecurrent, setIsRecurrent] = useState<boolean>(false);
-  const [selectedDiaSemana, setSelectedDiaSemana] = useState<string>("");
+  const [selectedDiasSemana, setSelectedDiasSemana] = useState<string[]>([]);
   const [selectedHorarioRecorrente, setSelectedHorarioRecorrente] =
     useState<string>("");
   const [qtdSessoes, setQtdSessoes] = useState<number>(1);
+  const [isEditingRecurrence, setIsEditingRecurrence] =
+    useState<boolean>(false);
 
-  // Função para calcular as próximas datas baseado no dia da semana
-  const getNextDatesForWeekday = (dayOfWeek: string, count: number): Date[] => {
+  // Estado para status do agendamento
+  const [selectedStatus, setSelectedStatus] = useState<number>(
+    EScheduleStatus.AConfirmar
+  );
+
+  // Opções para o select de status
+  const statusOptions = Object.entries(ScheduleStatusLabels).map(
+    ([value, label]) => ({
+      label,
+      value: value.toString(),
+    })
+  );
+
+  // Função para mapear status para ícones
+  const getStatusIcon = (status: number): string => {
+    switch (status) {
+      case EScheduleStatus.AConfirmar:
+        return "❓"; // interrogação
+      case EScheduleStatus.Finalizado:
+        return "✅"; // check verde
+      case EScheduleStatus.ConfirmadoPeloPaciente:
+        return "👍"; // polegar para cima
+      case EScheduleStatus.EmEspera:
+        return "⏳"; // ampulheta
+      case EScheduleStatus.CanceladoPeloProfissional:
+        return "❌"; // X vermelho
+      case EScheduleStatus.CanceladoPeloPaciente:
+        return "✖️"; // X cinza
+      case EScheduleStatus.Faltou:
+        return "⚠️"; // alerta
+      case EScheduleStatus.PreAtendimento:
+        return "🔄"; // setas circulares
+      case EScheduleStatus.Reagendar:
+        return "📅"; // calendário
+      case EScheduleStatus.Pagamento:
+        return "💰"; // dinheiro
+      default:
+        return "❓"; // padrão
+    }
+  };
+
+  // Função para calcular as próximas datas baseado em múltiplos dias da semana
+  const getNextDatesForMultipleWeekdays = (
+    daysOfWeek: string[],
+    count: number
+  ): Date[] => {
     const days = {
       "Segunda-Feira": 1,
       "Terça-Feira": 2,
@@ -96,60 +151,329 @@ const Calendar: React.FC = () => {
       Domingo: 0,
     };
 
-    const targetDay = days[dayOfWeek as keyof typeof days];
-    if (targetDay === undefined) return [];
+    if (daysOfWeek.length === 0) return [];
+
+    // Converter dias selecionados para números e ordenar
+    const selectedDayNumbers = daysOfWeek
+      .map((day) => days[day as keyof typeof days])
+      .filter((day) => day !== undefined)
+      .sort((a, b) => a - b);
+
+    if (selectedDayNumbers.length === 0) return [];
 
     const dates: Date[] = [];
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Zerar horário para comparação correta
 
-    // Encontrar a próxima ocorrência do dia da semana
-    let nextDate = new Date(today);
-    const currentDay = today.getDay();
-    const daysUntilTarget = (targetDay - currentDay + 7) % 7;
+    let dayIndex = 0;
+    let sessionsCreated = 0;
+    let searchDate = new Date(today); // Começar a partir de hoje
 
-    // Se for hoje e ainda não passou do horário, usar hoje, senão próxima semana
-    if (daysUntilTarget === 0) {
+    while (sessionsCreated < count) {
+      const targetDayNumber = selectedDayNumbers[dayIndex];
+      
+      // Encontrar a próxima ocorrência do dia da semana desejado
+      while (searchDate.getDay() !== targetDayNumber) {
+        searchDate.setDate(searchDate.getDate() + 1);
+      }
+
+      const targetDate = new Date(searchDate);
+
+      console.log('Debug - Geração de data:', {
+        today: today.toISOString(),
+        searchDate: searchDate.toISOString(),
+        targetDayNumber,
+        calculatedDate: targetDate.toISOString(),
+        dayOfWeek: targetDate.getDay(),
+        dayName: Object.keys(days).find(key => days[key as keyof typeof days] === targetDate.getDay())
+      });
+
+      // Verificar se a data é válida (hoje ou futuro)
+      let isValidDate = targetDate >= today;
+
       // Se for hoje, verificar se já passou do horário
-      if (selectedHorarioRecorrente) {
+      if (
+        targetDate.toDateString() === today.toDateString() &&
+        selectedHorarioRecorrente
+      ) {
         const [hours, minutes] = selectedHorarioRecorrente
           .split(":")
           .map(Number);
         const targetTime = new Date(today);
         targetTime.setHours(hours, minutes, 0, 0);
 
-        if (today > targetTime) {
-          // Já passou do horário hoje, começar na próxima semana
-          nextDate.setDate(today.getDate() + 7);
+        // Se já passou do horário hoje, não é válido
+        if (today >= targetTime) {
+          isValidDate = false;
         }
       }
-    } else {
-      nextDate.setDate(today.getDate() + daysUntilTarget);
-    }
 
-    // Gerar as próximas 'count' datas
-    for (let i = 0; i < count; i++) {
-      dates.push(new Date(nextDate));
-      nextDate.setDate(nextDate.getDate() + 7); // Próxima semana
+      // Se a data for válida, adicionar à lista
+      if (isValidDate) {
+        dates.push(new Date(targetDate));
+        sessionsCreated++;
+      }
+
+      // Avançar para o próximo dia da lista
+      dayIndex = (dayIndex + 1) % selectedDayNumbers.length;
+
+      // Avançar searchDate para o próximo dia para continuar a busca
+      searchDate.setDate(searchDate.getDate() + 1);
     }
 
     return dates;
+  };
+
+  // Função para buscar sessões futuras de um cliente e fisioterapeuta específicos
+  const getFutureSessionsByClientAndPhysiotherapist = (
+    clienteId: string,
+    funcionarioId: string
+  ): any[] => {
+    if (!schedules || !clienteId || !funcionarioId) return [];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Início do dia de hoje
+
+    return schedules
+      .filter((schedule: any) => {
+        // Filtrar por cliente e fisioterapeuta
+        if (
+          schedule.clienteId !== clienteId ||
+          schedule.funcionarioId !== funcionarioId
+        ) {
+          return false;
+        }
+
+        // Filtrar apenas sessões futuras (hoje em diante)
+        const scheduleDate = new Date(schedule.dataInicio);
+        scheduleDate.setHours(0, 0, 0, 0);
+
+        return scheduleDate >= today;
+      })
+      .sort((a: any, b: any) => {
+        // Ordenar por data crescente
+        return (
+          new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime()
+        );
+      });
+  };
+
+  // Função para atualizar recorrência de sessões existentes
+  const updateRecurrentSchedules = async () => {
+    if (!selectedEvent || !selectedCliente || !modalFuncionario) {
+      toast.error("Dados incompletos para atualizar recorrência.");
+      return;
+    }
+
+    try {
+      // Buscar todas as sessões futuras do cliente e fisioterapeuta
+      const futureSessions = getFutureSessionsByClientAndPhysiotherapist(
+        selectedCliente,
+        modalFuncionario
+      );
+
+      if (futureSessions.length === 0) {
+        toast.error("Não há sessões futuras para atualizar.");
+        return;
+      }
+
+      // Limitar pela quantidade de sessões especificada
+      const sessionsToUpdate = futureSessions.slice(0, qtdSessoes);
+
+      // Extrair horários dos campos de data/hora atualizados pelo usuário
+      const originalStartDate = new Date(eventStartDate);
+      const originalEndDate = new Date(eventEndDate);
+
+      const startHours = originalStartDate.getHours();
+      const startMinutes = originalStartDate.getMinutes();
+      const endHours = originalEndDate.getHours();
+      const endMinutes = originalEndDate.getMinutes();
+
+      console.log("Horários extraídos dos campos:", {
+        eventStartDate,
+        eventEndDate,
+        startHours,
+        startMinutes,
+        endHours,
+        endMinutes,
+      });
+
+      // Se há dias da semana selecionados, gerar novas datas baseadas na recorrência
+      // Caso contrário, manter as datas existentes e apenas atualizar os horários
+      let updatedSessions;
+      if (selectedDiasSemana && selectedDiasSemana.length > 0) {
+        console.log("Entrando no caminho: NOVA RECORRÊNCIA com dias da semana");
+        // Gerar novas datas baseadas na nova recorrência
+        const newDates = getNextDatesForMultipleWeekdays(
+          selectedDiasSemana,
+          sessionsToUpdate.length
+        );
+
+        if (newDates.length === 0) {
+          toast.error("Não foi possível gerar datas para a nova recorrência.");
+          return;
+        }
+
+        // Aplicar novas datas com horários atualizados
+        updatedSessions = sessionsToUpdate.map(
+          (session: any, index: number) => {
+            const newDate = newDates[index];
+
+            // Usar a NOVA data para criar os horários
+            const startDateTime = new Date(newDate);
+            startDateTime.setHours(startHours, startMinutes, 0, 0);
+
+            const endDateTime = new Date(newDate);
+            endDateTime.setHours(endHours, endMinutes, 0, 0);
+
+            console.log(`Sessão ${index + 1} - Nova recorrência:`, {
+              originalDate: session.dataInicio,
+              newDate: newDate.toISOString(),
+              startDateTime: startDateTime.toISOString(),
+              endDateTime: endDateTime.toISOString(),
+              startHours,
+              startMinutes,
+              endHours,
+              endMinutes,
+            });
+
+            // Atualizar os campos dataInicio e dataFim no objeto session
+            // Combinar a NOVA data com os horários extraídos dos campos
+            const newDateOnly = newDate.toISOString().split('T')[0]; // Apenas a data (YYYY-MM-DD)
+            const startTimeFormatted = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}:00`;
+            const endTimeFormatted = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:00`;
+            
+            const dataInicioFinal = `${newDateOnly}T${startTimeFormatted}`;
+            const dataFimFinal = `${newDateOnly}T${endTimeFormatted}`;
+
+            const updatedSession = {
+              ...session,
+              dataInicio: dataInicioFinal,
+              dataFim: dataFimFinal,
+            };
+
+            return updatedSession;
+          }
+        );
+      } else {
+        console.log("Entrando no caminho: APENAS ATUALIZAR HORÁRIOS");
+        // Apenas atualizar os horários nas datas existentes
+        updatedSessions = sessionsToUpdate.map(
+          (session: any, index: number) => {
+            const existingDate = new Date(session.dataInicio);
+
+            const startDateTime = new Date(existingDate);
+            startDateTime.setHours(startHours, startMinutes, 0, 0);
+
+            const endDateTime = new Date(existingDate);
+            endDateTime.setHours(endHours, endMinutes, 0, 0);
+
+            console.log(`Sessão ${index + 1} - Apenas horários:`, {
+              originalDate: session.dataInicio,
+              existingDate: existingDate.toISOString(),
+              startDateTime: startDateTime.toISOString(),
+              endDateTime: endDateTime.toISOString(),
+            });
+
+            // Atualizar os campos dataInicio e dataFim no objeto session
+            // Combinar a data EXISTENTE com os horários extraídos dos campos
+            const existingDateOnly = existingDate.toISOString().split('T')[0]; // Apenas a data (YYYY-MM-DD)
+            const startTimeFormatted = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}:00`;
+            const endTimeFormatted = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:00`;
+            
+            const dataInicioFinal = `${existingDateOnly}T${startTimeFormatted}`;
+            const dataFimFinal = `${existingDateOnly}T${endTimeFormatted}`;
+
+            const updatedSession = {
+              ...session,
+              dataInicio: dataInicioFinal,
+              dataFim: dataFimFinal,
+            };
+
+            return updatedSession;
+          }
+        );
+      }
+
+      // Atualizar cada sessão
+      const updatePromises = updatedSessions.map(
+        (session: any, index: number) => {
+          console.log("Dados da sessão antes do PUT:", {
+            sessionId: session.id,
+            dataInicioAtualizada: session.dataInicio,
+            dataFimAtualizada: session.dataFim,
+            eventStartDate,
+            eventEndDate,
+          });
+
+          return putScheduleAsync({
+            id: session.id,
+            titulo: session.titulo, // Manter o título original da sessão
+            descricao: session.descricao || eventDescription,
+            localizacao: session.localizacao || eventLocation,
+            dataInicio: session.dataInicio, // Agora tem os horários corretos calculados
+            dataFim: session.dataFim, // Agora tem os horários corretos calculados
+            diaTodo: false,
+            observacao: `Recorrência atualizada - Sessão ${index + 1} de ${
+              updatedSessions.length
+            }`,
+            notificar: false,
+            status: selectedStatus,
+            clienteId: selectedCliente,
+            funcionarioId: modalFuncionario,
+            filialId: modalFilial,
+          });
+        }
+      );
+
+      // Aguardar todas as atualizações serem concluídas
+      const results = await Promise.all(updatePromises);
+
+      // Verificar se todas as atualizações foram bem-sucedidas
+      const successfulUpdates = results.filter(
+        (result) => result?.status === 200
+      );
+
+      if (successfulUpdates.length === sessionsToUpdate.length) {
+        toast.success(
+          `${sessionsToUpdate.length} sessões atualizadas com sucesso!`
+        );
+        // Refetch apenas após todas as atualizações serem concluídas com sucesso
+        await refetchCalendar();
+      } else {
+        toast.error(
+          `Apenas ${successfulUpdates.length} de ${sessionsToUpdate.length} sessões foram atualizadas.`
+        );
+        // Refetch mesmo com falhas parciais para mostrar o estado atual
+        await refetchCalendar();
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar recorrência:", error);
+      toast.error("Erro ao atualizar algumas sessões. Verifique o calendário.");
+      // Refetch para mostrar o estado atual mesmo em caso de erro
+      await refetchCalendar();
+    }
   };
 
   // Função para criar agendamentos recorrentes
   const createRecurrentSchedules = async () => {
     if (
       !isRecurrent ||
-      !selectedDiaSemana ||
+      !selectedDiasSemana ||
+      selectedDiasSemana.length === 0 ||
       !selectedHorarioRecorrente ||
       qtdSessoes <= 0
     ) {
       return;
     }
 
-    const dates = getNextDatesForWeekday(selectedDiaSemana, qtdSessoes);
+    const dates = getNextDatesForMultipleWeekdays(
+      selectedDiasSemana,
+      qtdSessoes
+    );
     const [hours, minutes] = selectedHorarioRecorrente.split(":").map(Number);
 
-    const schedulePromises = dates.map((date, index) => {
+    const schedulePromises = dates.map((date: Date, index: number) => {
       const startDateTime = new Date(date);
       startDateTime.setHours(hours, minutes, 0, 0);
 
@@ -163,26 +487,44 @@ const Calendar: React.FC = () => {
         dataFim: endDateTime.toISOString(),
         diaTodo: false,
         clienteId: selectedCliente,
-        funcionarioId: selectedFuncionario,
-        filialId: selectedFilial,
+        funcionarioId: modalFuncionario,
+        filialId: modalFilial,
         localizacao: eventLocation || "Clínica",
         observacao: `Agendamento recorrente - Sessão ${
           index + 1
         } de ${qtdSessoes}`,
         notificar: false,
-        status: 1,
+        status: selectedStatus,
       });
     });
 
     try {
-      await Promise.all(schedulePromises);
-      toast.success(
-        `${qtdSessoes} agendamentos recorrentes criados com sucesso!`
+      // Aguardar todas as criações serem concluídas
+      const results = await Promise.all(schedulePromises);
+
+      // Verificar se todas as criações foram bem-sucedidas
+      const successfulCreations = results.filter(
+        (result) => result?.status === 200
       );
-      refetchCalendar();
+
+      if (successfulCreations.length === qtdSessoes) {
+        toast.success(
+          `${qtdSessoes} agendamentos recorrentes criados com sucesso!`
+        );
+        // Refetch apenas após todas as criações serem concluídas com sucesso
+        await refetchCalendar();
+      } else {
+        toast.error(
+          `Apenas ${successfulCreations.length} de ${qtdSessoes} agendamentos foram criados.`
+        );
+        // Refetch mesmo com falhas parciais para mostrar o estado atual
+        await refetchCalendar();
+      }
     } catch (error) {
       console.error("Erro ao criar agendamentos recorrentes:", error);
       toast.error("Erro ao criar alguns agendamentos. Verifique o calendário.");
+      // Refetch para mostrar o estado atual mesmo em caso de erro
+      await refetchCalendar();
     }
   };
 
@@ -254,6 +596,7 @@ const Calendar: React.FC = () => {
             funcionario: funcionario?.nome || "Não informado",
             filial: filial?.nomeFilial || "Não informado",
             observacao: schedule.observacao || "Sem observação",
+            status: schedule.status,
           },
         };
       });
@@ -384,9 +727,40 @@ const Calendar: React.FC = () => {
       setEventEndDate(schedule.dataFim ? schedule.dataFim.slice(0, 16) : "");
       setEventLevel("Primary");
       setSelectedCliente(schedule.clienteId?.toString() || undefined);
-      setSelectedFuncionario(schedule.funcionarioId?.toString() || undefined);
-      setSelectedFilial(schedule.filialId?.toString() || undefined);
+      // Usar modalFuncionario para não interferir com o filtro
+      setModalFuncionario(schedule.funcionarioId?.toString() || undefined);
+      // Usar modalFilial para não interferir com o filtro
+      setModalFilial(schedule.filialId?.toString() || undefined);
+      setSelectedStatus(schedule.status || EScheduleStatus.AConfirmar);
       setIsChecked(!!schedule.diaTodo);
+
+      // Detectar se é parte de uma recorrência baseado na observação
+      const isRecurrentSession =
+        schedule.observacao?.includes("Agendamento recorrente") ||
+        schedule.observacao?.includes("Recorrência atualizada") ||
+        schedule.titulo?.includes("Sessão");
+
+      if (isRecurrentSession && schedule.clienteId && schedule.funcionarioId) {
+        // Pré-configurar para edição de recorrência
+        setIsEditingRecurrence(true);
+
+        // Extrair horário da data de início
+        if (schedule.dataInicio) {
+          const scheduleDate = new Date(schedule.dataInicio);
+          const hours = scheduleDate.getHours().toString().padStart(2, "0");
+          const minutes = scheduleDate.getMinutes().toString().padStart(2, "0");
+          setSelectedHorarioRecorrente(`${hours}:${minutes}`);
+        }
+
+        // Buscar sessões futuras para determinar quantidade
+        const futureSessions = getFutureSessionsByClientAndPhysiotherapist(
+          schedule.clienteId,
+          schedule.funcionarioId
+        );
+        setQtdSessoes(futureSessions.length);
+      } else {
+        setIsEditingRecurrence(false);
+      }
     }
     openModal();
   };
@@ -395,8 +769,10 @@ const Calendar: React.FC = () => {
     // Se for recorrência, usar a função específica
     if (isRecurrent && !selectedEvent) {
       // Validações para recorrência
-      if (!selectedDiaSemana) {
-        toast.error("Selecione o dia da semana para a recorrência.");
+      if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
+        toast.error(
+          "Selecione pelo menos um dia da semana para a recorrência."
+        );
         return;
       }
       if (!selectedHorarioRecorrente) {
@@ -414,6 +790,36 @@ const Calendar: React.FC = () => {
       return;
     }
 
+    // Se for edição de recorrência
+    if (isRecurrent && selectedEvent && isEditingRecurrence) {
+      // Validações para edição de recorrência
+      if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
+        toast.error(
+          "Selecione pelo menos um dia da semana para a recorrência."
+        );
+        return;
+      }
+      if (!selectedHorarioRecorrente) {
+        toast.error("Selecione o horário para a recorrência.");
+        return;
+      }
+      if (qtdSessoes <= 0) {
+        toast.error("Defina a quantidade de sessões.");
+        return;
+      }
+      if (!selectedCliente || !modalFuncionario) {
+        toast.error(
+          "Cliente e fisioterapeuta são obrigatórios para editar recorrência."
+        );
+        return;
+      }
+
+      await updateRecurrentSchedules();
+      closeModal();
+      resetModalFields();
+      return;
+    }
+
     // Lógica normal para evento único ou edição
     if (selectedEvent) {
       mutateUpdateEvent({
@@ -426,16 +832,16 @@ const Calendar: React.FC = () => {
         diaTodo: isChecked,
         observacao: eventTitle,
         notificar: false,
-        status: 1,
+        status: selectedStatus,
         clienteId: selectedCliente,
-        funcionarioId: selectedFuncionario,
-        filialId: selectedFilial,
+        funcionarioId: modalFuncionario,
+        filialId: modalFilial,
       });
     } else {
       mutateAddEvent({
         clienteId: selectedCliente,
-        funcionarioId: selectedFuncionario,
-        filialId: selectedFilial,
+        funcionarioId: modalFuncionario,
+        filialId: modalFilial,
         titulo: eventTitle,
         descricao: eventDescription,
         localizacao: eventLocation,
@@ -444,7 +850,7 @@ const Calendar: React.FC = () => {
         diaTodo: isChecked,
         observacao: eventTitle,
         notificar: false,
-        status: 1,
+        status: selectedStatus,
       });
     }
   };
@@ -472,14 +878,16 @@ const Calendar: React.FC = () => {
     setEventLocation("");
     setSelectedEvent(null);
     setSelectedCliente(undefined);
-    setSelectedFuncionario(undefined);
-    setSelectedFilial(undefined);
+    setModalFuncionario(undefined);
+    setModalFilial(undefined);
+    setSelectedStatus(EScheduleStatus.AConfirmar);
     setIsChecked(false);
 
     setIsRecurrent(false);
-    setSelectedDiaSemana("");
+    setSelectedDiasSemana([]);
     setSelectedHorarioRecorrente("");
     setQtdSessoes(1);
+    setIsEditingRecurrence(false);
   };
 
   const handleOpenModal = () => {
@@ -512,7 +920,8 @@ const Calendar: React.FC = () => {
     // Define cor do texto baseada no fundo
     const textColor = isLightColor(cor) ? "#000000" : "#ffffff";
 
-    const { cliente, funcionario, filial, observacao } = eventInfo.event.extendedProps;
+    const { cliente, funcionario, filial, observacao, status } =
+      eventInfo.event.extendedProps;
 
     // Função para truncar o nome do cliente
     const truncateText = (text: string, maxLength: number = 15) => {
@@ -525,12 +934,23 @@ const Calendar: React.FC = () => {
       <div
         className="event-fc-color flex fc-event-main p-1 rounded-sm relative group cursor-pointer"
         style={{ background: cor, borderColor: cor }}
-        title={`Cliente: ${cliente} | Funcionário: ${funcionario} | Observação: ${observacao}`}
       >
         <div
           className="fc-daygrid-event-dot"
           style={{ background: textColor }}
         ></div>
+        <div
+          className="fc-event-status-icon"
+          style={{
+            fontSize: "12px",
+            marginRight: "4px",
+            marginLeft: "2px",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          {getStatusIcon(status)}
+        </div>
         <div className="fc-event-time" style={{ color: textColor }}>
           {eventInfo.timeText}
         </div>
@@ -563,7 +983,15 @@ const Calendar: React.FC = () => {
             </div>
             <div className="flex items-start gap-2">
               <span className="text-gray-300 font-medium">Observação:</span>
-              <span className="text-white">{observacao}</span>
+              <span className="text-white">{truncateText(observacao, 23)}</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-gray-300 font-medium">Status:</span>
+              <span className="text-white">
+                {ScheduleStatusLabels[
+                  status as keyof typeof ScheduleStatusLabels
+                ] || "Status desconhecido"}
+              </span>
             </div>
           </div>
           {/* Seta do tooltip */}
@@ -780,7 +1208,7 @@ const Calendar: React.FC = () => {
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-3">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
                 <div>
                   <Label>Cliente</Label>
                   <Select
@@ -799,10 +1227,10 @@ const Calendar: React.FC = () => {
                   </Label>
                   <Select
                     options={optionsFuncionario}
-                    value={selectedFuncionario}
+                    value={modalFuncionario}
                     placeholder="Selecione um fisioterapeuta"
                     onChange={(value) =>
-                      setSelectedFuncionario(value === "" ? undefined : value)
+                      setModalFuncionario(value === "" ? undefined : value)
                     }
                     className="dark:bg-dark-900"
                   />
@@ -813,23 +1241,38 @@ const Calendar: React.FC = () => {
                   </Label>
                   <Select
                     options={optionsFilial}
-                    value={selectedFilial}
+                    value={modalFilial}
                     placeholder="Selecione uma filial"
                     onChange={(value) =>
-                      setSelectedFilial(value === "" ? undefined : value)
+                      setModalFilial(value === "" ? undefined : value)
                     }
+                    className="dark:bg-dark-900"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Status do Agendamento{" "}
+                    <span className="text-red-300">*</span>
+                  </Label>
+                  <Select
+                    options={statusOptions}
+                    value={selectedStatus.toString()}
+                    placeholder="Selecione o status"
+                    onChange={(value) => setSelectedStatus(parseInt(value))}
                     className="dark:bg-dark-900"
                   />
                 </div>
               </div>
 
-              {/* Checkbox para recorrência - apenas para novos eventos */}
-              {!selectedEvent && (
+              {/* Checkbox para recorrência - apenas para novos eventos ou edição de recorrência */}
+              {(!selectedEvent || isEditingRecurrence) && (
                 <div className="mb-5">
                   <div className="flex items-center gap-3">
                     <Checkbox checked={isRecurrent} onChange={setIsRecurrent} />
                     <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
-                      Criar agendamento recorrente
+                      {selectedEvent && isEditingRecurrence
+                        ? "Editar recorrência (alterará sessões futuras)"
+                        : "Criar agendamento recorrente"}
                       {isRecurrent && (
                         <span className="ml-2 text-xs text-green-600 dark:text-green-400">
                           (Múltiplos agendamentos)
@@ -837,46 +1280,55 @@ const Calendar: React.FC = () => {
                       )}
                     </span>
                   </div>
+                  {selectedEvent && isEditingRecurrence && (
+                    <p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
+                      ⚠️ Apenas sessões futuras (a partir de hoje) serão
+                      alteradas. Sessões passadas permanecerão inalteradas.
+                    </p>
+                  )}
                 </div>
               )}
 
               {/* Configuração de recorrência */}
-              {isRecurrent && !selectedEvent && (
+              {isRecurrent && (
                 <>
                   <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <h6 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
                       Configuração de Recorrência
                     </h6>
-                    {qtdSessoes > 0 && selectedDiaSemana && (
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        <strong>Informação:</strong> Serão criados {qtdSessoes}{" "}
-                        agendamentos todas as {selectedDiaSemana.toLowerCase()}s
-                        {selectedHorarioRecorrente &&
-                          ` às ${selectedHorarioRecorrente}`}
-                        .
-                      </p>
-                    )}
+                    {qtdSessoes > 0 &&
+                      selectedDiasSemana &&
+                      selectedDiasSemana.length > 0 && (
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                          <strong>Informação:</strong> Serão criados{" "}
+                          {qtdSessoes} agendamentos alternando entre:{" "}
+                          {selectedDiasSemana
+                            .map((dia) => dia.toLowerCase())
+                            .join(", ")}
+                          {selectedHorarioRecorrente &&
+                            ` às ${selectedHorarioRecorrente}`}
+                          .
+                        </p>
+                      )}
                   </div>
 
                   <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-3 mb-5">
                     <div>
-                      <Label>
-                        Dia da Semana<span className="text-red-300">*</span>
-                      </Label>
-                      <Select
+                      <MultiSelect
+                        label="Dias da semana*"
                         options={[
-                          { label: "Segunda-Feira", value: "Segunda-Feira" },
-                          { label: "Terça-Feira", value: "Terça-Feira" },
-                          { label: "Quarta-Feira", value: "Quarta-Feira" },
-                          { label: "Quinta-Feira", value: "Quinta-Feira" },
-                          { label: "Sexta-Feira", value: "Sexta-Feira" },
-                          { label: "Sábado", value: "Sábado" },
-                          { label: "Domingo", value: "Domingo" },
+                          { text: "Segunda-Feira", value: "Segunda-Feira" },
+                          { text: "Terça-Feira", value: "Terça-Feira" },
+                          { text: "Quarta-Feira", value: "Quarta-Feira" },
+                          { text: "Quinta-Feira", value: "Quinta-Feira" },
+                          { text: "Sexta-Feira", value: "Sexta-Feira" },
+                          { text: "Sábado", value: "Sábado" },
+                          { text: "Domingo", value: "Domingo" },
                         ]}
-                        value={selectedDiaSemana}
-                        onChange={(value) => setSelectedDiaSemana(value)}
-                        placeholder="Selecione o dia da semana"
-                        className="dark:bg-dark-900"
+                        defaultSelected={selectedDiasSemana}
+                        onChange={(selectedDays) => {
+                          setSelectedDiasSemana(selectedDays);
+                        }}
                       />
                     </div>
                     <div>
@@ -937,7 +1389,9 @@ const Calendar: React.FC = () => {
                 className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
               >
                 {selectedEvent
-                  ? "Atualizar"
+                  ? isEditingRecurrence && isRecurrent
+                    ? "Atualizar Recorrência"
+                    : "Atualizar"
                   : isRecurrent
                   ? "Criar Recorrência"
                   : "Salvar"}

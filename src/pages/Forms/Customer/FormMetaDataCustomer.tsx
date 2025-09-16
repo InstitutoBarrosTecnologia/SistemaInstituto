@@ -247,7 +247,7 @@ export default function FormMetaDataCustomer({ data, edit }: FormCustomerProps) 
                             onClick={() => setShowHistorico(!showHistorico)}
                             className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200"
                         >
-                            <span>Histórico</span>
+                            <span>Evolução</span>
                             <svg className={`w-4 h-4 transform transition-transform ${showHistorico ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                             </svg>
