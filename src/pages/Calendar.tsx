@@ -59,6 +59,11 @@ const Calendar: React.FC = () => {
     openModal: openModalDelete,
     closeModal: closeModalDelete,
   } = useModal();
+  const {
+    isOpen: isOpenDeleteRecurrence,
+    openModal: openModalDeleteRecurrence,
+    closeModal: closeModalDeleteRecurrence,
+  } = useModal();
   const [selectedFilial, setSelectedFilial] = useState<string | undefined>(
     undefined
   );
@@ -85,6 +90,7 @@ const Calendar: React.FC = () => {
   const [filter, setFilter] = useState<Filter>({});
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [currentEventData, setCurrentEventData] = useState<any>(null);
 
   // Estados para recorrência
   const [isRecurrent, setIsRecurrent] = useState<boolean>(false);
@@ -858,7 +864,23 @@ const Calendar: React.FC = () => {
   const handleDeleteEvent = () => {
     if (selectedEvent && selectedEvent.id) {
       setIdDeleteRegister(selectedEvent.id);
-      openModalDelete();
+      
+      // Verificar se é um evento recorrente
+      const schedule = schedules?.find((s) => s.id === selectedEvent.id);
+      const isRecurrentSession =
+        schedule?.observacao?.includes("Agendamento recorrente") ||
+        schedule?.observacao?.includes("Recorrência atualizada") ||
+        schedule?.titulo?.includes("Sessão");
+
+      setCurrentEventData(schedule);
+      
+      if (isRecurrentSession) {
+        // Se for recorrente, abrir modal de opções de exclusão
+        openModalDeleteRecurrence();
+      } else {
+        // Se não for recorrente, abrir modal normal
+        openModalDelete();
+      }
     }
   };
 
@@ -866,6 +888,72 @@ const Calendar: React.FC = () => {
     e.preventDefault();
     if (idDeleteRegister) {
       mutateDeleteEvent(idDeleteRegister);
+    }
+  };
+
+  // Função para deletar apenas o evento atual
+  const handleDeleteCurrentEvent = async () => {
+    if (idDeleteRegister) {
+      try {
+        await mutateDeleteEvent(idDeleteRegister);
+        closeModalDeleteRecurrence();
+        closeModal();
+        resetModalFields();
+        toast.success("Evento excluído com sucesso!");
+      } catch (error) {
+        console.error("Erro ao deletar evento atual:", error);
+        toast.error("Erro ao excluir evento. Tente novamente.");
+      }
+    }
+  };
+
+  // Função para deletar toda a recorrência
+  const handleDeleteRecurrence = async () => {
+    if (!currentEventData || !currentEventData.clienteId || !currentEventData.funcionarioId) {
+      toast.error("Dados insuficientes para excluir recorrência.");
+      return;
+    }
+
+    try {
+      // Buscar todas as sessões futuras do cliente e fisioterapeuta (incluindo a atual)
+      const allSessions = schedules?.filter((schedule: any) => {
+        return (
+          schedule.clienteId === currentEventData.clienteId &&
+          schedule.funcionarioId === currentEventData.funcionarioId &&
+          (schedule.observacao?.includes("Agendamento recorrente") ||
+           schedule.observacao?.includes("Recorrência atualizada") ||
+           schedule.titulo?.includes("Sessão"))
+        );
+      }) || [];
+
+      if (allSessions.length === 0) {
+        toast.error("Nenhuma sessão da recorrência encontrada.");
+        return;
+      }
+
+      // Deletar todas as sessões da recorrência
+      const deletePromises = allSessions.map((session: any) => 
+        deleteScheduleAsync(session.id)
+      );
+
+      const results = await Promise.all(deletePromises);
+      const successfulDeletes = results.filter((result) => result?.status === 200);
+
+      if (successfulDeletes.length === allSessions.length) {
+        toast.success(`${allSessions.length} sessões da recorrência excluídas com sucesso!`);
+        await refetchCalendar();
+      } else {
+        toast.error(`Apenas ${successfulDeletes.length} de ${allSessions.length} sessões foram excluídas.`);
+        await refetchCalendar();
+      }
+
+      closeModalDeleteRecurrence();
+      closeModal();
+      resetModalFields();
+    } catch (error) {
+      console.error("Erro ao deletar recorrência:", error);
+      toast.error("Erro ao excluir recorrência. Verifique o calendário.");
+      await refetchCalendar();
     }
   };
 
@@ -888,6 +976,10 @@ const Calendar: React.FC = () => {
     setSelectedHorarioRecorrente("");
     setQtdSessoes(1);
     setIsEditingRecurrence(false);
+    
+    // Reset dos novos estados
+    setCurrentEventData(null);
+    setIdDeleteRegister("");
   };
 
   const handleOpenModal = () => {
@@ -1400,6 +1492,81 @@ const Calendar: React.FC = () => {
           </div>
           <Toaster position="bottom-right" />
         </Modal>
+
+        {/* Modal de opções de exclusão de recorrência */}
+        <Modal
+          isOpen={isOpenDeleteRecurrence}
+          onClose={closeModalDeleteRecurrence}
+          className="max-w-[500px] m-4"
+        >
+          <div className="no-scrollbar relative w-full max-w-[500px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-8">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900/20 mb-4">
+                <svg
+                  className="h-6 w-6 text-yellow-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                  />
+                </svg>
+              </div>
+              <h4 className="mb-2 text-xl font-semibold text-gray-800 dark:text-white/90">
+                Excluir Agendamento Recorrente
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+                Este evento faz parte de uma recorrência. O que você deseja excluir?
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleDeleteCurrentEvent}
+                className="w-full flex items-center justify-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex items-center justify-center w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="font-medium text-gray-900 dark:text-white">Apenas este evento</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Excluir somente esta sessão específica</div>
+                </div>
+              </button>
+
+              <button
+                onClick={handleDeleteRecurrence}
+                className="w-full flex items-center justify-center gap-3 p-4 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <div className="flex items-center justify-center w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full">
+                  <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="font-medium text-gray-900 dark:text-white">Toda a recorrência</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Excluir todas as sessões desta recorrência</div>
+                </div>
+              </button>
+            </div>
+
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={closeModalDeleteRecurrence}
+                className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </Modal>
+
         <Modal
           isOpen={isOpenDelete}
           onClose={closeModalDelete}

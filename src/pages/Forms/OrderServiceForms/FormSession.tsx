@@ -28,7 +28,9 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
 
     const getCurrentTime = () => {
         const now = new Date();
-        return now.toTimeString().split(" ")[0];
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
     };
 
     const [formData, setFormData] = useState<OrderServiceSessionRequestDto>({
@@ -123,11 +125,39 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Usar valores dos campos ou aplicar padrões se estiverem vazios
+        const finalDataSessao = formData.dataSessao || new Date().toISOString().split("T")[0];
+        const finalHoraSessao = formData.horaSessao || getCurrentTime();
+
+        // Converter hora para formato TimeSpan (HH:MM:SS)
+        const convertToTimeSpan = (timeString: string): string => {
+            // Se já estiver no formato completo, retornar como está
+            if (timeString.includes(':') && timeString.split(':').length === 3) {
+                return timeString;
+            }
+            // Se estiver no formato HH:MM, adicionar :00 para segundos
+            if (timeString.includes(':') && timeString.split(':').length === 2) {
+                return `${timeString}:00`;
+            }
+            // Fallback para formato atual
+            return `${timeString}:00`;
+        };
+
         const payload = {
             ...formData,
-            dataSessao: new Date().toISOString().split("T")[0],
-            horaSessao: getCurrentTime()
+            dataSessao: finalDataSessao,
+            horaSessao: convertToTimeSpan(finalHoraSessao)
         };
+
+        console.log("📅 Dados da sessão:", {
+            dataOriginal: formData.dataSessao,
+            horaOriginal: formData.horaSessao,
+            dataFinal: finalDataSessao,
+            horaFinal: finalHoraSessao,
+            horaSessaoConvertida: convertToTimeSpan(finalHoraSessao),
+            payload
+        });
+
         mutation.mutate(payload);
 
         if (historicoTemp && historicoTemp.trim() !== "") {
@@ -217,6 +247,30 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
                                         className="dark:bg-dark-900"
                                         required={true}
                                     />
+                                </div>
+                                <div>
+                                    <Label>Data da Sessão</Label>
+                                    <Input
+                                        type="date"
+                                        value={formData.dataSessao}
+                                        onChange={(e) => setFormData({ ...formData, dataSessao: e.target.value })}
+                                        placeholder="Data da sessão"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Se não informada, será utilizada a data atual
+                                    </p>
+                                </div>
+                                <div>
+                                    <Label>Hora da Sessão</Label>
+                                    <Input
+                                        type="time"
+                                        value={formData.horaSessao}
+                                        onChange={(e) => setFormData({ ...formData, horaSessao: e.target.value })}
+                                        placeholder="Hora da sessão"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Se não informada, será utilizada a hora atual
+                                    </p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
