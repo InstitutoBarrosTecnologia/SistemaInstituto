@@ -1,7 +1,6 @@
 
 import Input from "../../../components/form/input/InputField";
 import Label from "../../../components/form/Label";
-import Button from "../../../components/ui/button/Button";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
@@ -467,9 +466,13 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
                             )}
                         </div>
                         <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-                            <Button size="sm" variant="outline" onClick={closeModal}>
+                            <button
+                                type="button"
+                                className="text-text-secondary border border-border-secondary shadow-theme-xs hover:bg-bg-secondary px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+                                onClick={closeModal}
+                            >
                                 Cancelar
-                            </Button>
+                            </button>
                             <button
                                 className="bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
                                 type="submit"

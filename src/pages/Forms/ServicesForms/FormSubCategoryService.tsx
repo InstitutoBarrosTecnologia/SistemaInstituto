@@ -1,6 +1,5 @@
 import Input from "../../../components/form/input/InputField";
 import Label from "../../../components/form/Label";
-import Button from "../../../components/ui/button/Button";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { NumericFormat } from 'react-number-format';
@@ -174,7 +173,10 @@ export default function FormSubCategoryService({ data, edit, closeModal }: FormC
                     </p>
                 </div>
 
-                <form className="flex flex-col" onSubmit={edit ? handleSaveEdit : handleSave} >
+                <form 
+                    className="flex flex-col" 
+                    onSubmit={edit ? handleSaveEdit : handleSave}
+                >
                     <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
                         <div>
                             <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
@@ -207,10 +209,20 @@ export default function FormSubCategoryService({ data, edit, closeModal }: FormC
                                 <div>
                                     <Label>Preço Serviço<span className="text-red-300">*</span></Label>
                                     <NumericFormat
+                                        type="text"
                                         value={formData.valorServico}
                                         onValueChange={(values) => {
                                             const { floatValue } = values;
                                             setFormData({ ...formData, valorServico: floatValue || 0 });
+                                        }}
+                                        onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                const form = e.currentTarget.form;
+                                                if (form) {
+                                                    form.requestSubmit();
+                                                }
+                                            }
                                         }}
                                         thousandSeparator="."
                                         decimalSeparator=","
@@ -219,7 +231,11 @@ export default function FormSubCategoryService({ data, edit, closeModal }: FormC
                                         allowNegative={false}
                                         placeholder="Ex: 1.000,99"
                                         className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
-                                        required={true}
+                                        getInputRef={(el: HTMLInputElement | null) => {
+                                            if (el) {
+                                                el.setAttribute('type', 'text');
+                                            }
+                                        }}
                                     />
 
                                 </div>
@@ -231,15 +247,23 @@ export default function FormSubCategoryService({ data, edit, closeModal }: FormC
                                         onChange={handleSelectChangeEdit}
                                         className="dark:bg-dark-900"
                                         value={formData.categoriaId}
+                                        required={true}
                                     />
                                 </div>
                             </div>
                         </div>
 
+                        {/* Botão submit invisível para capturar Enter */}
+                        <input type="submit" style={{ display: 'none' }} aria-hidden="true" />
+
                         <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-                            <Button size="sm" variant="outline" onClick={closeModal}>
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                className="bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+                            >
                                 Cancelar
-                            </Button>
+                            </button>
                             <button
                                 className="bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
                                 type="submit"

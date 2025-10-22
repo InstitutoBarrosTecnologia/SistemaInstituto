@@ -3,7 +3,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast, Toaster } from "react-hot-toast";
 import { NumericFormat } from "react-number-format";
 import { Modal } from "../../../components/ui/modal";
-import Button from "../../../components/ui/button/Button";
 import Input from "../../../components/form/input/InputField";
 import Label from "../../../components/form/Label";
 import Select from "../../../components/form/Select";
@@ -758,9 +757,13 @@ export default function ModalNovaDespesa({
             </div>
 
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-              <Button size="sm" variant="outline" onClick={handleCloseModal}>
+              <button
+                type="button"
+                className="text-text-secondary border border-border-secondary shadow-theme-xs hover:bg-bg-secondary px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+                onClick={handleCloseModal}
+              >
                 Cancelar
-              </Button>
+              </button>
               <button
                 className="bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
                 type="submit"

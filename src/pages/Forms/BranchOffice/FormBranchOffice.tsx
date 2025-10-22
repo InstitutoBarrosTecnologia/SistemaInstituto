@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Input from "../../../components/form/input/InputField";
 import Label from "../../../components/form/Label";
-import Button from "../../../components/ui/button/Button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast, { Toaster } from "react-hot-toast";
 import { BranchOfficeRequestDto } from "../../../services/model/Dto/Request/BranchOfficeRequestDto";
@@ -194,10 +193,19 @@ export default function FormBranchOffice({ data, edit, closeModal }: FormBranchO
             </div>
           </div>
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={closeModal}>
+            <button
+              type="button"
+              onClick={closeModal}
+              className="bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300 px-5 py-3.5 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+            >
               Cancelar
-            </Button>
-            <Button >Salvar</Button>
+            </button>
+            <button
+              type="submit"
+              className="bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 px-5 py-3.5 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+            >
+              Salvar
+            </button>
           </div>
         </div>
       </form >

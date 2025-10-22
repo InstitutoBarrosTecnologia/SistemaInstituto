@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import Input from "../../../components/form/input/InputField";
 import Label from "../../../components/form/Label";
-import Button from "../../../components/ui/button/Button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast, { Toaster } from "react-hot-toast";
 import EmployeeService from "../../../services/service/EmployeeService";
@@ -248,6 +247,16 @@ export default function FormEmployee({
     mutation.mutate(formData);
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const form = e.currentTarget.form;
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+  };
+
   const handleChange = (
     eventOrName: React.ChangeEvent<HTMLInputElement> | string,
     manualValue?: string
@@ -348,6 +357,7 @@ export default function FormEmployee({
                   name="cpf"
                   value={formData.cpf}
                   onChange={handleChange}
+                  onKeyPress={handleKeyPress}
                   placeholder="000.000.000-00"
                   className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
                   required={true}
@@ -361,6 +371,7 @@ export default function FormEmployee({
                   name="rg"
                   value={formData.rg}
                   onChange={handleChange}
+                  onKeyPress={handleKeyPress}
                   placeholder="000.000.000-00"
                   className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
                 />
@@ -384,6 +395,7 @@ export default function FormEmployee({
                   name="telefone"
                   value={formData.telefone ?? ""}
                   onChange={handleChange}
+                  onKeyPress={handleKeyPress}
                   placeholder="(00) 00000-0000"
                   className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-dark-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
                 />
@@ -396,6 +408,7 @@ export default function FormEmployee({
                   name="contatoEmergencial"
                   value={formData.contatoEmergencial ?? ""}
                   onChange={handleChange}
+                  onKeyPress={handleKeyPress}
                   placeholder="Contato Emergencial"
                   className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-dark-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
                 />
@@ -410,6 +423,7 @@ export default function FormEmployee({
                   name="dataNascimento"
                   value={formData.dataNascimento ?? ""}
                   onChange={handleChange}
+                  onKeyPress={handleKeyPress}
                   placeholder="dd/mm/aaaa"
                   className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-dark-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
                   required={true}
@@ -560,10 +574,18 @@ export default function FormEmployee({
               </>
             )}
           </div>
+
+          {/* Botão submit invisível para capturar Enter */}
+          <input type="submit" style={{ display: 'none' }} aria-hidden="true" />
+
           <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-            <Button size="sm" variant="outline" onClick={closeModal}>
+            <button
+              type="button"
+              onClick={closeModal}
+              className="bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+            >
               Cancelar
-            </Button>
+            </button>
             <button
               className="bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
               type="submit"

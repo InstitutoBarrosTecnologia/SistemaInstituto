@@ -3,7 +3,6 @@ import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import Label from "../../../components/form/Label";
 import Select from "../../../components/form/Select";
-import Button from "../../../components/ui/button/Button";
 import { CustomerRequestDto, HistoryCustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
@@ -21,11 +20,30 @@ interface FormCustomerProps {
 export default function FormCustomer({ data, edit, closeModal }: FormCustomerProps) {
   const [historicoTemp, setHistoricoTemp] = useState("");
 
+  // Função para converter data ISO para formato brasileiro DD/MM/YYYY
+  const formatDateToBrazilian = (isoDate: string): string => {
+    if (!isoDate) return "";
+    
+    try {
+      // Se já está no formato brasileiro, retornar
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(isoDate)) {
+        return isoDate;
+      }
+
+      // Se está no formato ISO (YYYY-MM-DD ou YYYY-MM-DDTHH:mm:ss)
+      const dateOnly = isoDate.split('T')[0];
+      const [year, month, day] = dateOnly.split('-');
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      return "";
+    }
+  };
+
   const [formData, setFormData] = useState<CustomerRequestDto>({
     id: edit && data?.id ? data.id : undefined,
     nome: data?.nome ?? "",
     rg: data?.rg ?? "",
-    dataNascimento: data?.dataNascimento ? data.dataNascimento.split('T')[0] : "",
+    dataNascimento: data?.dataNascimento ? formatDateToBrazilian(data.dataNascimento) : "",
     imc: data?.imc,
     altura: data?.altura,
     peso: data?.peso,
@@ -110,7 +128,7 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
         id: data.id,
         nome: data.nome ?? "",
         rg: data.rg ?? "",
-        dataNascimento: data.dataNascimento ? data.dataNascimento.split('T')[0] : "",
+        dataNascimento: data.dataNascimento ? formatDateToBrazilian(data.dataNascimento) : "",
         imc: data.imc,
         altura: data.altura,
         peso: data.peso,
@@ -137,6 +155,13 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Converter data de DD/MM/YYYY para YYYY-MM-DD se necessário
+    let dataNascimentoISO = formData.dataNascimento;
+    if (formData.dataNascimento && /^\d{2}\/\d{2}\/\d{4}$/.test(formData.dataNascimento)) {
+      const [day, month, year] = formData.dataNascimento.split("/");
+      dataNascimentoISO = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+
     const novoHistorico: HistoryCustomerRequestDto = {
       assunto: edit ? "Atualização histórico do paciente" : "Histórico Novo",
       descricao: historicoTemp,
@@ -145,11 +170,22 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
 
     const formDataAtualizado: CustomerRequestDto = {
       ...formData,
+      dataNascimento: dataNascimentoISO,
       historico: [...(formData.historico ?? []), novoHistorico],
     };
 
     mutation.mutate(formDataAtualizado);
     setHistoricoTemp("");
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const form = e.currentTarget.form;
+      if (form) {
+        form.requestSubmit();
+      }
+    }
   };
 
   const options = [
@@ -247,13 +283,23 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                     name="rg"
                     value={formData.rg}
                     onChange={handleChange}
+                    onKeyPress={handleKeyPress}
                     placeholder="000.000.000-00"
                     className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
                   />
                 </div>
                 <div>
                   <Label>Data de Nascimento<span className="text-red-300">*</span></Label>
-                  <Input type="date" required={true} value={formData.dataNascimento} onChange={(e) => setFormData({ ...formData, dataNascimento: e.target.value })} />
+                  <InputMask
+                    mask="99/99/9999"
+                    maskChar=""
+                    value={formData.dataNascimento ?? ""}
+                    onChange={(e) => setFormData({ ...formData, dataNascimento: e.target.value })}
+                    onKeyPress={handleKeyPress}
+                    placeholder="dd/mm/aaaa"
+                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                    required={true}
+                  />
                 </div>
                 <div>
                   <Label>E-mail<span className="text-red-300">*</span></Label>
@@ -267,6 +313,7 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                     name="nrTelefone"
                     value={formData.nrTelefone ?? ""}
                     onChange={handleChange}
+                    onKeyPress={handleKeyPress}
                     placeholder="000.000.000-00"
                     className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
                   />
@@ -283,6 +330,7 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                       const altura = e.target.value ? parseFloat(e.target.value) : undefined;
                       setFormData((prev) => ({ ...prev, altura }));
                     }}
+                    onKeyPress={handleKeyPress}
                     placeholder="9.99"
                     className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
                   />
@@ -298,6 +346,7 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                       const peso = e.target.value ? parseFloat(e.target.value) : undefined;
                       setFormData((prev) => ({ ...prev, peso }));
                     }}
+                    onKeyPress={handleKeyPress}
                     placeholder="999.99"
                     className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
                   />
@@ -407,6 +456,7 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                           endereco: { ...prev.endereco!, cep: e.target.value },
                         }))
                       }
+                      onKeyPress={handleKeyPress}
                       placeholder="00000-000"
                       className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
                     />
@@ -516,7 +566,13 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
           </div>
 
           <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-            <Button size="sm" variant="outline" onClick={closeModal}>Cancelar</Button>
+            <button
+              type="button"
+              onClick={closeModal}
+              className="bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+            >
+              Cancelar
+            </button>
             <button
               className="bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
               type="submit"
