@@ -500,9 +500,20 @@ export default function FormEmployee({
                     />
                   </div>
                   <div>
-                    <Label>
-                      Nome de usuário<span className="text-red-300">*</span>
-                    </Label>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Label className="mb-0">
+                        Nome de usuário<span className="text-red-300">*</span>
+                      </Label>
+                      <div className="group relative inline-flex">
+                        <span className="flex items-center justify-center w-4 h-4 text-xs font-bold text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-full cursor-help">
+                          ?
+                        </span>
+                        <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 invisible group-hover:visible bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-md px-3 py-2 whitespace-nowrap z-[9999] shadow-lg pointer-events-none">
+                          Ex: NomeSobrenome
+                          <div className="absolute right-full top-1/2 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
+                        </div>
+                      </div>
+                    </div>
                     <Input
                       type="text"
                       placeholder="Username por favor coloque o nome de usuário sem espaço"
@@ -523,9 +534,20 @@ export default function FormEmployee({
                     />
                   </div>
                   <div>
-                    <Label>
-                      Senha<span className="text-red-300">*</span>
-                    </Label>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Label className="mb-0">
+                        Senha<span className="text-red-300">*</span>
+                      </Label>
+                      <div className="group relative inline-flex">
+                        <span className="flex items-center justify-center w-4 h-4 text-xs font-bold text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-full cursor-help">
+                          ?
+                        </span>
+                        <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 invisible group-hover:visible bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-md px-3 py-2 whitespace-nowrap z-[9999] shadow-lg pointer-events-none">
+                          Ex: Raph@_25
+                          <div className="absolute right-full top-1/2 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
+                        </div>
+                      </div>
+                    </div>
                     <Input
                       type="text"
                       placeholder="Senha"
