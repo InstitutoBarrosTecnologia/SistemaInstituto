@@ -142,6 +142,18 @@ const Calendar: React.FC = () => {
     }
   };
 
+  // Função helper para construir string ISO sem conversão UTC
+  const toLocalISOString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  };
+
   // Função para calcular as próximas datas baseado em múltiplos dias da semana
   const getNextDatesForMultipleWeekdays = (
     daysOfWeek: string[],
@@ -489,8 +501,8 @@ const Calendar: React.FC = () => {
       return postScheduleAsync({
         titulo: `${eventTitle || "Agendamento"} - Sessão ${index + 1}`,
         descricao: eventDescription || "Agendamento recorrente",
-        dataInicio: startDateTime.toISOString(),
-        dataFim: endDateTime.toISOString(),
+        dataInicio: toLocalISOString(startDateTime),
+        dataFim: toLocalISOString(endDateTime),
         diaTodo: false,
         clienteId: selectedCliente,
         funcionarioId: modalFuncionario,
