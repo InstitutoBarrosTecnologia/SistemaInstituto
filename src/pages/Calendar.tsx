@@ -621,10 +621,12 @@ const Calendar: React.FC = () => {
     }
     if (clientesData) {
       setOptionsCliente(
-        clientesData.map((item: any) => ({
-          label: item.nome,
-          value: item.id,
-        }))
+        clientesData
+          .map((item: any) => ({
+            label: item.nome,
+            value: item.id,
+          }))
+          .sort((a, b) => a.label.localeCompare(b.label))
       );
     }
     if (funcionariosData) {
