@@ -559,8 +559,13 @@ const Calendar: React.FC = () => {
   });
 
   useEffect(() => {
+    // Garantir que todos os dados sejam arrays
+    const funcionariosArray = Array.isArray(funcionariosData) ? funcionariosData : [];
+    const clientesArray = Array.isArray(clientesData) ? clientesData : [];
+    const filiaisArray = Array.isArray(filiaisData) ? filiaisData : [];
+    
     // Cria o map de id do funcionário para cor
-    const funcionarioColorMap = (funcionariosData || []).reduce(
+    const funcionarioColorMap = funcionariosArray.reduce(
       (acc: Record<string, string>, funcionario: any) => {
         if (funcionario.id && funcionario.cor) {
           acc[funcionario.id] = funcionario.cor;
@@ -573,15 +578,15 @@ const Calendar: React.FC = () => {
     if (schedules) {
       const formattedEvents = schedules.map((schedule) => {
         // Buscar nome do cliente
-        const cliente = clientesData?.find(
+        const cliente = clientesArray.find(
           (c: any) => c.id === schedule.clienteId
         );
         // Buscar nome do funcionário
-        const funcionario = funcionariosData?.find(
+        const funcionario = funcionariosArray.find(
           (f: any) => f.id === schedule.funcionarioId
         );
         // Buscar nome da filial
-        const filial = filiaisData?.find(
+        const filial = filiaisArray.find(
           (f: any) => f.id === schedule.filialId
         );
 
@@ -611,7 +616,7 @@ const Calendar: React.FC = () => {
   }, [schedules, funcionariosData, clientesData, filiaisData]);
 
   useEffect(() => {
-    if (filiaisData) {
+    if (filiaisData && Array.isArray(filiaisData)) {
       setOptionsFilial(
         filiaisData.map((item: any) => ({
           label: item.nomeFilial,
@@ -619,7 +624,7 @@ const Calendar: React.FC = () => {
         }))
       );
     }
-    if (clientesData) {
+    if (clientesData && Array.isArray(clientesData)) {
       setOptionsCliente(
         clientesData
           .map((item: any) => ({
@@ -629,7 +634,7 @@ const Calendar: React.FC = () => {
           .sort((a, b) => a.label.localeCompare(b.label))
       );
     }
-    if (funcionariosData) {
+    if (funcionariosData && Array.isArray(funcionariosData)) {
       setOptionsFuncionario(
         funcionariosData.map((item: any) => ({
           label: item.nome,
