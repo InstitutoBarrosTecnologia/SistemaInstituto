@@ -302,8 +302,8 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                   />
                 </div>
                 <div>
-                  <Label>E-mail<span className="text-red-300">*</span></Label>
-                  <Input type="email" required={true} placeholder="exemplo@email.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                  <Label>E-mail</Label>
+                  <Input type="email" placeholder="exemplo@email.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                 </div>
                 <div>
                   <Label>Telefone</Label>
