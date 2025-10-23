@@ -98,6 +98,8 @@ const Calendar: React.FC = () => {
   const [selectedHorarioRecorrente, setSelectedHorarioRecorrente] =
     useState<string>("");
   const [qtdSessoes, setQtdSessoes] = useState<number>(1);
+  const [horarioFinalRecorrente, setHorarioFinalRecorrente] =
+    useState<string>("");
   const [isEditingRecurrence, setIsEditingRecurrence] =
     useState<boolean>(false);
 
@@ -304,8 +306,13 @@ const Calendar: React.FC = () => {
 
       const startHours = originalStartDate.getHours();
       const startMinutes = originalStartDate.getMinutes();
-      const endHours = originalEndDate.getHours();
-      const endMinutes = originalEndDate.getMinutes();
+      let endHours = originalEndDate.getHours();
+      let endMinutes = originalEndDate.getMinutes();
+
+      // Se horarioFinalRecorrente foi definido, usar ele ao invés do horário do evento
+      if (horarioFinalRecorrente) {
+        [endHours, endMinutes] = horarioFinalRecorrente.split(":").map(Number);
+      }
 
       console.log("Horários extraídos dos campos:", {
         eventStartDate,
@@ -314,6 +321,7 @@ const Calendar: React.FC = () => {
         startMinutes,
         endHours,
         endMinutes,
+        horarioFinalRecorrente,
       });
 
       // Se há dias da semana selecionados, gerar novas datas baseadas na recorrência
@@ -490,13 +498,20 @@ const Calendar: React.FC = () => {
       qtdSessoes
     );
     const [hours, minutes] = selectedHorarioRecorrente.split(":").map(Number);
+    
+    // Processar horário final
+    let endHours = hours + 1;
+    let endMinutes = minutes;
+    if (horarioFinalRecorrente) {
+      [endHours, endMinutes] = horarioFinalRecorrente.split(":").map(Number);
+    }
 
     const schedulePromises = dates.map((date: Date, index: number) => {
       const startDateTime = new Date(date);
       startDateTime.setHours(hours, minutes, 0, 0);
 
       const endDateTime = new Date(startDateTime);
-      endDateTime.setHours(hours + 1, minutes, 0, 0); // Assumindo 1 hora de duração
+      endDateTime.setHours(endHours, endMinutes, 0, 0);
 
       return postScheduleAsync({
         titulo: `${eventTitle || "Agendamento"} - Sessão ${index + 1}`,
@@ -1416,7 +1431,9 @@ const Calendar: React.FC = () => {
                           {selectedDiasSemana
                             .map((dia) => dia.toLowerCase())
                             .join(", ")}
-                          {selectedHorarioRecorrente &&
+                          {selectedHorarioRecorrente && horarioFinalRecorrente &&
+                            ` das ${selectedHorarioRecorrente} às ${horarioFinalRecorrente}`}
+                          {selectedHorarioRecorrente && !horarioFinalRecorrente &&
                             ` às ${selectedHorarioRecorrente}`}
                           .
                         </p>
@@ -1451,6 +1468,19 @@ const Calendar: React.FC = () => {
                         value={selectedHorarioRecorrente}
                         onChange={(e) =>
                           setSelectedHorarioRecorrente(e.target.value)
+                        }
+                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                      />
+                    </div>
+                    <div>
+                      <Label>
+                        Horário Final<span className="text-red-300">*</span>
+                      </Label>
+                      <input
+                        type="time"
+                        value={horarioFinalRecorrente}
+                        onChange={(e) =>
+                          setHorarioFinalRecorrente(e.target.value)
                         }
                         className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                       />
