@@ -506,6 +506,7 @@ const Calendar: React.FC = () => {
       [endHours, endMinutes] = horarioFinalRecorrente.split(":").map(Number);
     }
 
+    
     const schedulePromises = dates.map((date: Date, index: number) => {
       const startDateTime = new Date(date);
       startDateTime.setHours(hours, minutes, 0, 0);
