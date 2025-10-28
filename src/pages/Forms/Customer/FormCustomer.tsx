@@ -3,6 +3,7 @@ import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import Label from "../../../components/form/Label";
 import Select from "../../../components/form/Select";
+import Checkbox from "../../../components/form/input/Checkbox";
 import { CustomerRequestDto, HistoryCustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
@@ -61,6 +62,8 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
     patologia: data?.patologia ?? "",
     cpf: data?.cpf ?? "",
     redeSocial: data?.redeSocial ?? "",
+    estrangeiro: data?.estrangeiro ?? false,
+    documentoIdentificacao: data?.documentoIdentificacao ?? "",
     status: data?.status ?? 0,
     historico: data?.historico ?? [],
   });
@@ -138,6 +141,8 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
         patologia: data.patologia ?? "",
         cpf: data.cpf ?? "",
         redeSocial: data.redeSocial ?? "",
+        estrangeiro: data.estrangeiro ?? false,
+        documentoIdentificacao: data.documentoIdentificacao ?? "",
         status: data.status ?? 0,
         historico: data.historico ?? [],
         endereco: {
@@ -172,6 +177,10 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
       ...formData,
       dataNascimento: dataNascimentoISO,
       historico: [...(formData.historico ?? []), novoHistorico],
+      // Se for estrangeiro, não enviar CPF (ou enviar vazio)
+      cpf: formData.estrangeiro ? "" : formData.cpf,
+      // Se não for estrangeiro, não enviar documento de identificação
+      documentoIdentificacao: formData.estrangeiro ? formData.documentoIdentificacao : undefined,
     };
 
     mutation.mutate(formDataAtualizado);
@@ -263,17 +272,49 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
                   />
                 </div>
                 <div>
-                  <Label>CPF<span className="text-red-300">*</span></Label>
-                  <InputMask
-                    mask="999.999.999-99"
-                    maskChar=""
-                    name="cpf"
-                    value={formData.cpf}
-                    onChange={handleChange}
-                    placeholder="000.000.000-00"
-                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
-                    required={true}
-                  />
+                  <div className="mb-3">
+                    <Checkbox
+                      label="Estrangeiro"
+                      checked={formData.estrangeiro}
+                      onChange={(checked) => {
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          estrangeiro: checked,
+                          // Limpar os campos quando alterar o tipo
+                          cpf: checked ? "" : prev.cpf,
+                          documentoIdentificacao: !checked ? "" : prev.documentoIdentificacao
+                        }));
+                      }}
+                    />
+                  </div>
+                  
+                  {!formData.estrangeiro ? (
+                    <>
+                      <Label>CPF<span className="text-red-300">*</span></Label>
+                      <InputMask
+                        mask="999.999.999-99"
+                        maskChar=""
+                        name="cpf"
+                        value={formData.cpf}
+                        onChange={handleChange}
+                        placeholder="000.000.000-00"
+                        className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                        required={!formData.estrangeiro}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Label>Documento de Identificação<span className="text-red-300">*</span></Label>
+                      <Input
+                        type="text"
+                        name="documentoIdentificacao"
+                        value={formData.documentoIdentificacao || ""}
+                        onChange={(e) => setFormData(prev => ({ ...prev, documentoIdentificacao: e.target.value }))}
+                        placeholder="Passaporte, RNE ou outro documento"
+                        required={formData.estrangeiro}
+                      />
+                    </>
+                  )}
                 </div>
                 <div>
                   <Label>RG</Label>

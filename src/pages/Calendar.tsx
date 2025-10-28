@@ -94,6 +94,7 @@ const Calendar: React.FC = () => {
 
   // Estados para recorrência
   const [isRecurrent, setIsRecurrent] = useState<boolean>(false);
+  const [tipoRecorrencia, setTipoRecorrencia] = useState<string>("semanal");
   const [selectedDiasSemana, setSelectedDiasSemana] = useState<string[]>([]);
   const [selectedHorarioRecorrente, setSelectedHorarioRecorrente] =
     useState<string>("");
@@ -239,6 +240,103 @@ const Calendar: React.FC = () => {
 
       // Avançar searchDate para o próximo dia para continuar a busca
       searchDate.setDate(searchDate.getDate() + 1);
+    }
+
+    return dates;
+  };
+
+  // Nova função para calcular datas baseado no tipo de recorrência
+  // Exemplo: 
+  // - Semanal + Segunda,Quarta + 6 sessões = distribui 6 sessões em 3 semanas (2 por semana)
+  // - Quinzenal + Segunda,Sexta + 6 sessões = distribui 6 sessões em 6 semanas (1 por semana a cada 2 semanas)
+  // - Mensal + Terça + 5 sessões = distribui 5 sessões em 5 meses (1 por mês)
+  const getNextDatesWithRecurrenceType = (
+    daysOfWeek: string[],
+    count: number,
+    recurrenceType: string
+  ): Date[] => {
+    const days = {
+      "Segunda-Feira": 1,
+      "Terça-Feira": 2,
+      "Quarta-Feira": 3,
+      "Quinta-Feira": 4,
+      "Sexta-Feira": 5,
+      Sábado: 6,
+      Domingo: 0,
+    };
+
+    if (daysOfWeek.length === 0) return [];
+
+    // Converter dias selecionados para números e ordenar
+    const selectedDayNumbers = daysOfWeek
+      .map((day) => days[day as keyof typeof days])
+      .filter((day) => day !== undefined)
+      .sort((a, b) => a - b);
+
+    if (selectedDayNumbers.length === 0) return [];
+
+    const dates: Date[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let currentDate = new Date(today);
+    let sessionsCreated = 0;
+    let dayIndex = 0;
+
+    // Definir o intervalo baseado no tipo de recorrência
+    const intervals = {
+      semanal: 7,      // A cada 7 dias (1 semana)
+      quinzenal: 14,   // A cada 14 dias (2 semanas)
+      mensal: 28       // A cada 28 dias (~1 mês - 4 semanas)
+    };
+
+    const intervalDays = intervals[recurrenceType as keyof typeof intervals] || 7;
+
+    while (sessionsCreated < count) {
+      const targetDayNumber = selectedDayNumbers[dayIndex];
+      
+      // Encontrar a próxima ocorrência do dia da semana desejado a partir da data atual
+      let searchDate = new Date(currentDate);
+      while (searchDate.getDay() !== targetDayNumber) {
+        searchDate.setDate(searchDate.getDate() + 1);
+      }
+
+      // Verificar se a data é válida (hoje ou futuro)
+      let isValidDate = searchDate >= today;
+
+      // Se for hoje, verificar se já passou do horário
+      if (
+        searchDate.toDateString() === today.toDateString() &&
+        selectedHorarioRecorrente
+      ) {
+        const [hours, minutes] = selectedHorarioRecorrente
+          .split(":")
+          .map(Number);
+        const targetTime = new Date(today);
+        targetTime.setHours(hours, minutes, 0, 0);
+
+        if (today >= targetTime) {
+          isValidDate = false;
+        }
+      }
+
+      if (isValidDate) {
+        dates.push(new Date(searchDate));
+        sessionsCreated++;
+      }
+
+      // Avançar para o próximo dia da semana na lista
+      dayIndex = (dayIndex + 1) % selectedDayNumbers.length;
+
+      // Se completamos um ciclo de todos os dias selecionados, 
+      // avançar para o próximo período de recorrência
+      if (dayIndex === 0) {
+        currentDate.setDate(currentDate.getDate() + intervalDays);
+      } else {
+        // Continuar na mesma semana/período para o próximo dia
+        currentDate = new Date(searchDate);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
     }
 
     return dates;
@@ -462,20 +560,28 @@ const Calendar: React.FC = () => {
 
       if (successfulUpdates.length === sessionsToUpdate.length) {
         toast.success(
-          `${sessionsToUpdate.length} sessões atualizadas com sucesso!`
+          `${sessionsToUpdate.length} sessões atualizadas com sucesso!`,
+          {
+            duration: 3000,
+          }
         );
         // Refetch apenas após todas as atualizações serem concluídas com sucesso
         await refetchCalendar();
       } else {
         toast.error(
-          `Apenas ${successfulUpdates.length} de ${sessionsToUpdate.length} sessões foram atualizadas.`
+          `Apenas ${successfulUpdates.length} de ${sessionsToUpdate.length} sessões foram atualizadas.`,
+          {
+            duration: 3000,
+          }
         );
         // Refetch mesmo com falhas parciais para mostrar o estado atual
         await refetchCalendar();
       }
     } catch (error) {
       console.error("Erro ao atualizar recorrência:", error);
-      toast.error("Erro ao atualizar algumas sessões. Verifique o calendário.");
+      toast.error("Erro ao atualizar algumas sessões. Verifique o calendário.", {
+        duration: 3000,
+      });
       // Refetch para mostrar o estado atual mesmo em caso de erro
       await refetchCalendar();
     }
@@ -493,9 +599,10 @@ const Calendar: React.FC = () => {
       return;
     }
 
-    const dates = getNextDatesForMultipleWeekdays(
+    const dates = getNextDatesWithRecurrenceType(
       selectedDiasSemana,
-      qtdSessoes
+      qtdSessoes,
+      tipoRecorrencia
     );
     const [hours, minutes] = selectedHorarioRecorrente.split(":").map(Number);
     
@@ -543,20 +650,28 @@ const Calendar: React.FC = () => {
 
       if (successfulCreations.length === qtdSessoes) {
         toast.success(
-          `${qtdSessoes} agendamentos recorrentes criados com sucesso!`
+          `${qtdSessoes} agendamentos recorrentes criados com sucesso!`,
+          {
+            duration: 3000,
+          }
         );
         // Refetch apenas após todas as criações serem concluídas com sucesso
         await refetchCalendar();
       } else {
         toast.error(
-          `Apenas ${successfulCreations.length} de ${qtdSessoes} agendamentos foram criados.`
+          `Apenas ${successfulCreations.length} de ${qtdSessoes} agendamentos foram criados.`,
+          {
+            duration: 3000,
+          }
         );
         // Refetch mesmo com falhas parciais para mostrar o estado atual
         await refetchCalendar();
       }
     } catch (error) {
       console.error("Erro ao criar agendamentos recorrentes:", error);
-      toast.error("Erro ao criar alguns agendamentos. Verifique o calendário.");
+      toast.error("Erro ao criar alguns agendamentos. Verifique o calendário.", {
+        duration: 3000,
+      });
       // Refetch para mostrar o estado atual mesmo em caso de erro
       await refetchCalendar();
     }
@@ -810,6 +925,10 @@ const Calendar: React.FC = () => {
     // Se for recorrência, usar a função específica
     if (isRecurrent && !selectedEvent) {
       // Validações para recorrência
+      if (!tipoRecorrencia) {
+        toast.error("Selecione o tipo de recorrência.");
+        return;
+      }
       if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
         toast.error(
           "Selecione pelo menos um dia da semana para a recorrência."
@@ -826,14 +945,21 @@ const Calendar: React.FC = () => {
       }
 
       await createRecurrentSchedules();
-      closeModal();
-      resetModalFields();
+      // Usar setTimeout similar aos eventos únicos para dar tempo do toast aparecer
+      setTimeout(() => {
+        closeModal();
+        resetModalFields();
+      }, 3000);
       return;
     }
 
     // Se for edição de recorrência
     if (isRecurrent && selectedEvent && isEditingRecurrence) {
       // Validações para edição de recorrência
+      if (!tipoRecorrencia) {
+        toast.error("Selecione o tipo de recorrência.");
+        return;
+      }
       if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
         toast.error(
           "Selecione pelo menos um dia da semana para a recorrência."
@@ -856,8 +982,11 @@ const Calendar: React.FC = () => {
       }
 
       await updateRecurrentSchedules();
-      closeModal();
-      resetModalFields();
+      // Usar setTimeout similar aos eventos únicos para dar tempo do toast aparecer
+      setTimeout(() => {
+        closeModal();
+        resetModalFields();
+      }, 3000);
       return;
     }
 
@@ -944,7 +1073,7 @@ const Calendar: React.FC = () => {
 
   // Função para deletar toda a recorrência
   const handleDeleteRecurrence = async () => {
-    if (!currentEventData || !currentEventData.clienteId || !currentEventData.funcionarioId) {
+    if (!currentEventData) {
       toast.error("Dados insuficientes para excluir recorrência.");
       return;
     }
@@ -1007,6 +1136,7 @@ const Calendar: React.FC = () => {
     setIsChecked(false);
 
     setIsRecurrent(false);
+    setTipoRecorrencia("semanal");
     setSelectedDiasSemana([]);
     setSelectedHorarioRecorrente("");
     setQtdSessoes(1);
@@ -1264,7 +1394,9 @@ const Calendar: React.FC = () => {
               )}
             </div>
             <div className="mt-8">
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-3">
+              {/* Container com scroll para os campos do formulário */}
+              <div className="custom-scrollbar h-[450px] sm:h-[500px] overflow-y-auto px-2 pb-3">
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-3">
                 <div>
                   <Label>
                     Título Evento
@@ -1428,7 +1560,8 @@ const Calendar: React.FC = () => {
                       selectedDiasSemana.length > 0 && (
                         <p className="text-sm text-blue-800 dark:text-blue-200">
                           <strong>Informação:</strong> Serão criados{" "}
-                          {qtdSessoes} agendamentos alternando entre:{" "}
+                          {qtdSessoes} agendamentos com recorrência{" "}
+                          <strong>{tipoRecorrencia}</strong> alternando entre:{" "}
                           {selectedDiasSemana
                             .map((dia) => dia.toLowerCase())
                             .join(", ")}
@@ -1441,7 +1574,23 @@ const Calendar: React.FC = () => {
                       )}
                   </div>
 
-                  <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-3 mb-5">
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
+                    <div>
+                      <Label>
+                        Tipo de Recorrência<span className="text-red-300">*</span>
+                      </Label>
+                      <Select
+                        options={[
+                          { label: "Semanal", value: "semanal" },
+                          { label: "Quinzenal", value: "quinzenal" },
+                          { label: "Mensal", value: "mensal" }
+                        ]}
+                        value={tipoRecorrencia}
+                        onChange={(value) => setTipoRecorrencia(value)}
+                        placeholder="Selecione o tipo"
+                        className="dark:bg-dark-900"
+                      />
+                    </div>
                     <div>
                       <MultiSelect
                         label="Dias da semana*"
@@ -1516,6 +1665,8 @@ const Calendar: React.FC = () => {
                   </span>
                 </div>
               )}
+              </div>
+              {/* Fim do container com scroll */}
             </div>
             <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
               <button

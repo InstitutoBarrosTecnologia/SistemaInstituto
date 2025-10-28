@@ -37,6 +37,8 @@ export default function FormMetaDataCustomer({ data, edit }: FormCustomerProps) 
         patologia: data?.patologia ?? "",
         cpf: data?.cpf ?? "",
         redeSocial: data?.redeSocial ?? "",
+        estrangeiro: data?.estrangeiro ?? false,
+        documentoIdentificacao: data?.documentoIdentificacao ?? "",
         status: data?.status ?? 0,
         historico: data?.historico ?? [],
         servicos: data?.servicos ?? []

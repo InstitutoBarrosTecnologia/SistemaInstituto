@@ -73,6 +73,8 @@ export default function OrdemServiceGrid() {
             patologia: "",
             cpf: "",
             redeSocial: "",
+            estrangeiro: false,
+            documentoIdentificacao: "",
             status: 0,
             historico: []
         },

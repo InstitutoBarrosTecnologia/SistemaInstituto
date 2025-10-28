@@ -167,7 +167,7 @@ export default function CustomerTableComponent({ filters }: CustomerGridProps) {
                                     Telefone
                                 </TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
-                                    CPF
+                                    CPF / Documento
                                 </TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
                                     E-mail
@@ -203,7 +203,15 @@ export default function CustomerTableComponent({ filters }: CustomerGridProps) {
                                         </a>
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                        {formatCPF(customer.cpf)}
+                                        {customer.estrangeiro ? 
+                                            (customer.documentoIdentificacao || "N/A") : 
+                                            formatCPF(customer.cpf)
+                                        }
+                                        {customer.estrangeiro && (
+                                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full dark:bg-blue-900 dark:text-blue-200">
+                                                Estrangeiro
+                                            </span>
+                                        )}
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         {customer.email}

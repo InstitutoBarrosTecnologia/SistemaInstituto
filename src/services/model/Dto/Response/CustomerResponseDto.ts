@@ -35,6 +35,8 @@ export interface CustomerResponseDto extends BaseResponseDto {
   patologia?: string;
   cpf: string;
   redeSocial?: string;
+  estrangeiro: boolean;
+  documentoIdentificacao?: string;
   status: number;
   historico?: HistoryCustomerResponseDto[];
   servicos?: OrderServiceResponseDto[];

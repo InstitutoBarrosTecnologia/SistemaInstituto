@@ -33,6 +33,8 @@ export interface AndressRequestDto {
     patologia?: string;
     cpf: string;
     redeSocial?: string;
+    estrangeiro: boolean;
+    documentoIdentificacao?: string;
     status: number;
     historico?: HistoryCustomerRequestDto[]; // Adicionado conforme o DTO C#
     servicos?: OrderServiceRequestDto[]; // Adicionado conforme o DTO C#
