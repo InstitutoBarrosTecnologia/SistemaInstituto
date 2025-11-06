@@ -16,6 +16,8 @@ import TextArea from "../../../components/form/input/TextArea";
 import { HistoryCustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
 import { getCustomerHistoryAsync, postCustomerHistoryAsync } from "../../../services/service/CustomerService";
 import { HistoryCustomerResponseDto, CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
+import { ScheduleResponseDto } from "../../../services/model/Dto/Response/ScheduleResponseDto";
+import { EScheduleStatus, ScheduleStatusLabels } from "../../../services/model/Enum/EScheduleStatus";
 
 interface FormSessionProps {
     clienteId?: string;
@@ -42,7 +44,9 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
     });
     const [showHistorico, setShowHistorico] = useState(false);
     const [showSessaoHistorico, setShowSessao] = useState(false);
+    const [showCalendario, setShowCalendario] = useState(false);
     const [historicos, setHistoricos] = useState<HistoryCustomerResponseDto[]>([]);
+    const [agendamentos, setAgendamentos] = useState<ScheduleResponseDto[]>([]);
 
     const queryClient = useQueryClient();
     const [sessions, setSessions] = useState<OrderServiceSessionResponseDto[]>([]);
@@ -85,23 +89,18 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
     useEffect(() => {
         if (clienteId && clienteId !== "") {
             getAllSessionsAsync(clienteId).then((res) => {
-                if (Array.isArray(res)) setSessions(res);
-            });
-
-            getAllOrderServicesAsync({ clienteId }).then((res) => {
                 if (Array.isArray(res)) {
-                    setOrdensServico(res);
+                    setSessions(res);
+                    
+                    // Extrair todos os agendamentos de todas as sessões
+                    const todosAgendamentos: ScheduleResponseDto[] = [];
+                    res.forEach((sessao) => {
+                        if (sessao.agendamentos && Array.isArray(sessao.agendamentos)) {
+                            todosAgendamentos.push(...sessao.agendamentos);
+                        }
+                    });
+                    setAgendamentos(todosAgendamentos);
                 }
-            }).catch(err => {
-                console.error("Erro ao carregar ordens de serviço:", err);
-            });
-        }
-    }, [clienteId]);
-
-    useEffect(() => {
-        if (clienteId && clienteId !== "") {
-            getAllSessionsAsync(clienteId).then((res) => {
-                if (Array.isArray(res)) setSessions(res);
             });
 
             getAllOrderServicesAsync({ clienteId }).then((res) => {
@@ -373,6 +372,98 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
                                                         <TableRow>
                                                             <TableCell className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
                                                                 Nenhuma sessão registrada para este paciente.
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mb-2">
+                            <button
+                                onClick={() => setShowCalendario(!showCalendario)}
+                                className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200"
+                                type="button"
+                            >
+                                <span>Calendário</span>
+                                <svg className={`w-4 h-4 transform transition-transform ${showCalendario ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            {showCalendario && (
+                                <div className="mt-3">
+                                    <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
+                                        <div>
+                                            <Table>
+                                                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                                                    <TableRow>
+                                                        <TableCell
+                                                            isHeader
+                                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                                        >
+                                                            Status
+                                                        </TableCell>
+                                                        <TableCell
+                                                            isHeader
+                                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                                        >
+                                                            Título
+                                                        </TableCell>
+                                                        <TableCell
+                                                            isHeader
+                                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                                        >
+                                                            Data/Hora
+                                                        </TableCell>
+                                                        <TableCell
+                                                            isHeader
+                                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                                        >
+                                                            Fisio
+                                                        </TableCell>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                                                    {agendamentos && agendamentos.length > 0 ? (
+                                                        agendamentos.map((agendamento, index) => (
+                                                            <TableRow key={index}>
+                                                                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {ScheduleStatusLabels[agendamento.status as EScheduleStatus] ?? "Desconhecido"}
+                                                                    </span>
+                                                                </TableCell>
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {agendamento.titulo}
+                                                                    </span>
+                                                                </TableCell>
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {new Date(agendamento.dataInicio).toLocaleString("pt-BR", {
+                                                                            day: "2-digit",
+                                                                            month: "2-digit",
+                                                                            year: "numeric",
+                                                                            hour: "2-digit",
+                                                                            minute: "2-digit"
+                                                                        })}
+                                                                    </span>
+                                                                </TableCell>
+                                                                <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {agendamento.funcionario?.nome ?? "N/A"}
+                                                                    </span>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                    ) : (
+                                                        <TableRow>
+                                                            <TableCell className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
+                                                                Nenhum agendamento registrado para este paciente.
                                                             </TableCell>
                                                         </TableRow>
                                                     )}

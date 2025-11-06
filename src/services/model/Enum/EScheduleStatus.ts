@@ -8,7 +8,9 @@ export enum EScheduleStatus {
     Faltou = 6,
     PreAtendimento = 7,
     Reagendar = 8,
-    Pagamento = 9
+    Pagamento = 9,
+    OFF = 10,
+    Reuniao = 11
 }
 
 export const ScheduleStatusLabels = {
@@ -21,7 +23,9 @@ export const ScheduleStatusLabels = {
     [EScheduleStatus.Faltou]: "Faltou",
     [EScheduleStatus.PreAtendimento]: "Pré atendimento",
     [EScheduleStatus.Reagendar]: "Reagendar",
-    [EScheduleStatus.Pagamento]: "Pagamento"
+    [EScheduleStatus.Pagamento]: "Pagamento",
+    [EScheduleStatus.OFF]: "OFF",
+    [EScheduleStatus.Reuniao]: "Reunião"
 };
 
 export const getScheduleStatusLabel = (status: number): string => {
@@ -49,6 +53,10 @@ export const getScheduleStatusColor = (status: number): string => {
             return "warning"; // Amarelo
         case EScheduleStatus.Pagamento:
             return "primary"; // Roxo/Azul primário
+        case EScheduleStatus.OFF:
+            return "secondary"; // Cinza
+        case EScheduleStatus.Reuniao:
+            return "info"; // Azul
         default:
             return "secondary";
     }

@@ -140,6 +140,10 @@ const Calendar: React.FC = () => {
         return "📅"; // calendário
       case EScheduleStatus.Pagamento:
         return "💰"; // dinheiro
+      case EScheduleStatus.OFF:
+        return "🔴"; // círculo vermelho
+      case EScheduleStatus.Reuniao:
+        return "👥"; // pessoas/reunião
       default:
         return "❓"; // padrão
     }
@@ -862,8 +866,30 @@ const Calendar: React.FC = () => {
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     resetModalFields();
-    setEventStartDate(selectInfo.startStr);
-    setEventEndDate(selectInfo.endStr || selectInfo.startStr);
+    
+    // Converter as datas para o formato compatível com datetime-local (YYYY-MM-DDTHH:mm)
+    const startDate = new Date(selectInfo.start);
+    const endDate = selectInfo.end ? new Date(selectInfo.end) : new Date(selectInfo.start);
+    
+    // Se for um clique em um dia (sem horário específico), definir horários padrão
+    // FullCalendar retorna 00:00 quando clica em um dia no month view
+    if (startDate.getHours() === 0 && startDate.getMinutes() === 0) {
+      startDate.setHours(8, 0); // Início às 8h
+      endDate.setHours(9, 0);   // Fim às 9h
+    }
+    
+    // Formato YYYY-MM-DDTHH:mm para datetime-local
+    const formatDateTimeLocal = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+    
+    setEventStartDate(formatDateTimeLocal(startDate));
+    setEventEndDate(formatDateTimeLocal(endDate));
     openModal();
   };
 
