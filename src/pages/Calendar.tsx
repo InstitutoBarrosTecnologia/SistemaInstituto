@@ -14,6 +14,7 @@ import EmployeeService from "../services/service/EmployeeService";
 import { getAllCustomersAsync } from "../services/service/CustomerService";
 import Label from "../components/form/Label";
 import Select from "../components/form/Select";
+import SelectWithSearch from "../components/form/SelectWithSearch";
 import MultiSelect from "../components/form/MultiSelect";
 import Checkbox from "../components/form/input/Checkbox";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -1496,14 +1497,16 @@ const Calendar: React.FC = () => {
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
                 <div>
                   <Label>Cliente</Label>
-                  <Select
+                  <SelectWithSearch
                     options={optionsCliente}
                     value={selectedCliente}
-                    placeholder="Selecione um cliente"
+                    placeholder="Buscar cliente..."
                     onChange={(value) =>
                       setSelectedCliente(value === "" ? undefined : value)
                     }
                     className="dark:bg-dark-900"
+                    isClearable={true}
+                    noOptionsMessage="Nenhum cliente encontrado"
                   />
                 </div>
                 <div>
