@@ -105,6 +105,9 @@ const Calendar: React.FC = () => {
   const [isEditingRecurrence, setIsEditingRecurrence] =
     useState<boolean>(false);
 
+  // Estado para controlar loading do botão de salvar
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
   // Estado para status do agendamento
   const [selectedStatus, setSelectedStatus] = useState<number>(
     EScheduleStatus.AConfirmar
@@ -782,6 +785,7 @@ const Calendar: React.FC = () => {
             calendar: "Primary",
             corFuncionario,
             cliente: cliente?.nome || "Não informado",
+            clienteTelefone: cliente?.nrTelefone || "Não informado",
             funcionario: funcionario?.nome || "Não informado",
             filial: filial?.nomeFilial || "Não informado",
             observacao: schedule.observacao || "Sem observação",
@@ -871,11 +875,13 @@ const Calendar: React.FC = () => {
           closeModal();
           resetModalFields();
           refetchCalendar();
+          setIsSaving(false);
         }, 3000); // Fecha a modal após o toast sumir
       } else {
         toast.error("Erro ao criar evento. Tente novamente.", {
           duration: 3000,
         });
+        setIsSaving(false);
       }
     },
     onError: (error: any) => {
@@ -901,6 +907,7 @@ const Calendar: React.FC = () => {
         duration: 4000,
       });
       console.error("Erro ao adicionar evento:", error);
+      setIsSaving(false);
     },
   });
 
@@ -915,11 +922,13 @@ const Calendar: React.FC = () => {
           closeModal();
           resetModalFields();
           refetchCalendar();
+          setIsSaving(false);
         }, 3000); // Fecha a modal após o toast sumir
       } else {
         toast.error("Erro ao atualizar evento. Tente novamente.", {
           duration: 3000,
         });
+        setIsSaving(false);
       }
     },
     onError: (error: any) => {
@@ -945,6 +954,7 @@ const Calendar: React.FC = () => {
         duration: 4000,
       });
       console.error("Erro ao atualizar evento:", error);
+      setIsSaving(false);
     },
   });
 
@@ -1047,106 +1057,127 @@ const Calendar: React.FC = () => {
   };
 
   const handleAddOrUpdateEvent = async () => {
-    // Se for recorrência, usar a função específica
-    if (isRecurrent && !selectedEvent) {
-      // Validações para recorrência
-      if (!tipoRecorrencia) {
-        toast.error("Selecione o tipo de recorrência.");
-        return;
-      }
-      if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
-        toast.error(
-          "Selecione pelo menos um dia da semana para a recorrência."
-        );
-        return;
-      }
-      if (!selectedHorarioRecorrente) {
-        toast.error("Selecione o horário para a recorrência.");
-        return;
-      }
-      if (qtdSessoes <= 0) {
-        toast.error("Defina a quantidade de sessões.");
+    // Prevenir múltiplos cliques
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    
+    try {
+      // Se for recorrência, usar a função específica
+      if (isRecurrent && !selectedEvent) {
+        // Validações para recorrência
+        if (!tipoRecorrencia) {
+          toast.error("Selecione o tipo de recorrência.");
+          setIsSaving(false);
+          return;
+        }
+        if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
+          toast.error(
+            "Selecione pelo menos um dia da semana para a recorrência."
+          );
+          setIsSaving(false);
+          return;
+        }
+        if (!selectedHorarioRecorrente) {
+          toast.error("Selecione o horário para a recorrência.");
+          setIsSaving(false);
+          return;
+        }
+        if (qtdSessoes <= 0) {
+          toast.error("Defina a quantidade de sessões.");
+          setIsSaving(false);
+          return;
+        }
+
+        await createRecurrentSchedules();
+        // Usar setTimeout similar aos eventos únicos para dar tempo do toast aparecer
+        setTimeout(() => {
+          closeModal();
+          resetModalFields();
+          setIsSaving(false);
+        }, 3000);
         return;
       }
 
-      await createRecurrentSchedules();
-      // Usar setTimeout similar aos eventos únicos para dar tempo do toast aparecer
-      setTimeout(() => {
-        closeModal();
-        resetModalFields();
-      }, 3000);
-      return;
-    }
+      // Se for edição de recorrência
+      if (isRecurrent && selectedEvent && isEditingRecurrence) {
+        // Validações para edição de recorrência
+        if (!tipoRecorrencia) {
+          toast.error("Selecione o tipo de recorrência.");
+          setIsSaving(false);
+          return;
+        }
+        if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
+          toast.error(
+            "Selecione pelo menos um dia da semana para a recorrência."
+          );
+          setIsSaving(false);
+          return;
+        }
+        if (!selectedHorarioRecorrente) {
+          toast.error("Selecione o horário para a recorrência.");
+          setIsSaving(false);
+          return;
+        }
+        if (qtdSessoes <= 0) {
+          toast.error("Defina a quantidade de sessões.");
+          setIsSaving(false);
+          return;
+        }
+        if (!selectedCliente || !modalFuncionario) {
+          toast.error(
+            "Cliente e fisioterapeuta são obrigatórios para editar recorrência."
+          );
+          setIsSaving(false);
+          return;
+        }
 
-    // Se for edição de recorrência
-    if (isRecurrent && selectedEvent && isEditingRecurrence) {
-      // Validações para edição de recorrência
-      if (!tipoRecorrencia) {
-        toast.error("Selecione o tipo de recorrência.");
-        return;
-      }
-      if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
-        toast.error(
-          "Selecione pelo menos um dia da semana para a recorrência."
-        );
-        return;
-      }
-      if (!selectedHorarioRecorrente) {
-        toast.error("Selecione o horário para a recorrência.");
-        return;
-      }
-      if (qtdSessoes <= 0) {
-        toast.error("Defina a quantidade de sessões.");
-        return;
-      }
-      if (!selectedCliente || !modalFuncionario) {
-        toast.error(
-          "Cliente e fisioterapeuta são obrigatórios para editar recorrência."
-        );
+        await updateRecurrentSchedules();
+        // Usar setTimeout similar aos eventos únicos para dar tempo do toast aparecer
+        setTimeout(() => {
+          closeModal();
+          resetModalFields();
+          setIsSaving(false);
+        }, 3000);
         return;
       }
 
-      await updateRecurrentSchedules();
-      // Usar setTimeout similar aos eventos únicos para dar tempo do toast aparecer
-      setTimeout(() => {
-        closeModal();
-        resetModalFields();
-      }, 3000);
-      return;
-    }
-
-    // Lógica normal para evento único ou edição
-    if (selectedEvent) {
-      mutateUpdateEvent({
-        id: selectedEvent.id,
-        titulo: eventTitle,
-        descricao: eventDescription,
-        localizacao: eventLocation,
-        dataInicio: eventStartDate,
-        dataFim: eventEndDate,
-        diaTodo: isChecked,
-        observacao: eventTitle,
-        notificar: false,
-        status: selectedStatus,
-        clienteId: selectedCliente,
-        funcionarioId: modalFuncionario,
-        filialId: modalFilial,
-      });
-    } else {
-      mutateAddEvent({
-        clienteId: selectedCliente,
-        funcionarioId: modalFuncionario,
-        filialId: modalFilial,
-        titulo: eventTitle,
-        descricao: eventDescription,
-        localizacao: eventLocation,
-        dataInicio: eventStartDate,
-        dataFim: eventEndDate,
-        diaTodo: isChecked,
-        observacao: eventTitle,
-        notificar: false,
-        status: selectedStatus,
-      });
+      // Lógica normal para evento único ou edição
+      if (selectedEvent) {
+        await mutateUpdateEvent({
+          id: selectedEvent.id,
+          titulo: eventTitle,
+          descricao: eventDescription,
+          localizacao: eventLocation,
+          dataInicio: eventStartDate,
+          dataFim: eventEndDate,
+          diaTodo: isChecked,
+          observacao: eventTitle,
+          notificar: false,
+          status: selectedStatus,
+          clienteId: selectedCliente,
+          funcionarioId: modalFuncionario,
+          filialId: modalFilial,
+        });
+      } else {
+        await mutateAddEvent({
+          clienteId: selectedCliente,
+          funcionarioId: modalFuncionario,
+          filialId: modalFilial,
+          titulo: eventTitle,
+          descricao: eventDescription,
+          localizacao: eventLocation,
+          dataInicio: eventStartDate,
+          dataFim: eventEndDate,
+          diaTodo: isChecked,
+          observacao: eventTitle,
+          notificar: false,
+          status: selectedStatus,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao salvar evento:", error);
+      setIsSaving(false);
     }
   };
 
@@ -1302,7 +1333,7 @@ const Calendar: React.FC = () => {
     // Define cor do texto baseada no fundo
     const textColor = isLightColor(cor) ? "#000000" : "#ffffff";
 
-    const { cliente, funcionario, filial, observacao, status } =
+    const { cliente, clienteTelefone, funcionario, filial, observacao, status } =
       eventInfo.event.extendedProps;
 
     // Função para truncar o nome do cliente
@@ -1354,6 +1385,10 @@ const Calendar: React.FC = () => {
             <div className="flex items-start gap-2">
               <span className="text-gray-300 font-medium">Cliente:</span>
               <span className="text-white">{cliente}</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-gray-300 font-medium">Telefone:</span>
+              <span className="text-white">{clienteTelefone}</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-gray-300 font-medium">Filial:</span>
@@ -1810,15 +1845,32 @@ const Calendar: React.FC = () => {
               <button
                 onClick={handleAddOrUpdateEvent}
                 type="button"
-                className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
+                disabled={isSaving}
+                className={`btn btn-success btn-update-event flex w-full justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white sm:w-auto ${
+                  isSaving 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-brand-500 hover:bg-brand-600'
+                }`}
               >
-                {selectedEvent
-                  ? isEditingRecurrence && isRecurrent
-                    ? "Atualizar Recorrência"
-                    : "Atualizar"
-                  : isRecurrent
-                  ? "Criar Recorrência"
-                  : "Salvar"}
+                {isSaving ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Salvando...
+                  </span>
+                ) : (
+                  <>
+                    {selectedEvent
+                      ? isEditingRecurrence && isRecurrent
+                        ? "Atualizar Recorrência"
+                        : "Atualizar"
+                      : isRecurrent
+                      ? "Criar Recorrência"
+                      : "Salvar"}
+                  </>
+                )}
               </button>
             </div>
           </div>
