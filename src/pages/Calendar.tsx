@@ -90,7 +90,7 @@ const Calendar: React.FC = () => {
   >([]);
   const [filter, setFilter] = useState<Filter>({});
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | string[] | null>(null);
   const [currentEventData, setCurrentEventData] = useState<any>(null);
 
   // Estados para recorrência
@@ -586,10 +586,23 @@ const Calendar: React.FC = () => {
         // Refetch mesmo com falhas parciais para mostrar o estado atual
         await refetchCalendar();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao atualizar recorrência:", error);
-      toast.error("Erro ao atualizar algumas sessões. Verifique o calendário.", {
-        duration: 3000,
+      
+      // Tratar erro 409 (Conflito - cliente já possui agendamento neste horário)
+      let errorMessage = "Erro ao atualizar algumas sessões. Verifique o calendário.";
+      if (error?.response?.status === 409) {
+        if (Array.isArray(error?.response?.data) && error.response.data.length > 0) {
+          errorMessage = error.response.data[0];
+        } else if (error?.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else {
+          errorMessage = "Cliente já possui um agendamento em um dos horários selecionados";
+        }
+      }
+      
+      toast.error(errorMessage, {
+        duration: 4000,
       });
       // Refetch para mostrar o estado atual mesmo em caso de erro
       await refetchCalendar();
@@ -676,10 +689,23 @@ const Calendar: React.FC = () => {
         // Refetch mesmo com falhas parciais para mostrar o estado atual
         await refetchCalendar();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar agendamentos recorrentes:", error);
-      toast.error("Erro ao criar alguns agendamentos. Verifique o calendário.", {
-        duration: 3000,
+      
+      // Tratar erro 409 (Conflito - cliente já possui agendamento neste horário)
+      let errorMessage = "Erro ao criar alguns agendamentos. Verifique o calendário.";
+      if (error?.response?.status === 409) {
+        if (Array.isArray(error?.response?.data) && error.response.data.length > 0) {
+          errorMessage = error.response.data[0];
+        } else if (error?.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else {
+          errorMessage = "Cliente já possui um agendamento em um dos horários selecionados";
+        }
+      }
+      
+      toast.error(errorMessage, {
+        duration: 4000,
       });
       // Refetch para mostrar o estado atual mesmo em caso de erro
       await refetchCalendar();
@@ -854,10 +880,25 @@ const Calendar: React.FC = () => {
     },
     onError: (error: any) => {
       let message = "Erro ao criar evento. Tente novamente.";
-      if (error?.response?.data?.message) message = error.response.data.message;
-      else if (error?.message) message = error.message;
+      
+      // Tratar erro 409 (Conflito - cliente já possui agendamento neste horário)
+      if (error?.response?.status === 409) {
+        // Tentar extrair a mensagem do array retornado pela API
+        if (Array.isArray(error?.response?.data) && error.response.data.length > 0) {
+          message = error.response.data[0];
+        } else if (error?.response?.data?.message) {
+          message = error.response.data.message;
+        } else {
+          message = "Cliente já possui um agendamento neste horário";
+        }
+      } else if (error?.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error?.message) {
+        message = error.message;
+      }
+      
       toast.error(message, {
-        duration: 3000,
+        duration: 4000,
       });
       console.error("Erro ao adicionar evento:", error);
     },
@@ -883,10 +924,25 @@ const Calendar: React.FC = () => {
     },
     onError: (error: any) => {
       let message = "Erro ao atualizar evento. Tente novamente.";
-      if (error?.response?.data?.message) message = error.response.data.message;
-      else if (error?.message) message = error.message;
+      
+      // Tratar erro 409 (Conflito - cliente já possui agendamento neste horário)
+      if (error?.response?.status === 409) {
+        // Tentar extrair a mensagem do array retornado pela API
+        if (Array.isArray(error?.response?.data) && error.response.data.length > 0) {
+          message = error.response.data[0];
+        } else if (error?.response?.data?.message) {
+          message = error.response.data.message;
+        } else {
+          message = "Cliente já possui um agendamento neste horário";
+        }
+      } else if (error?.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error?.message) {
+        message = error.message;
+      }
+      
       toast.error(message, {
-        duration: 3000,
+        duration: 4000,
       });
       console.error("Erro ao atualizar evento:", error);
     },

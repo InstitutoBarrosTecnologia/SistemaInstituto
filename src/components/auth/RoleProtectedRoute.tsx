@@ -13,10 +13,10 @@ export default function RoleProtectedRoute({
     redirectTo = "/access-denied" 
 }: RoleProtectedRouteProps) {
     const token = localStorage.getItem("token");
-    const userRole = getUserRoleFromToken(token);
+    const userRoles = getUserRoleFromToken(token);
 
     // Se não tem role ou não tem permissão, redireciona
-    if (!userRole || !hasPermissionForMenu(userRole, requiredPermissions)) {
+    if (!userRoles || !hasPermissionForMenu(userRoles, requiredPermissions)) {
         return <Navigate to={redirectTo} replace />;
     }
 

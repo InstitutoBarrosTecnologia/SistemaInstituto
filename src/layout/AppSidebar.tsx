@@ -168,32 +168,32 @@ const AppSidebar: React.FC = () => {
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Obter role do usuário e filtrar itens do menu
-  const userRole = getUserRoleFromToken(localStorage.getItem("token"));
+  const userRoles = getUserRoleFromToken(localStorage.getItem("token"));
   
   // Função para filtrar subitens baseado nas permissões
-  const filterSubItems = useCallback((subItems: NavItem['subItems'], userRole: string | null) => {
-    if (!subItems || !userRole) return [];
+  const filterSubItems = useCallback((subItems: NavItem['subItems'], userRoles: string | string[] | null) => {
+    if (!subItems || !userRoles) return [];
     
     return subItems.filter(subItem => {
       if (!subItem.permissions) return true; // Se não tem permissão definida, mostra para todos
-      return hasPermissionForMenu(userRole, subItem.permissions);
+      return hasPermissionForMenu(userRoles, subItem.permissions);
     });
   }, []);
 
   // Filtrar itens do menu baseado no perfil do usuário usando useMemo
   const navItems = useMemo(() => {
     return allNavItems.filter(item => {
-      if (!userRole) return false; // Se não tem role, não mostra nada
+      if (!userRoles) return false; // Se não tem role, não mostra nada
       
       // Se o item não tem permissões definidas, mostra para todos (fallback)
       if (!item.permissions) return true;
       
       // Verificar se o usuário tem permissão para o item principal
-      const hasPermission = hasPermissionForMenu(userRole, item.permissions);
+      const hasPermission = hasPermissionForMenu(userRoles, item.permissions);
       
       // Se tem subitens, verificar se pelo menos um subitem tem permissão
       if (item.subItems && item.subItems.length > 0) {
-        const filteredSubItems = filterSubItems(item.subItems, userRole);
+        const filteredSubItems = filterSubItems(item.subItems, userRoles);
         return hasPermission && filteredSubItems.length > 0;
       }
       
@@ -201,9 +201,9 @@ const AppSidebar: React.FC = () => {
     }).map(item => ({
       ...item,
       // Filtrar subitens também
-      subItems: item.subItems ? filterSubItems(item.subItems, userRole) : undefined
+      subItems: item.subItems ? filterSubItems(item.subItems, userRoles) : undefined
     }));
-  }, [userRole, filterSubItems]);
+  }, [userRoles, filterSubItems]);
 
   // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(

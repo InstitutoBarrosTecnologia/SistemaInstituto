@@ -28,7 +28,7 @@ import { formatPhone, formatCPF } from "../../helper/formatUtils";
 import FormMetaDataCustomer from "../../../pages/Forms/Customer/FormMetaDataCustomer";
 import FormSession from "../../../pages/Forms/OrderServiceForms/FormSession";
 import { CustomerFilterRequestDto } from "../../../services/model/Dto/Request/CustomerFilterRequestDto";
-import { getUserRoleFromToken, USER_ROLES } from "../../../services/util/rolePermissions";
+import { getUserRoleFromToken, userHasRole, USER_ROLES } from "../../../services/util/rolePermissions";
 
 interface CustomerGridProps {
     filters?: CustomerFilterRequestDto;
@@ -46,8 +46,10 @@ export default function CustomerTableComponent({ filters }: CustomerGridProps) {
     const [idSessionRegister, setIdSessionRegister] = useState<string>("");
 
     // Obter role do usuário para controlar exibição dos botões
-    const userRole = getUserRoleFromToken(localStorage.getItem("token"));
-    const isFisioterapeuta = userRole === USER_ROLES.FISIOTERAPEUTA;
+    const userRoles = getUserRoleFromToken(localStorage.getItem("token"));
+    // Fisioterapeuta que não é coordenador tem restrições
+    const isFisioterapeuta = userHasRole(userRoles, USER_ROLES.FISIOTERAPEUTA) && 
+                             !userHasRole(userRoles, USER_ROLES.COORDENADOR_FISIOTERAPEUTA);
 
 
     const queryClient = useQueryClient();

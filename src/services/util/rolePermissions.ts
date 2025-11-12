@@ -141,12 +141,21 @@ export const MENU_PERMISSIONS = {
 } as const;
 
 // Função para verificar se o usuário tem permissão para um menu específico
-export const hasPermissionForMenu = (userRole: string, menuPermissions: readonly string[]): boolean => {
-  return menuPermissions.includes(userRole);
+export const hasPermissionForMenu = (userRoles: string | string[] | null, menuPermissions: readonly string[]): boolean => {
+  if (!userRoles) return false;
+  
+  // Se userRoles é um array, verifica se algum dos roles tem permissão
+  if (Array.isArray(userRoles)) {
+    return userRoles.some(role => menuPermissions.includes(role));
+  }
+  
+  // Se é string única, verifica se está nas permissões
+  return menuPermissions.includes(userRoles);
 };
 
-// Função para obter o role do usuário a partir do token JWT
-export const getUserRoleFromToken = (token: string | null): string | null => {
+// Função para obter o(s) role(s) do usuário a partir do token JWT
+// Retorna string se for único role, ou array se forem múltiplos
+export const getUserRoleFromToken = (token: string | null): string | string[] | null => {
   if (!token) return null;
   
   try {
@@ -166,6 +175,17 @@ export const getUserRoleFromToken = (token: string | null): string | null => {
     console.error("Erro ao decodificar token:", e);
     return null;
   }
+};
+
+// Função auxiliar para verificar se o usuário tem um role específico
+export const userHasRole = (userRoles: string | string[] | null, targetRole: string): boolean => {
+  if (!userRoles) return false;
+  
+  if (Array.isArray(userRoles)) {
+    return userRoles.includes(targetRole);
+  }
+  
+  return userRoles === targetRole;
 };
 
 // Função para obter o ID do funcionário a partir do token JWT
@@ -192,6 +212,16 @@ export const getUserFuncionarioIdFromToken = (token: string | null): string | nu
 };
 
 // Função para verificar se o usuário deve ter filtro aplicado na agenda
-export const shouldApplyAgendaFilter = (userRole: string | null): boolean => {
-  return userRole === USER_ROLES.FISIOTERAPEUTA;
+// CoordenadorFisioterapeuta pode ver todos os agendamentos
+// Fisioterapeuta sem ser coordenador vê apenas seus próprios agendamentos
+export const shouldApplyAgendaFilter = (userRoles: string | string[] | null): boolean => {
+  if (!userRoles) return false;
+  
+  // Se é coordenador fisioterapeuta, não aplica filtro (vê todos)
+  if (userHasRole(userRoles, USER_ROLES.COORDENADOR_FISIOTERAPEUTA)) {
+    return false;
+  }
+  
+  // Se é fisioterapeuta (mas não coordenador), aplica filtro
+  return userHasRole(userRoles, USER_ROLES.FISIOTERAPEUTA);
 };

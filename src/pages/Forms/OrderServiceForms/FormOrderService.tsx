@@ -204,9 +204,22 @@ export default function FormOrderService({
     try {
       await Promise.all(schedulePromises);
       toast.success(`${qtdSessoes} agendamentos criados com sucesso!`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar agendamentos:", error);
-      toast.error("Erro ao criar alguns agendamentos. Verifique o calendário.");
+      
+      // Tratar erro 409 (Conflito - cliente já possui agendamento neste horário)
+      let errorMessage = "Erro ao criar alguns agendamentos. Verifique o calendário.";
+      if (error?.response?.status === 409) {
+        if (Array.isArray(error?.response?.data) && error.response.data.length > 0) {
+          errorMessage = error.response.data[0];
+        } else if (error?.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else {
+          errorMessage = "Cliente já possui um agendamento em um dos horários selecionados";
+        }
+      }
+      
+      toast.error(errorMessage, { duration: 4000 });
     }
   };
 

@@ -16,7 +16,7 @@ import BasicTables from "./pages/Tables/WhatsappTableLeadComponent";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/Dashboard/Home";
+import DashboardRedirect from "./components/auth/DashboardRedirect";
 import DashboardOperacao from "./pages/Dashboard/DashboardOperacao";
 import DashboardLead from "./pages/Dashboard/DashboardLead";
 import ProtectedRoute from "./ProtectedRoute";
@@ -45,7 +45,7 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index path="/" element={<Home />} />
+          <Route index path="/" element={<DashboardRedirect />} />
           <Route path="/dashboard-operacao" element={<DashboardOperacao />} />
           
           {/* Dashboard Lead - Sem acesso para Fisioterapeuta e Coordenador Fisioterapeuta */}
