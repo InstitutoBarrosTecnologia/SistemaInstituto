@@ -1002,6 +1002,33 @@ const Calendar: React.FC = () => {
     openModal();
   };
 
+  // Função para capturar mudanças de visualização do calendário (mudança de mês/semana/dia)
+  const handleDatesSet = (dateInfo: any) => {
+    // Formatar datas para o padrão esperado pela API (YYYY-MM-DD)
+    const formatDate = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const dataInicio = formatDate(dateInfo.start);
+    const dataFim = formatDate(dateInfo.end);
+
+    // Atualizar o filtro apenas se as datas mudaram (evita loop infinito)
+    setFilter((prev) => {
+      if (prev.data === dataInicio && prev.dataFim === dataFim) {
+        return prev; // Não atualiza se as datas são as mesmas
+      }
+       
+      return {
+        ...prev,
+        data: dataInicio,
+        dataFim: dataFim,
+      };
+    });
+  };
+
   const handleEventClick = (clickInfo: EventClickArg) => {
     const event = clickInfo.event;
     const publicId = clickInfo.event._def.publicId;
@@ -1510,6 +1537,7 @@ const Calendar: React.FC = () => {
             select={handleDateSelect}
             eventClick={handleEventClick}
             eventContent={renderEventContent}
+            datesSet={handleDatesSet}
             slotMinTime={slotMinTime}
             slotMaxTime={slotMaxTime}
             slotDuration="00:30:00"

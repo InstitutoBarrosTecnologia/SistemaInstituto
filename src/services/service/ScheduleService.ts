@@ -19,6 +19,7 @@ export const putScheduleAsync = async (
 
 export interface Filter {
   data?: string;
+  dataFim?: string;
   titulo?: string;
   diaTodo?: boolean;
   idCliente?: string;
