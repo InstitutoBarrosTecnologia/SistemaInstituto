@@ -23,7 +23,7 @@ import {
   getAllSchedulesAsync,
   postScheduleAsync,
   putScheduleAsync,
-  deleteScheduleAsync,
+  disableScheduleAsync,
 } from "../services/service/ScheduleService";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -74,6 +74,13 @@ const Calendar: React.FC = () => {
   const [selectedFuncionario, setSelectedFuncionario] = useState<
     string | undefined
   >(undefined);
+  const [filterCliente, setFilterCliente] = useState<string | undefined>(
+    undefined
+  );
+  const [filterStatus, setFilterStatus] = useState<string | undefined>(
+    undefined
+  );
+  const [showFilters, setShowFilters] = useState(false);
   const [modalFuncionario, setModalFuncionario] = useState<string | undefined>(
     undefined
   );
@@ -959,7 +966,7 @@ const Calendar: React.FC = () => {
   });
 
   const { mutateAsync: mutateDeleteEvent } = useMutation({
-    mutationFn: deleteScheduleAsync,
+    mutationFn: disableScheduleAsync,
     onSuccess: () => {
       toast.success("Evento excluído com sucesso!");
       closeModal();
@@ -1280,7 +1287,7 @@ const Calendar: React.FC = () => {
 
       // Deletar todas as sessões da recorrência
       const deletePromises = allSessions.map((session: any) => 
-        deleteScheduleAsync(session.id)
+        disableScheduleAsync(session.id)
       );
 
       const results = await Promise.all(deletePromises);
@@ -1342,6 +1349,22 @@ const Calendar: React.FC = () => {
       filialId: selectedFilial || undefined,
     }));
   }, [selectedFilial]);
+
+  // Atualize o filtro quando o cliente for selecionado
+  useEffect(() => {
+    setFilter((prev) => ({
+      ...prev,
+      idCliente: filterCliente || undefined,
+    }));
+  }, [filterCliente]);
+
+  // Atualize o filtro quando o status for selecionado
+  useEffect(() => {
+    setFilter((prev) => ({
+      ...prev,
+      status: filterStatus ? parseInt(filterStatus) : undefined,
+    }));
+  }, [filterStatus]);
 
   const renderEventContent = (eventInfo: any) => {
     // Usa a cor do funcionário, se não houver, usa azul padrão
@@ -1478,11 +1501,27 @@ const Calendar: React.FC = () => {
         title="Sistema Instituto Barros - Agenda"
         description="Sistema Instituto Barros - Página para gerenciamento de Agenda"
       />
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 pt-4 pb-2 gap-3">
         <PageBreadcrumb pageTitle="Agenda" />
-        <div className="flex items-center gap-4">
-          <div className="flex items-center">
-            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">
+        
+        {/* Botão toggle para mobile */}
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="sm:hidden flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          Filtros
+          <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {/* Container dos filtros - responsivo */}
+        <div className={`${showFilters ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto`}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap">
               Filial:
             </Label>
             <Select
@@ -1492,12 +1531,12 @@ const Calendar: React.FC = () => {
               onChange={(value) =>
                 setSelectedFilial(value === "" ? undefined : value)
               }
-              className="w-28 text-xs h-8 px-2 py-1"
+              className="w-full sm:w-28 text-xs h-8 px-2 py-1"
             />
           </div>
           {!shouldApplyAgendaFilter(userRole) && (
-            <div className="flex items-center">
-              <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap mr-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap">
                 Fisioterapeuta:
               </Label>
               <Select
@@ -1507,10 +1546,38 @@ const Calendar: React.FC = () => {
                 onChange={(value) =>
                   setSelectedFuncionario(value === "" ? undefined : value)
                 }
-                className="w-36 text-xs h-8 px-2 py-1"
+                className="w-full sm:w-36 text-xs h-8 px-2 py-1"
               />
             </div>
           )}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap">
+              Cliente:
+            </Label>
+            <SelectWithSearch
+              options={[{ label: "Todos", value: "" }, ...optionsCliente]}
+              value={filterCliente || ""}
+              placeholder="Selecione um cliente"
+              onChange={(value) =>
+                setFilterCliente(value === "" ? undefined : value)
+              }
+              className="w-full sm:w-40 text-xs h-8"
+            />
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap">
+              Status:
+            </Label>
+            <Select
+              options={[{ label: "Todos", value: "" }, ...statusOptions]}
+              value={filterStatus || ""}
+              placeholder="Status"
+              onChange={(value) =>
+                setFilterStatus(value === "" ? undefined : value)
+              }
+              className="w-full sm:w-44 text-xs h-8 px-2 py-1"
+            />
+          </div>
         </div>
       </div>
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">

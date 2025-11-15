@@ -25,6 +25,7 @@ export interface Filter {
   idCliente?: string;
   idFuncionario?: string;
   filialId?: string;
+  status?: number;
 }
 
 // GET - Buscar todos os eventos com filtros
