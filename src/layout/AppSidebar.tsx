@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router";
 import {
   CalenderIcon,
   ChevronDownIcon,
+  DocsIcon,
   DollarLineIcon,
   GridIcon,
   HorizontaLDots,
@@ -125,6 +126,12 @@ const allNavItems: NavItem[] = [
         permissions: MENU_PERMISSIONS.NOTIFICACOES_ENVIAR,
       }
     ],
+  },
+  {
+    icon: <DocsIcon />,
+    name: "Logs",
+    path: "/logs",
+    permissions: MENU_PERMISSIONS.LOGS,
   },
   {
     icon: <GridIcon />,

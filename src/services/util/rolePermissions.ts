@@ -137,6 +137,11 @@ export const MENU_PERMISSIONS = {
   // Notificações - Enviar
   NOTIFICACOES_ENVIAR: [
     USER_ROLES.ADMINISTRADOR
+  ],
+
+  // Logs - Rastreabilidade (apenas Administradores)
+  LOGS: [
+    USER_ROLES.ADMINISTRADOR
   ]
 } as const;
 

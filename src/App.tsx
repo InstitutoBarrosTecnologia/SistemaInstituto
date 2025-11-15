@@ -30,6 +30,7 @@ import EmployeeTables from "./pages/Tables/EmployeeTable/EmployeeTables";
 import BranchOfficeTables from "./pages/Tables/BranchOfficeTable/BranchOfficeTables";
 import { Despesas } from "./pages/Financeiro";
 import Notifications from "./pages/Notificacoes/Notifications";
+import Logs from "./pages/Logs/Logs";
 
 export default function App() {
   return (
@@ -82,6 +83,16 @@ export default function App() {
             element={
               <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.NOTIFICACOES_ENVIAR}>
                 <Notifications />
+              </RoleProtectedRoute>
+            } 
+          />
+
+          {/* Logs - Apenas para Administradores */}
+          <Route 
+            path="/logs" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.LOGS}>
+                <Logs />
               </RoleProtectedRoute>
             } 
           />
