@@ -771,7 +771,6 @@ const Calendar: React.FC = () => {
         filteredSchedules = filteredSchedules.filter(
           (schedule) => schedule.clienteId === filterCliente
         );
-        console.log('Filtro Cliente aplicado:', filterCliente, 'Resultados:', filteredSchedules.length);
       }
 
       if (filterStatus) {
@@ -779,21 +778,18 @@ const Calendar: React.FC = () => {
         filteredSchedules = filteredSchedules.filter(
           (schedule) => schedule.status === statusNumber
         );
-        console.log('Filtro Status aplicado:', statusNumber, 'Resultados:', filteredSchedules.length);
       }
 
       if (selectedFuncionario) {
         filteredSchedules = filteredSchedules.filter(
           (schedule) => schedule.funcionarioId === selectedFuncionario
         );
-        console.log('Filtro Funcionário aplicado:', selectedFuncionario, 'Resultados:', filteredSchedules.length);
       }
 
       if (selectedFilial) {
         filteredSchedules = filteredSchedules.filter(
           (schedule) => schedule.filialId === selectedFilial
         );
-        console.log('Filtro Filial aplicado:', selectedFilial, 'Resultados:', filteredSchedules.length);
       }
 
       const formattedEvents = filteredSchedules.map((schedule) => {
@@ -814,11 +810,52 @@ const Calendar: React.FC = () => {
           schedule.funcionarioId && funcionarioColorMap[schedule.funcionarioId]
             ? funcionarioColorMap[schedule.funcionarioId]
             : undefined;
+        
+        // Processar as datas corretamente
+        let eventStart = schedule.dataInicio;
+        let eventEnd = schedule.dataFim;
+        
+        // Para eventos allDay, o FullCalendar espera que a data final seja exclusiva
+        if (schedule.diaTodo && schedule.dataInicio && schedule.dataFim) {
+          const start = new Date(schedule.dataInicio);
+          const end = new Date(schedule.dataFim);
+          
+          // Normalizar as datas para comparação (ignorar hora)
+          const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+          const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+          
+          // Se são do mesmo dia, não definir end
+          if (startDate.getTime() === endDate.getTime()) {
+            eventEnd = undefined;
+          }
+        }
+        
+        // Para eventos com horário específico (não allDay)
+        if (!schedule.diaTodo && schedule.dataFim) {
+          const end = new Date(schedule.dataFim);
+          const start = schedule.dataInicio ? new Date(schedule.dataInicio) : null;
+          
+          // Se termina à meia-noite exata e começou em outro dia
+          if (end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0) {
+            if (start) {
+              const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+              const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+              
+              // Se são datas diferentes, o evento realmente passa pela meia-noite
+              // Ajustar para 23:59 do dia anterior para não mostrar no dia seguinte
+              if (startDate.getTime() !== endDate.getTime()) {
+                end.setMinutes(-1);
+                eventEnd = end.toISOString();
+              }
+            }
+          }
+        }
+        
         return {
           id: schedule.id,
           title: schedule.titulo,
-          start: schedule.dataInicio,
-          end: schedule.dataFim,
+          start: eventStart,
+          end: eventEnd,
           allDay: schedule.diaTodo,
           extendedProps: {
             calendar: "Primary",
@@ -1702,6 +1739,17 @@ const Calendar: React.FC = () => {
               slotMaxTime={slotMaxTime}
               slotDuration="00:30:00"
               scrollTime="08:00:00"
+              height="auto"
+              eventDisplay="block"
+              dayMaxEvents={false}
+              forceEventDuration={true}
+              defaultAllDayEventDuration={{ days: 1 }}
+              defaultTimedEventDuration="01:00"
+              eventTimeFormat={{
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              }}
             />
           </div>
         </div>

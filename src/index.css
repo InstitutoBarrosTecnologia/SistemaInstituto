@@ -766,6 +766,7 @@ span.flatpickr-weekday,
   border: none;
   color: black;
 }
+
 .fc.fc-media-screen {
   @apply min-h-screen;
 }
