@@ -30,7 +30,7 @@ import EmployeeTables from "./pages/Tables/EmployeeTable/EmployeeTables";
 import BranchOfficeTables from "./pages/Tables/BranchOfficeTable/BranchOfficeTables";
 import { Despesas } from "./pages/Financeiro";
 import Notifications from "./pages/Notificacoes/Notifications";
-import Logs from "./pages/Logs/Logs";
+import Log from "./pages/Log/Log";
 
 
 export default function App() {
@@ -93,7 +93,7 @@ export default function App() {
             path="/logs" 
             element={
               <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.LOGS}>
-                <Logs />
+                <Log />
               </RoleProtectedRoute>
             } 
           />

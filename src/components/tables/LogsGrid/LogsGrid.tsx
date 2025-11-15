@@ -10,8 +10,8 @@ import { useModal } from "../../../hooks/useModal";
 import { useState } from "react";
 import Badge from "../../ui/badge/Badge";
 import Button from "../../ui/button/Button";
-import { LogFilters } from "../../../pages/Logs/Logs";
 import { useLogs } from "../../../hooks/useLogs";
+import { LogFilters } from "../../../pages/Log/Log";
 
 interface LogsGridProps {
   filters?: LogFilters;
