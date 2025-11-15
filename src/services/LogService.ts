@@ -1,6 +1,6 @@
-import { LogFilters } from "../pages/Logs/Logs";
 import { instanceApi } from "./service/AxioService";
 import { LogResponseDto, LogPaginatedResponseDto } from "./model/Dto/Response/LogResponseDto";
+import { LogFilters } from "../pages/Logs/Logs";
 
 export const LogService = {
   async getAllLogs(filters?: LogFilters): Promise<LogPaginatedResponseDto> {

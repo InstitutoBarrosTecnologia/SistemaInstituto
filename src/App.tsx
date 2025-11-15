@@ -32,6 +32,7 @@ import { Despesas } from "./pages/Financeiro";
 import Notifications from "./pages/Notificacoes/Notifications";
 import Logs from "./pages/Logs/Logs";
 
+
 export default function App() {
   return (
     <>

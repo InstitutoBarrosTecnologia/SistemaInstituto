@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { LogFilters } from "../pages/Logs/Logs";
 import { LogService } from "../services/LogService";
+import { LogFilters } from "../pages/Logs/Logs";
+
 
 export function useLogs(filters?: LogFilters) {
   const { data, refetch } = useQuery({
