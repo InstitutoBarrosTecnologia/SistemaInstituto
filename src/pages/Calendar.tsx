@@ -764,7 +764,39 @@ const Calendar: React.FC = () => {
     );
 
     if (schedules) {
-      const formattedEvents = schedules.map((schedule) => {
+      let filteredSchedules = schedules;
+
+      // Aplicar filtros adicionais no frontend (caso o backend não filtre corretamente)
+      if (filterCliente) {
+        filteredSchedules = filteredSchedules.filter(
+          (schedule) => schedule.clienteId === filterCliente
+        );
+        console.log('Filtro Cliente aplicado:', filterCliente, 'Resultados:', filteredSchedules.length);
+      }
+
+      if (filterStatus) {
+        const statusNumber = parseInt(filterStatus);
+        filteredSchedules = filteredSchedules.filter(
+          (schedule) => schedule.status === statusNumber
+        );
+        console.log('Filtro Status aplicado:', statusNumber, 'Resultados:', filteredSchedules.length);
+      }
+
+      if (selectedFuncionario) {
+        filteredSchedules = filteredSchedules.filter(
+          (schedule) => schedule.funcionarioId === selectedFuncionario
+        );
+        console.log('Filtro Funcionário aplicado:', selectedFuncionario, 'Resultados:', filteredSchedules.length);
+      }
+
+      if (selectedFilial) {
+        filteredSchedules = filteredSchedules.filter(
+          (schedule) => schedule.filialId === selectedFilial
+        );
+        console.log('Filtro Filial aplicado:', selectedFilial, 'Resultados:', filteredSchedules.length);
+      }
+
+      const formattedEvents = filteredSchedules.map((schedule) => {
         // Buscar nome do cliente
         const cliente = clientesArray.find(
           (c: any) => c.id === schedule.clienteId
@@ -802,7 +834,7 @@ const Calendar: React.FC = () => {
       });
       setEvents(formattedEvents);
     }
-  }, [schedules, funcionariosData, clientesData, filiaisData]);
+  }, [schedules, funcionariosData, clientesData, filiaisData, filterCliente, filterStatus, selectedFuncionario, selectedFilial]);
 
   useEffect(() => {
     if (filiaisData && Array.isArray(filiaisData)) {
@@ -1501,116 +1533,181 @@ const Calendar: React.FC = () => {
         title="Sistema Instituto Barros - Agenda"
         description="Sistema Instituto Barros - Página para gerenciamento de Agenda"
       />
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 pt-4 pb-2 gap-3">
+      
+      {/* Header com Título e Botão Novo Evento */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <PageBreadcrumb pageTitle="Agenda" />
-        
-        {/* Botão toggle para mobile */}
+        {/* Botão circular para mobile */}
         <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="sm:hidden flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          onClick={handleOpenModal}
+          className="sm:hidden flex items-center justify-center w-10 h-10 text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-full transition-colors shadow-lg hover:shadow-xl"
+          title="Novo Evento"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          Filtros
-          <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
         </button>
+        {/* Botão com texto para desktop */}
+        <button
+          onClick={handleOpenModal}
+          className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Novo Evento</span>
+        </button>
+      </div>
 
-        {/* Container dos filtros - responsivo */}
-        <div className={`${showFilters ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto`}>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap">
-              Filial:
-            </Label>
-            <Select
-              options={[{ label: "Todas", value: "" }, ...optionsFilial]}
-              value={selectedFilial || ""}
-              placeholder="Filial"
-              onChange={(value) =>
-                setSelectedFilial(value === "" ? undefined : value)
-              }
-              className="w-full sm:w-28 text-xs h-8 px-2 py-1"
-            />
+      {/* Seção de Filtros */}
+      <div className="px-4 pb-3">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+          {/* Header dos Filtros com Toggle */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Filtros</h3>
+              {(selectedFilial || selectedFuncionario || filterCliente || filterStatus) && (
+                <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full">
+                  Ativos
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="lg:hidden flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            >
+              {showFilters ? 'Ocultar' : 'Mostrar'}
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
           </div>
-          {!shouldApplyAgendaFilter(userRole) && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-              <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap">
-                Fisioterapeuta:
+
+          {/* Grid de Filtros */}
+          <div className={`${showFilters ? 'grid' : 'hidden'} lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4`}>
+            {/* Filtro Filial */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                Filial
               </Label>
               <Select
-                options={[{ label: "Todos", value: "" }, ...optionsFuncionario]}
-                value={selectedFuncionario || ""}
-                placeholder="Fisioterapeuta"
+                options={[{ label: "Todas", value: "" }, ...optionsFilial]}
+                value={selectedFilial || ""}
+                placeholder="Selecione a filial"
                 onChange={(value) =>
-                  setSelectedFuncionario(value === "" ? undefined : value)
+                  setSelectedFilial(value === "" ? undefined : value)
                 }
-                className="w-full sm:w-36 text-xs h-8 px-2 py-1"
+                className="w-full text-sm"
               />
             </div>
-          )}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap">
-              Cliente:
-            </Label>
-            <SelectWithSearch
-              options={[{ label: "Todos", value: "" }, ...optionsCliente]}
-              value={filterCliente || ""}
-              placeholder="Selecione um cliente"
-              onChange={(value) =>
-                setFilterCliente(value === "" ? undefined : value)
-              }
-              className="w-full sm:w-40 text-xs h-8"
-            />
+
+            {/* Filtro Fisioterapeuta */}
+            {!shouldApplyAgendaFilter(userRole) && (
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                  Fisioterapeuta
+                </Label>
+                <Select
+                  options={[{ label: "Todos", value: "" }, ...optionsFuncionario]}
+                  value={selectedFuncionario || ""}
+                  placeholder="Selecione o fisioterapeuta"
+                  onChange={(value) =>
+                    setSelectedFuncionario(value === "" ? undefined : value)
+                  }
+                  className="w-full text-sm"
+                />
+              </div>
+            )}
+
+            {/* Filtro Cliente */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                Cliente
+              </Label>
+              <SelectWithSearch
+                options={[{ label: "Todos", value: "" }, ...optionsCliente]}
+                value={filterCliente || ""}
+                placeholder="Buscar cliente"
+                onChange={(value) =>
+                  setFilterCliente(value === "" ? undefined : value)
+                }
+                className="w-full text-sm"
+              />
+            </div>
+
+            {/* Filtro Status */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                Status do Agendamento
+              </Label>
+              <Select
+                options={[{ label: "Todos", value: "" }, ...statusOptions]}
+                value={filterStatus || ""}
+                placeholder="Selecione o status"
+                onChange={(value) =>
+                  setFilterStatus(value === "" ? undefined : value)
+                }
+                className="w-full text-sm"
+              />
+            </div>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <Label className="mb-0 font-medium text-xs text-gray-700 dark:text-gray-200 whitespace-nowrap">
-              Status:
-            </Label>
-            <Select
-              options={[{ label: "Todos", value: "" }, ...statusOptions]}
-              value={filterStatus || ""}
-              placeholder="Status"
-              onChange={(value) =>
-                setFilterStatus(value === "" ? undefined : value)
-              }
-              className="w-full sm:w-44 text-xs h-8 px-2 py-1"
+
+          {/* Botão Limpar Filtros */}
+          {(selectedFilial || selectedFuncionario || filterCliente || filterStatus) && (
+            <div className={`${showFilters ? 'block' : 'hidden'} lg:block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700`}>
+              <button
+                onClick={() => {
+                  setSelectedFilial(undefined);
+                  setSelectedFuncionario(undefined);
+                  setFilterCliente(undefined);
+                  setFilterStatus(undefined);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Limpar filtros
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Calendário */}
+      <div className="px-4 pb-4">
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] overflow-hidden">
+          <div className="custom-calendar">
+            <FullCalendar
+              ref={calendarRef}
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              locales={[ptBrLocale]}
+              locale="pt-br"
+              headerToolbar={{
+                left: "prev,next",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay",
+              }}
+              events={events}
+              selectable={true}
+              select={handleDateSelect}
+              eventClick={handleEventClick}
+              eventContent={renderEventContent}
+              datesSet={handleDatesSet}
+              slotMinTime={slotMinTime}
+              slotMaxTime={slotMaxTime}
+              slotDuration="00:30:00"
+              scrollTime="08:00:00"
             />
           </div>
         </div>
       </div>
+
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="custom-calendar">
-          <FullCalendar
-            ref={calendarRef}
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            locales={[ptBrLocale]}
-            locale="pt-br"
-            headerToolbar={{
-              left: "prev,next addEventButton",
-              center: "title",
-              right: "dayGridMonth,timeGridWeek,timeGridDay",
-            }}
-            customButtons={{
-              addEventButton: {
-                text: "Novo Evento",
-                click: handleOpenModal,
-              },
-            }}
-            events={events}
-            selectable={true}
-            select={handleDateSelect}
-            eventClick={handleEventClick}
-            eventContent={renderEventContent}
-            datesSet={handleDatesSet}
-            slotMinTime={slotMinTime}
-            slotMaxTime={slotMaxTime}
-            slotDuration="00:30:00"
-            scrollTime="08:00:00"
-          />
-        </div>
         <Modal
           isOpen={isOpen}
           onClose={closeModal}
