@@ -12,6 +12,7 @@ import { BranchOfficeService } from "../../../services/service/BranchOfficeServi
 import Checkbox from "../../../components/form/input/Checkbox";
 import { ChromePicker } from "react-color";
 import { getRoleOptionsForEmployeeForm } from "../../../services/util/roleOptions";
+import { getUserRoleFromToken, userHasRole, USER_ROLES } from "../../../services/util/rolePermissions";
 
 interface FormEmployeeProps {
   data?: EmployeeResponseDto;
@@ -64,6 +65,7 @@ export default function FormEmployee({
   };
 
   const [userConfig, setUserConfig] = useState<boolean>(false);
+  const [isAdministrador, setIsAdministrador] = useState<boolean>(false);
   const [formData, setFormData] = useState<EmployeeRequestDto>({
     id: edit && data?.id ? data.id : undefined,
     nome: data?.nome ?? "",
@@ -211,6 +213,14 @@ export default function FormEmployee({
       setColor(data.cor ?? "#000000");
     }
   }, [data]);
+
+  // Verificar se o usuário logado é Administrador
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userRole = getUserRoleFromToken(token);
+    const isAdmin = userHasRole(userRole, USER_ROLES.ADMINISTRADOR);
+    setIsAdministrador(isAdmin);
+  }, []);
 
   useEffect(() => {
     const fetchFiliais = async () => {
@@ -477,26 +487,29 @@ export default function FormEmployee({
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
-              <div>
-                <Checkbox
-                  checked={userConfig}
-                  onChange={(checked) => {
-                    setUserConfig(checked);
-                    setFormData((prev) => ({
-                      ...prev,
-                      createUser: checked,
-                    }));
-                  }}
-                  className="dark:bg-dark-900"
-                />
+            {/* Seção Configurar acesso ao sistema - apenas para Administradores */}
+            {isAdministrador && (
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
+                <div>
+                  <Checkbox
+                    checked={userConfig}
+                    onChange={(checked) => {
+                      setUserConfig(checked);
+                      setFormData((prev) => ({
+                        ...prev,
+                        createUser: checked,
+                      }));
+                    }}
+                    className="dark:bg-dark-900"
+                  />
 
-                <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Configurar acesso ao sistema
-                </span>
+                  <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
+                    Configurar acesso ao sistema
+                  </span>
+                </div>
               </div>
-            </div>
-            {userConfig && (
+            )}
+            {userConfig && isAdministrador && (
               <>
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
                   Configuração do usuário ao sistema
