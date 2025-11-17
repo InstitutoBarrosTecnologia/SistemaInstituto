@@ -6,7 +6,8 @@ export const USER_ROLES = {
   COMERCIAL: "Comercial",
   FISIOTERAPEUTA: "Fisioterapeuta",
   ADMINISTRATIVO: "Administrativo",
-  COORDENADOR_FISIOTERAPEUTA: "CoordenadorFisioterapeuta"
+  COORDENADOR_FISIOTERAPEUTA: "CoordenadorFisioterapeuta",
+  FINANCEIRO: "Financeiro"
 } as const;
 
 // Tipo para os roles
@@ -98,7 +99,8 @@ export const MENU_PERMISSIONS = {
     USER_ROLES.ADMINISTRADOR,
     USER_ROLES.ADMINISTRATIVO,
     USER_ROLES.COMERCIAL,
-    USER_ROLES.FUNCIONARIO
+    USER_ROLES.FUNCIONARIO,
+    USER_ROLES.FINANCEIRO
   ],
   
   // Dashboard Operação - todos os perfis
@@ -108,7 +110,8 @@ export const MENU_PERMISSIONS = {
     USER_ROLES.COMERCIAL,
     USER_ROLES.FISIOTERAPEUTA,
     USER_ROLES.FUNCIONARIO,
-    USER_ROLES.COORDENADOR_FISIOTERAPEUTA
+    USER_ROLES.COORDENADOR_FISIOTERAPEUTA,
+    USER_ROLES.FINANCEIRO
   ],
   
   // Dashboard Lead - todos exceto Fisioterapeuta e Coordenador Fisioterapeuta
@@ -119,14 +122,16 @@ export const MENU_PERMISSIONS = {
     USER_ROLES.FUNCIONARIO
   ],
 
-  // Módulo Financeiro - apenas Administradores
+  // Módulo Financeiro - Administradores e Financeiro
   FINANCEIRO: [
-    USER_ROLES.ADMINISTRADOR
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.FINANCEIRO
   ],
 
   // Financeiro - Despesas
   FINANCEIRO_DESPESAS: [
-    USER_ROLES.ADMINISTRADOR
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.FINANCEIRO
   ],
 
   // Módulo Notificações - apenas Administradores

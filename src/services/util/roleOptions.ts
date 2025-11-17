@@ -13,5 +13,6 @@ export const getRoleOptionsForEmployeeForm = (): RoleOption[] => {
     { label: "Comercial", value: USER_ROLES.COMERCIAL },
     { label: "Fisioterapeuta", value: USER_ROLES.FISIOTERAPEUTA },
     { label: "Coordenador Fisioterapeuta", value: USER_ROLES.COORDENADOR_FISIOTERAPEUTA },
+    { label: "Financeiro", value: USER_ROLES.FINANCEIRO },
   ];
 };
