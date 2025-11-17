@@ -14,9 +14,9 @@ export function useLogs(filters?: LogFilters) {
   return {
     logs: data?.data || [],
     pagination: data ? {
-      currentPage: data.currentPage,
-      totalPages: data.totalPages,
-      totalItems: data.totalItems,
+      currentPage: data.page,
+      totalPages: Math.ceil(data.totalCount / data.pageSize),
+      totalItems: data.totalCount,
       pageSize: data.pageSize,
     } : null,
     isLoading,

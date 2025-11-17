@@ -14,8 +14,8 @@ export interface LogResponseDto extends BaseResponseDto {
 
 export interface LogPaginatedResponseDto {
   data: LogResponseDto[];
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
+  page: number;
+  totalCount: number;
   pageSize: number;
+  id: null;
 }

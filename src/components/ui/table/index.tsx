@@ -38,6 +38,7 @@ interface PaginationProps {
   currentPage: number;
   totalPages: number;
   itemsPerPage: number;
+  totalItems?: number;
   onPageChange: (page: number) => void;
 }
 
@@ -76,24 +77,36 @@ const TableCell: React.FC<TableCellProps> = ({
 const Pagination: React.FC<PaginationProps> = ({
   currentPage,
   totalPages,
+  totalItems,
   onPageChange,
 }) => {
+  // Garantir valores válidos
+  const safePage = isNaN(currentPage) || currentPage < 1 ? 1 : currentPage;
+  const safeTotal = isNaN(totalPages) || totalPages < 1 ? 1 : totalPages;
+
   return (
-    <div className="px-6 py-4 border-t flex justify-between">
+    <div className="px-6 py-4 border-t flex justify-between items-center">
       <button
-        onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
-        disabled={currentPage === 1}
-        className="px-4 py-2 bg-gray-300 border-gray-900 rounded dark:text-white dark:bg-blue-600 dark:border-blue-700"
+        onClick={() => onPageChange(Math.max(safePage - 1, 1))}
+        disabled={safePage === 1}
+        className="px-4 py-2 bg-gray-300 border-gray-900 rounded dark:text-white dark:bg-blue-600 dark:border-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Anterior
       </button>
-      <span className="dark:text-white">
-        Página {currentPage} de {totalPages}
-      </span>
+      <div className="flex flex-col items-center gap-1">
+        <span className="dark:text-white font-medium">
+          Página {safePage} de {safeTotal}
+        </span>
+        {totalItems && (
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Total de {totalItems} {totalItems === 1 ? "registro" : "registros"}
+          </span>
+        )}
+      </div>
       <button
-        onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
-        disabled={currentPage === totalPages}
-        className="px-4 py-2 bg-gray-300 border-gray-900 rounded dark:text-white dark:bg-blue-600 dark:border-blue-700"
+        onClick={() => onPageChange(Math.min(safePage + 1, safeTotal))}
+        disabled={safePage === safeTotal}
+        className="px-4 py-2 bg-gray-300 border-gray-900 rounded dark:text-white dark:bg-blue-600 dark:border-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Próximo
       </button>

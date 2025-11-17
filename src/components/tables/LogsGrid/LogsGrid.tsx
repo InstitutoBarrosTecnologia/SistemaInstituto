@@ -4,10 +4,11 @@ import {
   TableCell,
   TableHeader,
   TableRow,
+  Pagination,
 } from "../../ui/table";
 import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Badge from "../../ui/badge/Badge";
 import Button from "../../ui/button/Button";
 import { useLogs } from "../../../hooks/useLogs";
@@ -19,6 +20,8 @@ interface LogsGridProps {
 
 export default function LogsGrid({ filters }: LogsGridProps) {
   const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 10;
 
   const {
     isOpen: isOpenDetails,
@@ -26,82 +29,31 @@ export default function LogsGrid({ filters }: LogsGridProps) {
     closeModal: closeModalDetails,
   } = useModal();
 
+  // Resetar página quando os filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  // Mesclar filtros com paginação atual
+  const filtersWithPagination: LogFilters = {
+    ...filters,
+    page: currentPage,
+    pageSize: pageSize,
+  };
+
   // Hook personalizado para buscar logs
-  const { logs: apiLogs, isLoading, isError } = useLogs(filters);
-
-  // Dados mockados para teste
-  const mockLogs = [
-    {
-      id: "550e8400-e29b-41d4-a716-446655440001",
-      ip: "192.168.1.100",
-      dispositivo: "Chrome 120.0 / Windows 10",
-      dataInsercao: new Date().toISOString(),
-      localizacao: "São Paulo, SP - Brasil",
-      titulo: "Login realizado com sucesso",
-      descricao: "Usuário admin realizou login no sistema via navegador Chrome",
-      nivel: 0, // Info
-      jornadaCritica: false,
-      usrAcao: "123e4567-e89b-12d3-a456-426614174000",
-    },
-    {
-      id: "550e8400-e29b-41d4-a716-446655440002",
-      ip: "192.168.1.101",
-      dispositivo: "Firefox 121.0 / macOS",
-      dataInsercao: new Date(Date.now() - 3600000).toISOString(),
-      localizacao: "Rio de Janeiro, RJ - Brasil",
-      titulo: "Tentativa de acesso não autorizado",
-      descricao: "Tentativa de acesso ao módulo financeiro sem permissão adequada",
-      nivel: 1, // Warning
-      jornadaCritica: true,
-      usrAcao: "223e4567-e89b-12d3-a456-426614174001",
-    },
-    {
-      id: "550e8400-e29b-41d4-a716-446655440003",
-      ip: "192.168.1.102",
-      dispositivo: "Safari 17.0 / iOS 17",
-      dataInsercao: new Date(Date.now() - 7200000).toISOString(),
-      localizacao: "Belo Horizonte, MG - Brasil",
-      titulo: "Erro ao processar requisição",
-      descricao: "Erro 500 ao tentar carregar lista de pacientes - Timeout na conexão com banco de dados",
-      nivel: 2, // Error
-      jornadaCritica: true,
-      usrAcao: "323e4567-e89b-12d3-a456-426614174002",
-    },
-    {
-      id: "550e8400-e29b-41d4-a716-446655440004",
-      ip: "192.168.1.103",
-      dispositivo: "Edge 120.0 / Windows 11",
-      dataInsercao: new Date(Date.now() - 10800000).toISOString(),
-      localizacao: "Curitiba, PR - Brasil",
-      titulo: "Falha crítica no sistema de agendamento",
-      descricao: "Sistema de agendamento apresentou falha crítica durante criação de múltiplos eventos simultâneos",
-      nivel: 3, // Fatal
-      jornadaCritica: true,
-      usrAcao: "423e4567-e89b-12d3-a456-426614174003",
-    },
-    {
-      id: "550e8400-e29b-41d4-a716-446655440005",
-      ip: "192.168.1.104",
-      dispositivo: "Chrome 120.0 / Android 14",
-      dataInsercao: new Date(Date.now() - 14400000).toISOString(),
-      localizacao: "Porto Alegre, RS - Brasil",
-      titulo: "Relatório gerado com sucesso",
-      descricao: "Relatório financeiro do mês de outubro foi gerado e enviado por e-mail",
-      nivel: 0, // Info
-      jornadaCritica: false,
-      usrAcao: "523e4567-e89b-12d3-a456-426614174004",
-    },
-  ];
-
-  // Usar dados mockados se não houver dados da API (para teste)
-  const logs = apiLogs && apiLogs.length > 0 ? apiLogs : mockLogs;
-
-  // Debug para verificar os dados
-  console.log("📊 LogsGrid - Dados:", { apiLogs, mockLogs, logs, isLoading, isError });
+  const { logs, pagination, isLoading, isError } = useLogs(filtersWithPagination);
 
   const handleOpenModalDetails = (log: any) => {
     setSelectedLog(log);
     openModalDetails();
+  };
+
+  // Handler para mudança de página
+  const handlePageChange = (newPage: number) => {
+    if (!isNaN(newPage) && newPage > 0) {
+      setCurrentPage(newPage);
+    }
   };
 
   // Função para obter badge de nível (criticidade)
@@ -143,7 +95,39 @@ export default function LogsGrid({ filters }: LogsGridProps) {
       </div>
     );
 
-  // Removido verificação de erro e vazio para sempre mostrar os dados mockados durante desenvolvimento
+  if (isError)
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="mb-4 text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-900 dark:text-white font-semibold">Erro ao carregar logs</p>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Não foi possível buscar os dados. Tente novamente.
+          </p>
+        </div>
+      </div>
+    );
+
+  if (!logs || logs.length === 0)
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="mb-4 text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <p className="text-gray-900 dark:text-white font-semibold">Nenhum log encontrado</p>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Não há registros para exibir com os filtros aplicados.
+          </p>
+        </div>
+      </div>
+    );
 
   return (
     <>
@@ -265,14 +249,25 @@ export default function LogsGrid({ filters }: LogsGridProps) {
           </Table>
         </div>
 
-        {/* Rodapé da Tabela */}
-        <div className="border-t border-gray-100 px-5 py-3 dark:border-white/[0.05]">
-          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>
-              Mostrando {logs.length} {logs.length === 1 ? "registro" : "registros"}
-            </span>
-            {/* Paginação pode ser adicionada aqui se necessário */}
-          </div>
+        {/* Rodapé da Tabela com Paginação */}
+        <div className="border-t border-gray-100 dark:border-white/[0.05]">
+          {pagination ? (
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              itemsPerPage={pagination.pageSize}
+              totalItems={pagination.totalItems}
+              onPageChange={handlePageChange}
+            />
+          ) : (
+            <div className="px-5 py-3">
+              <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                <span>
+                  Mostrando {logs.length} {logs.length === 1 ? "registro" : "registros"}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
