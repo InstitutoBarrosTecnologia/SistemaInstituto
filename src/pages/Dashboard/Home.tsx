@@ -165,39 +165,22 @@ export default function Home() {
           )}
         </div>
         <div>
-          {errorCategoria ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-800 dark:bg-red-900/20">
-              <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
-                ❌ Erro ao carregar faturamento por categoria
-              </h3>
-              <p className="text-sm text-red-600 dark:text-red-400 mb-4">
-                {errorCategoria}
-              </p>
-              <button
-                onClick={refetchCategoria}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-              >
-                🔄 Tentar Novamente
-              </button>
-            </div>
-          ) : (
-            <PieChartGeneric
-              title="Faturamento por Categoria"
-              series={faturamentoCategoriaData.map((item) => item.valorReceita)}
-              labels={faturamentoCategoriaData.map((item) => item.tipo)}
-              loading={loadingCategoria}
-              tooltipSuffix=""
-              colors={[
-                "#3B82F6",
-                "#8B5CF6",
-                "#F59E0B",
-                "#EF4444",
-                "#10B981",
-                "#F97316",
-              ]} // Cores variadas para categorias
-              onDropdownAction={handleChartCategoriaAction}
-            />
-          )}
+          <PieChartGeneric
+            title="Faturamento por Categoria"
+            series={errorCategoria ? [] : faturamentoCategoriaData.map((item) => item.valorReceita)}
+            labels={errorCategoria ? [] : faturamentoCategoriaData.map((item) => item.tipo)}
+            loading={loadingCategoria}
+            tooltipSuffix=""
+            colors={[
+              "#3B82F6",
+              "#8B5CF6",
+              "#F59E0B",
+              "#EF4444",
+              "#10B981",
+              "#F97316",
+            ]} // Cores variadas para categorias
+            onDropdownAction={handleChartCategoriaAction}
+          />
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-8">

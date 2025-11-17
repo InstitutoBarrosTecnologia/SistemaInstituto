@@ -19,8 +19,7 @@ export default function StatisticsChart({
   series = [], 
   categories = [],
   loading = false,
-  error = null,
-  onRefresh
+  error = null
 }: StatisticsChartProps) {
   const options: ApexOptions = {
     legend: {
@@ -169,31 +168,25 @@ export default function StatisticsChart({
         </div>
       </div>
 
-      {error ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600 text-sm mb-2">Erro ao carregar dados de comparação</p>
-          {onRefresh && (
-            <button 
-              onClick={onRefresh}
-              className="text-red-700 hover:text-red-800 text-sm underline"
-            >
-              Tentar novamente
-            </button>
+      <div className="max-w-full overflow-x-auto custom-scrollbar">
+        <div className="min-w-[1000px] xl:min-w-full">
+          {loading ? (
+            <div className="flex items-center justify-center h-[310px]">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+            </div>
+          ) : error || !series || series.length === 0 || series.every(s => !s.data || s.data.length === 0) ? (
+            <div className="flex items-center justify-center h-[310px]">
+              <div className="text-center">
+                <p className="text-gray-500 dark:text-gray-400">
+                  Nenhum dado encontrado
+                </p>
+              </div>
+            </div>
+          ) : (
+            <Chart options={options} series={series} type="area" height={310} />
           )}
         </div>
-      ) : (
-        <div className="max-w-full overflow-x-auto custom-scrollbar">
-          <div className="min-w-[1000px] xl:min-w-full">
-            {loading ? (
-              <div className="flex items-center justify-center h-[310px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-              </div>
-            ) : (
-              <Chart options={options} series={series} type="area" height={310} />
-            )}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

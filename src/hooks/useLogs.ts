@@ -1,16 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { LogService } from "../services/LogService";
-import { LogFilters } from "../pages/Logs/Logs";
-
+import { LogFilters } from "../pages/Log/Log";
 
 export function useLogs(filters?: LogFilters) {
-  const { data, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["logs", filters],
     queryFn: () => LogService.getAllLogs(filters),
-    retry: 0, // Não tentar novamente se falhar (para mostrar os dados mockados)
+    retry: 3,
+    retryDelay: 30000,
     refetchOnWindowFocus: false,
-    enabled: false, // Desabilitar temporariamente até o backend estar pronto
-    initialData: { data: [], currentPage: 1, totalPages: 0, totalItems: 0, pageSize: 50 }, // Dados iniciais
   });
 
   return {
@@ -21,8 +19,8 @@ export function useLogs(filters?: LogFilters) {
       totalItems: data.totalItems,
       pageSize: data.pageSize,
     } : null,
-    isLoading: false, // Forçar false durante desenvolvimento com dados mockados
-    isError: false, // Forçar false durante desenvolvimento
+    isLoading,
+    isError,
     refetch,
   };
 }

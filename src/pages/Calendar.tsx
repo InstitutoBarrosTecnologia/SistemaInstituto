@@ -298,64 +298,65 @@ const Calendar: React.FC = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let currentDate = new Date(today);
-    let sessionsCreated = 0;
-    let dayIndex = 0;
-
     // Definir o intervalo baseado no tipo de recorrência
     const intervals = {
-      semanal: 7,      // A cada 7 dias (1 semana)
-      quinzenal: 14,   // A cada 14 dias (2 semanas)
-      mensal: 28       // A cada 28 dias (~1 mês - 4 semanas)
+      semanal: 1,      // A cada 1 semana
+      quinzenal: 2,    // A cada 2 semanas
+      mensal: 4        // A cada 4 semanas
     };
 
-    const intervalDays = intervals[recurrenceType as keyof typeof intervals] || 7;
+    const weekInterval = intervals[recurrenceType as keyof typeof intervals] || 1;
+    let currentWeek = 0;
+    let sessionsCreated = 0;
 
+    // Loop através das semanas
     while (sessionsCreated < count) {
-      const targetDayNumber = selectedDayNumbers[dayIndex];
-      
-      // Encontrar a próxima ocorrência do dia da semana desejado a partir da data atual
-      let searchDate = new Date(currentDate);
-      while (searchDate.getDay() !== targetDayNumber) {
-        searchDate.setDate(searchDate.getDate() + 1);
-      }
+      // Para cada semana, verificar todos os dias selecionados
+      for (const targetDayNumber of selectedDayNumbers) {
+        if (sessionsCreated >= count) break;
 
-      // Verificar se a data é válida (hoje ou futuro)
-      let isValidDate = searchDate >= today;
+        // Calcular a data base desta semana (segunda-feira)
+        const baseDate = new Date(today);
+        baseDate.setDate(baseDate.getDate() + (currentWeek * 7));
+        
+        // Encontrar o primeiro dia da semana (domingo = 0, segunda = 1, etc)
+        const currentDayOfWeek = baseDate.getDay();
+        const daysUntilMonday = currentDayOfWeek === 0 ? 1 : (1 - currentDayOfWeek + 7) % 7;
+        const monday = new Date(baseDate);
+        monday.setDate(monday.getDate() + daysUntilMonday);
 
-      // Se for hoje, verificar se já passou do horário
-      if (
-        searchDate.toDateString() === today.toDateString() &&
-        selectedHorarioRecorrente
-      ) {
-        const [hours, minutes] = selectedHorarioRecorrente
-          .split(":")
-          .map(Number);
-        const targetTime = new Date(today);
-        targetTime.setHours(hours, minutes, 0, 0);
+        // Calcular quantos dias adicionar para chegar ao dia desejado
+        let daysToAdd = targetDayNumber - 1; // -1 porque segunda é dia 1
+        if (targetDayNumber === 0) daysToAdd = 6; // Domingo é o último dia da semana
 
-        if (today >= targetTime) {
-          isValidDate = false;
+        const targetDate = new Date(monday);
+        targetDate.setDate(monday.getDate() + daysToAdd);
+
+        // Verificar se a data é válida (hoje ou futuro)
+        let isValidDate = targetDate >= today;
+
+        // Se for hoje, verificar se já passou do horário
+        if (
+          targetDate.toDateString() === today.toDateString() &&
+          selectedHorarioRecorrente
+        ) {
+          const [hours, minutes] = selectedHorarioRecorrente.split(":").map(Number);
+          const targetTime = new Date(today);
+          targetTime.setHours(hours, minutes, 0, 0);
+
+          if (today >= targetTime) {
+            isValidDate = false;
+          }
+        }
+
+        if (isValidDate) {
+          dates.push(new Date(targetDate));
+          sessionsCreated++;
         }
       }
 
-      if (isValidDate) {
-        dates.push(new Date(searchDate));
-        sessionsCreated++;
-      }
-
-      // Avançar para o próximo dia da semana na lista
-      dayIndex = (dayIndex + 1) % selectedDayNumbers.length;
-
-      // Se completamos um ciclo de todos os dias selecionados, 
-      // avançar para o próximo período de recorrência
-      if (dayIndex === 0) {
-        currentDate.setDate(currentDate.getDate() + intervalDays);
-      } else {
-        // Continuar na mesma semana/período para o próximo dia
-        currentDate = new Date(searchDate);
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
+      // Avançar para a próxima semana de acordo com o tipo de recorrência
+      currentWeek += weekInterval;
     }
 
     return dates;
@@ -726,24 +727,34 @@ const Calendar: React.FC = () => {
     isLoading,
     data: schedules,
     refetch: refetchCalendar,
+    isError: isErrorSchedules
   } = useQuery({
     queryKey: ["schedules", filter],
     queryFn: () => getAllSchedulesAsync(filter),
+    enabled: !!filter.data && !!filter.dataFim, // Só executa quando tiver as datas
+    retry: 3, // Tenta 3 vezes
+    retryDelay: 30000, // Aguarda 30 segundos entre tentativas
   });
 
-  const { data: filiaisData } = useQuery({
+  const { data: filiaisData, isError: isErrorFiliais } = useQuery({
     queryKey: ["filiais"],
     queryFn: () => BranchOfficeService.getAll(),
+    retry: 3,
+    retryDelay: 30000,
   });
 
-  const { data: clientesData } = useQuery({
+  const { data: clientesData, isError: isErrorClientes } = useQuery({
     queryKey: ["clientes"],
     queryFn: () => getAllCustomersAsync(),
+    retry: 3,
+    retryDelay: 30000,
   });
 
-  const { data: funcionariosData } = useQuery({
+  const { data: funcionariosData, isError: isErrorFuncionarios } = useQuery({
     queryKey: ["funcionarios"],
     queryFn: () => EmployeeService.getAll(),
+    retry: 3,
+    retryDelay: 30000,
   });
 
   useEffect(() => {
@@ -901,6 +912,39 @@ const Calendar: React.FC = () => {
       );
     }
   }, [filiaisData, clientesData, funcionariosData]);
+
+  // useEffect para exibir erros após 3 tentativas falharem
+  useEffect(() => {
+    if (isErrorSchedules) {
+      toast.error("Erro ao carregar agendamentos após 3 tentativas. Verifique sua conexão.", {
+        duration: 5000,
+      });
+    }
+  }, [isErrorSchedules]);
+
+  useEffect(() => {
+    if (isErrorFiliais) {
+      toast.error("Erro ao carregar filiais após 3 tentativas.", {
+        duration: 5000,
+      });
+    }
+  }, [isErrorFiliais]);
+
+  useEffect(() => {
+    if (isErrorClientes) {
+      toast.error("Erro ao carregar clientes após 3 tentativas.", {
+        duration: 5000,
+      });
+    }
+  }, [isErrorClientes]);
+
+  useEffect(() => {
+    if (isErrorFuncionarios) {
+      toast.error("Erro ao carregar funcionários após 3 tentativas.", {
+        duration: 5000,
+      });
+    }
+  }, [isErrorFuncionarios]);
 
   // useEffect para atualizar horários de funcionamento baseado na filial selecionada
   useEffect(() => {
@@ -1316,17 +1360,23 @@ const Calendar: React.FC = () => {
 
   // Função para deletar apenas o evento atual
   const handleDeleteCurrentEvent = async () => {
-    if (idDeleteRegister) {
-      try {
-        await mutateDeleteEvent(idDeleteRegister);
-        closeModalDeleteRecurrence();
-        closeModal();
-        resetModalFields();
-        toast.success("Evento excluído com sucesso!");
-      } catch (error) {
-        console.error("Erro ao deletar evento atual:", error);
-        toast.error("Erro ao excluir evento. Tente novamente.");
-      }
+    if (!idDeleteRegister) {
+      toast.error("ID do evento não encontrado.");
+      closeModalDeleteRecurrence();
+      return;
+    }
+
+    // Fechar modais imediatamente
+    closeModalDeleteRecurrence();
+    closeModal();
+
+    try {
+      await mutateDeleteEvent(idDeleteRegister);
+      toast.success("Evento excluído com sucesso!");
+      resetModalFields();
+    } catch (error) {
+      console.error("Erro ao deletar evento atual:", error);
+      toast.error("Erro ao excluir evento. Tente novamente.");
     }
   };
 
@@ -1334,26 +1384,33 @@ const Calendar: React.FC = () => {
   const handleDeleteRecurrence = async () => {
     if (!currentEventData) {
       toast.error("Dados insuficientes para excluir recorrência.");
+      closeModalDeleteRecurrence();
       return;
     }
 
+    // Buscar todas as sessões futuras do cliente e fisioterapeuta (incluindo a atual)
+    const allSessions = schedules?.filter((schedule: any) => {
+      return (
+        schedule.clienteId === currentEventData.clienteId &&
+        schedule.funcionarioId === currentEventData.funcionarioId &&
+        (schedule.observacao?.includes("Agendamento recorrente") ||
+         schedule.observacao?.includes("Recorrência atualizada") ||
+         schedule.titulo?.includes("Sessão"))
+      );
+    }) || [];
+
+    if (allSessions.length === 0) {
+      toast.error("Nenhuma sessão da recorrência encontrada.");
+      closeModalDeleteRecurrence();
+      closeModal();
+      return;
+    }
+
+    // Fechar modais imediatamente
+    closeModalDeleteRecurrence();
+    closeModal();
+
     try {
-      // Buscar todas as sessões futuras do cliente e fisioterapeuta (incluindo a atual)
-      const allSessions = schedules?.filter((schedule: any) => {
-        return (
-          schedule.clienteId === currentEventData.clienteId &&
-          schedule.funcionarioId === currentEventData.funcionarioId &&
-          (schedule.observacao?.includes("Agendamento recorrente") ||
-           schedule.observacao?.includes("Recorrência atualizada") ||
-           schedule.titulo?.includes("Sessão"))
-        );
-      }) || [];
-
-      if (allSessions.length === 0) {
-        toast.error("Nenhuma sessão da recorrência encontrada.");
-        return;
-      }
-
       // Deletar todas as sessões da recorrência
       const deletePromises = allSessions.map((session: any) => 
         disableScheduleAsync(session.id)
@@ -1364,19 +1421,17 @@ const Calendar: React.FC = () => {
 
       if (successfulDeletes.length === allSessions.length) {
         toast.success(`${allSessions.length} sessões da recorrência excluídas com sucesso!`);
-        await refetchCalendar();
       } else {
         toast.error(`Apenas ${successfulDeletes.length} de ${allSessions.length} sessões foram excluídas.`);
-        await refetchCalendar();
       }
 
-      closeModalDeleteRecurrence();
-      closeModal();
+      await refetchCalendar();
       resetModalFields();
     } catch (error) {
       console.error("Erro ao deletar recorrência:", error);
       toast.error("Erro ao excluir recorrência. Verifique o calendário.");
       await refetchCalendar();
+      resetModalFields();
     }
   };
 
@@ -1537,15 +1592,7 @@ const Calendar: React.FC = () => {
     );
   };
 
-  // Atualize o filtro quando o fisioterapeuta for selecionado
-  useEffect(() => {
-    setFilter((prev) => ({
-      ...prev,
-      idFuncionario: selectedFuncionario || undefined,
-    }));
-  }, [selectedFuncionario]);
-
-  // Aplica filtro automático para fisioterapeutas
+  // Aplica filtro automático para fisioterapeutas e configurações iniciais
   useEffect(() => {
     const token = localStorage.getItem("token");
     const currentUserRole = getUserRoleFromToken(token);
@@ -1555,14 +1602,28 @@ const Calendar: React.FC = () => {
       // Se é fisioterapeuta, aplicar filtro por ID do funcionário
       const funcionarioId = getUserFuncionarioIdFromToken(token);
       if (funcionarioId) {
-        setFilter((prev) => ({
-          ...prev,
-          idFuncionario: funcionarioId,
-        }));
         setSelectedFuncionario(funcionarioId);
+        // Não precisa setar o filter aqui, o useEffect abaixo cuidará disso
       }
     }
   }, []);
+
+  // Atualiza o filtro quando selectedFuncionario mudar (consolidado)
+  useEffect(() => {
+    setFilter((prev) => {
+      const newFilter = {
+        ...prev,
+        idFuncionario: selectedFuncionario || undefined,
+      };
+      
+      // Só atualiza se realmente mudou
+      if (JSON.stringify(prev) === JSON.stringify(newFilter)) {
+        return prev;
+      }
+      
+      return newFilter;
+    });
+  }, [selectedFuncionario]);
 
   return (
     <>

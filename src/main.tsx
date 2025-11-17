@@ -14,6 +14,18 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      retry: (failureCount, error: any) => {
+        // Não fazer retry em caso de erro 429 (Too Many Requests)
+        if (error?.response?.status === 429) {
+          return false;
+        }
+        // Limitar a 3 tentativas para outros erros
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      staleTime: 1000 * 60 * 5, // 5 minutos
     },
   },
 });
