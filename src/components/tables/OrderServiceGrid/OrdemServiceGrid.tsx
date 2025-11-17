@@ -150,8 +150,8 @@ export default function OrdemServiceGrid() {
     const totalPages = Math.ceil(filteredOrdens.length / itemsPerPage);
     if (isError) return <p className="text-dark dark:text-white">Erro ao carregar dados.</p>;
     // FUNÇÕES AUXILIARES -----------------
-    const handleOpenModal = (id: string) => {
-        loadCategoryData(id);
+    const handleOpenModal = (ordem: OrderServiceResponseDto) => {
+        setFormDataResponse(ordem);
         openModal();
     };
 
@@ -171,21 +171,10 @@ export default function OrdemServiceGrid() {
     const handleOpenModalInfoData = (oder: OrderServiceResponseDto) => {
         setSelectedOrderData(oder);
         openModalData();
-    }
-
-    const loadCategoryData = async (id: string) => {
-        try {
-            const orderService = await getOrderServiceByIdAsync(id);
-            if (typeof orderService !== "string")
-                setFormDataResponse(orderService);
-            else console.log(orderService);
-        } catch (error) {
-            console.error("Erro ao buscar o lead:", error);
-        }
     };
 
     const handleCloseModalData = () => {
-        closeModalData(); // se você tiver definido esse `closeModal` via hook
+        closeModalData();
     };
 
     return (
@@ -310,7 +299,7 @@ export default function OrdemServiceGrid() {
                                                 </svg>
                                             </button>
                                             <button
-                                                onClick={() => handleOpenModal(ordem.id!.toString())}
+                                                onClick={() => handleOpenModal(ordem)}
                                                 rel="noopener"
                                                 className="p-3 flex h-11 w-11 items-center justify-center rounded-full border border-yellow-300 bg-white text-sm font-medium text-yellow-700 shadow-theme-xs hover:bg-yellow-50 hover:text-yellow-800 dark:border-yellow-700 dark:bg-yellow-800 dark:text-yellow-400 dark:hover:bg-white/[0.03] dark:hover:text-yellow-200"
                                             >

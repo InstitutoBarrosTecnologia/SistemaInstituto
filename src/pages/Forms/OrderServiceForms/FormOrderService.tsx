@@ -79,11 +79,6 @@ export default function FormOrderService({
   const [selectedServices, setSelectedServices] = useState<Option[]>([]);
   const [selectedConta, setSelectedConta] = useState<string>("corrente");
 
-  // Função wrapper para debug do setSelectedServices
-  const handleSelectedServicesChange = (newServices: Option[]) => {
-    console.log("chamou a função");
-    setSelectedServices(newServices);
-  };
   const queryClient = useQueryClient();
 
   // Função para calcular as próximas datas baseado em múltiplos dias da semana
@@ -456,24 +451,21 @@ export default function FormOrderService({
         sessoes: data.sessoes,
       });
 
-      // Populer os serviços selecionados quando estiver editando
-      if (data.servicos && servicesOptions.length > 0) {
+      // Popula os serviços selecionados quando estiver editando
+      if (data.servicos && data.servicos.length > 0) {
         const servicosSelecionados = data.servicos
-          .map((servico) => {
-            return {
-              value: servico.subServicoId || "",
-              text: servico.descricao || "",
-              preco: servico.valor?.toString() || "0",
-            };
-          })
-          .filter((servico) => servico.value); // Filtrar apenas serviços válidos
+          .map((servico) => ({
+            value: servico.subServicoId || "",
+            text: servico.descricao || "",
+            preco: servico.valor?.toString() || "0",
+          }))
+          .filter((servico) => servico.value);
 
         setSelectedServices(servicosSelecionados);
       }
 
       // Inicializar número de parcelas para edição
       if (data.formaPagamento === EFormaPagamento.CartaoCreditoParcelado) {
-        // Se não tivermos o valor do banco, assume 2 parcelas como padrão para cartão parcelado
         setNumeroParcelas(2);
       } else {
         setNumeroParcelas(1);
@@ -746,7 +738,7 @@ export default function FormOrderService({
                   <MultiSelect
                     label="Serviços"
                     options={servicesOptions}
-                    onChangeFull={handleSelectedServicesChange}
+                    onChangeFull={setSelectedServices}
                     defaultSelected={selectedServices.map((s) => s.value)}
                     disabled={edit}
                   />
