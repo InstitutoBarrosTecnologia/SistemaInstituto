@@ -34,15 +34,79 @@ export default function LogsGrid({ filters }: LogsGridProps) {
     setCurrentPage(1);
   }, [filters]);
 
-  // Mesclar filtros com paginação atual
-  const filtersWithPagination: LogFilters = {
-    ...filters,
-    page: currentPage,
-    pageSize: pageSize,
+  // Buscar TODOS os logs da API (sem paginação backend)
+  const filtersForApi: LogFilters = {
+    page: 1,
+    pageSize: 9999, // Buscar todos os registros
   };
 
   // Hook personalizado para buscar logs
-  const { logs, pagination, isLoading, isError } = useLogs(filtersWithPagination);
+  const { logs: allLogs, isLoading, isError } = useLogs(filtersForApi);
+
+  // Aplicar filtros no frontend
+  const filteredLogs = allLogs.filter((log: any) => {
+    // Filtro por IP
+    if (filters?.ip && !log.ip?.toLowerCase().includes(filters.ip.toLowerCase())) {
+      return false;
+    }
+
+    // Filtro por Nível
+    if (filters?.nivel !== null && filters?.nivel !== undefined && log.nivel !== filters.nivel) {
+      return false;
+    }
+
+    // Filtro por Jornada Crítica
+    if (filters?.jornadaCritica !== null && filters?.jornadaCritica !== undefined && log.jornadaCritica !== filters.jornadaCritica) {
+      return false;
+    }
+
+    // Filtro por Data Início
+    if (filters?.dataInicio) {
+      // Extrair apenas a data (yyyy-mm-dd) sem hora
+      const logDateStr = log.dataInsercao?.split('T')[0];
+      const filterDateStr = filters.dataInicio;
+      
+      if (logDateStr < filterDateStr) {
+        return false;
+      }
+    }
+
+    // Filtro por Data Fim
+    if (filters?.dataFim) {
+      // Extrair apenas a data (yyyy-mm-dd) sem hora
+      const logDateStr = log.dataInsercao?.split('T')[0];
+      const filterDateStr = filters.dataFim;
+      
+      if (logDateStr > filterDateStr) {
+        return false;
+      }
+    }
+
+    // Filtro por Usuário (Guid)
+    if (filters?.usrAcao && !log.usrAcao?.toLowerCase().includes(filters.usrAcao.toLowerCase())) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Paginação manual dos dados filtrados
+  const totalFilteredItems = filteredLogs.length;
+  const totalFilteredPages = Math.ceil(totalFilteredItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+
+  // Usar logs filtrados e paginados
+  const logs = paginatedLogs;
+
+  // Ajustar paginação para dados filtrados
+  const effectivePagination = {
+    currentPage: currentPage,
+    totalPages: totalFilteredPages,
+    totalItems: totalFilteredItems,
+    pageSize: pageSize,
+  };
 
   const handleOpenModalDetails = (log: any) => {
     setSelectedLog(log);
@@ -251,23 +315,13 @@ export default function LogsGrid({ filters }: LogsGridProps) {
 
         {/* Rodapé da Tabela com Paginação */}
         <div className="border-t border-gray-100 dark:border-white/[0.05]">
-          {pagination ? (
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              itemsPerPage={pagination.pageSize}
-              totalItems={pagination.totalItems}
-              onPageChange={handlePageChange}
-            />
-          ) : (
-            <div className="px-5 py-3">
-              <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-                <span>
-                  Mostrando {logs.length} {logs.length === 1 ? "registro" : "registros"}
-                </span>
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={effectivePagination.currentPage}
+            totalPages={effectivePagination.totalPages}
+            itemsPerPage={effectivePagination.pageSize}
+            totalItems={effectivePagination.totalItems}
+            onPageChange={handlePageChange}
+          />
         </div>
       </div>
 
