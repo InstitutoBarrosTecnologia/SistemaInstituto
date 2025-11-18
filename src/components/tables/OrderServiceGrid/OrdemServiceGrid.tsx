@@ -97,28 +97,8 @@ export default function OrdemServiceGrid() {
 
     const mutationDelete = useMutation({
         mutationFn: async (id: string) => {
-            // Obter userId do token/localStorage
-            const token = localStorage.getItem("token");
-            let userId = "";
-            
-            if (token) {
-                try {
-                    const base64Url = token.split(".")[1];
-                    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-                    const jsonPayload = decodeURIComponent(
-                        atob(base64)
-                            .split("")
-                            .map((c) => `%${("00" + c.charCodeAt(0).toString(16)).slice(-2)}`)
-                            .join("")
-                    );
-                    const decoded = JSON.parse(jsonPayload);
-                    userId = decoded.nameid || decoded.sub || "";
-                } catch (e) {
-                    console.error("Erro ao decodificar token:", e);
-                }
-            }
-            
-            return desabilitarOrderServiceAsync(id, userId);
+                      
+            return desabilitarOrderServiceAsync(id);
         },
         onSuccess: () => {
             toast.success("Ordem de serviço desativada com sucesso!", {

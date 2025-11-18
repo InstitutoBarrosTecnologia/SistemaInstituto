@@ -75,8 +75,7 @@ export const deleteOrderServiceAsync = async (id: string): Promise<string> => {
 
 // Desativar ordem de serviço
 export const desabilitarOrderServiceAsync = async (
-  id: string,
-  userId: string
+  id: string
 ): Promise<OrderServiceResponseDto> => {
   const response = await instanceApi.put<OrderServiceResponseDto>(
     `/OrderService/DesativarPrestacao?id=${id}`
