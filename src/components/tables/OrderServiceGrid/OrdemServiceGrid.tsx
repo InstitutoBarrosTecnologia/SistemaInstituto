@@ -16,7 +16,7 @@ import { useModal as useModalInfo } from "../../../hooks/useModal";
 import { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import Alert, { AlertProps } from "../../ui/alert/Alert";
-import { getAllOrderServicesAsync, getOrderServiceByIdAsync, deleteOrderServiceAsync } from "../../../services/service/OrderServiceService";
+import { getAllOrderServicesAsync, desabilitarOrderServiceAsync } from "../../../services/service/OrderServiceService";
 import FormOrderService from "../../../pages/Forms/OrderServiceForms/FormOrderService";
 import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/OrderServiceResponseDto";
 import FormMetaDataOrderService from "../../../pages/Forms/OrderServiceForms/FormMetaDataOrderService";
@@ -96,17 +96,38 @@ export default function OrdemServiceGrid() {
     });
 
     const mutationDelete = useMutation({
-        mutationFn: deleteOrderServiceAsync,
+        mutationFn: async (id: string) => {
+            // Obter userId do token/localStorage
+            const token = localStorage.getItem("token");
+            let userId = "";
+            
+            if (token) {
+                try {
+                    const base64Url = token.split(".")[1];
+                    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+                    const jsonPayload = decodeURIComponent(
+                        atob(base64)
+                            .split("")
+                            .map((c) => `%${("00" + c.charCodeAt(0).toString(16)).slice(-2)}`)
+                            .join("")
+                    );
+                    const decoded = JSON.parse(jsonPayload);
+                    userId = decoded.nameid || decoded.sub || "";
+                } catch (e) {
+                    console.error("Erro ao decodificar token:", e);
+                }
+            }
+            
+            return desabilitarOrderServiceAsync(id, userId);
+        },
         onSuccess: () => {
-            toast.success("Ordem de serviço deletada com sucesso!", {
+            toast.success("Ordem de serviço desativada com sucesso!", {
                 duration: 3000,
             });
 
             queryClient.invalidateQueries({ queryKey: ["getAllOrderService"] });
 
-            // setTimeout(() => {
-                closeModalDelete();
-            // }, 3000);
+            closeModalDelete();
         },
         onError: async (error: any) => {
             console.error("Erro ao deletar ordem de serviço:", error);
@@ -356,15 +377,18 @@ export default function OrdemServiceGrid() {
                     <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
                         <div className="px-2 pr-14">
                             <h4 className="mb-2 text-2xl font-semibold text-center text-gray-800 dark:text-white/90">
-                                Apagar Categoria
+                                Desativar Tratamento/Sessão
                             </h4>
                         </div>
                         <form className="flex flex-col" onSubmit={handlePostDelete}>
                             <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
                                 <div>
                                     <h5 className="mb-5 text-lg font-medium text-gray-800 text-center dark:text-white/90 lg:mb-6">
-                                        Tem certeza que deseja apagar este registro?
+                                        Tem certeza que deseja desativar este tratamento/sessão?
                                     </h5>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                                        O registro será desativado logicamente e não aparecerá mais nas listagens ativas.
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex justify-center items-center mt-6">
@@ -375,8 +399,19 @@ export default function OrdemServiceGrid() {
                                     <button
                                         className="bg-red-500 text-white shadow-theme-xs hover:bg-red-600 disabled:bg-red-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
                                         type="submit"
+                                        disabled={mutationDelete.isPending}
                                     >
-                                        Apagar
+                                        {mutationDelete.isPending ? (
+                                            <>
+                                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Desativando...
+                                            </>
+                                        ) : (
+                                            'Desativar'
+                                        )}
                                     </button>
                                 </div>
                             </div>

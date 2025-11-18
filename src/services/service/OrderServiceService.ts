@@ -79,7 +79,7 @@ export const desabilitarOrderServiceAsync = async (
   userId: string
 ): Promise<OrderServiceResponseDto> => {
   const response = await instanceApi.put<OrderServiceResponseDto>(
-    `/OrderService/Desabilitar?id=${id}&userDesabled=${userId}`
+    `/OrderService/DesativarPrestacao?id=${id}`
   );
   return response.data;
 };
