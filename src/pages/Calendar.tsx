@@ -1542,7 +1542,7 @@ const Calendar: React.FC = () => {
           {eventInfo.timeText}
         </div>
         <div className="fc-event-title" style={{ color: textColor }}>
-          {truncateText(cliente)}
+          {truncateText(cliente === "Não informado" ? eventInfo.event.title : cliente)}
         </div>
 
         {/* Tooltip personalizado */}
