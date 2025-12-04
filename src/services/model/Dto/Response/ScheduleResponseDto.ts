@@ -10,7 +10,10 @@ export interface ScheduleResponseDto {
   diaTodo: boolean;
   usuarioResponsavelId?: string | null;
   idCliente?: string | null;
-  idFuncionarioa?: string | null;
+  idFuncionario?: string | null;
+  filialId?: string | null;
+  clienteId?: string | null;
+  funcionarioId?: string | null;
   cliente?: CustomerResponseDto | null;
   funcionario?: EmployeeResponseDto | null;
   localizacao: string;

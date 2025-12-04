@@ -1,4 +1,5 @@
 import { ScheduleRequestDto } from "../model/Dto/Request/ScheduleRequestDto";
+import { ScheduleResponseDto } from "../model/Dto/Response/ScheduleResponseDto";
 import { instanceApi } from "./AxioService";
 
 // POST - Criar evento de agenda
@@ -29,8 +30,8 @@ export interface Filter {
 }
 
 // GET - Buscar todos os eventos com filtros
-export const getAllSchedulesAsync = async (filters: Filter): Promise<ScheduleRequestDto[]> => {
-  const response = await instanceApi.get<ScheduleRequestDto[] | null>(`/Schedule`, {
+export const getAllSchedulesAsync = async (filters: Filter): Promise<ScheduleResponseDto[]> => {
+  const response = await instanceApi.get<ScheduleResponseDto[] | null>(`/Schedule`, {
     params: filters,
   });
   return response.data || [];

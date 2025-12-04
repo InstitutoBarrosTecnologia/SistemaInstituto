@@ -731,9 +731,9 @@ const Calendar: React.FC = () => {
   } = useQuery({
     queryKey: ["schedules", filter],
     queryFn: () => getAllSchedulesAsync(filter),
-    enabled: !!filter.data && !!filter.dataFim, // Só executa quando tiver as datas
-    retry: 3, // Tenta 3 vezes
-    retryDelay: 30000, // Aguarda 30 segundos entre tentativas
+    enabled: !!filter.data && !!filter.dataFim,
+    retry: 3,
+    retryDelay: 30000,
   });
 
   const { data: filiaisData, isError: isErrorFiliais } = useQuery({
@@ -780,7 +780,7 @@ const Calendar: React.FC = () => {
       // Aplicar filtros adicionais no frontend (caso o backend não filtre corretamente)
       if (filterCliente) {
         filteredSchedules = filteredSchedules.filter(
-          (schedule) => schedule.clienteId === filterCliente
+          (schedule) => (schedule.clienteId === filterCliente || schedule.idCliente === filterCliente)
         );
       }
 
@@ -791,11 +791,8 @@ const Calendar: React.FC = () => {
         );
       }
 
-      if (selectedFuncionario) {
-        filteredSchedules = filteredSchedules.filter(
-          (schedule) => schedule.funcionarioId === selectedFuncionario
-        );
-      }
+      // Nota: Filtro de funcionário removido do frontend
+      // O backend já filtra corretamente usando o idFuncionario da query
 
       if (selectedFilial) {
         filteredSchedules = filteredSchedules.filter(
@@ -806,25 +803,26 @@ const Calendar: React.FC = () => {
       const formattedEvents = filteredSchedules.map((schedule) => {
         // Buscar nome do cliente
         const cliente = clientesArray.find(
-          (c: any) => c.id === schedule.clienteId
+          (c: any) => c.id === (schedule.clienteId || schedule.idCliente)
         );
         // Buscar nome do funcionário
         const funcionario = funcionariosArray.find(
-          (f: any) => f.id === schedule.funcionarioId
+          (f: any) => f.id === (schedule.funcionarioId || schedule.idFuncionario)
         );
         // Buscar nome da filial
         const filial = filiaisArray.find(
           (f: any) => f.id === schedule.filialId
         );
 
+        const funcionarioIdToUse = schedule.funcionarioId || schedule.idFuncionario;
         const corFuncionario =
-          schedule.funcionarioId && funcionarioColorMap[schedule.funcionarioId]
-            ? funcionarioColorMap[schedule.funcionarioId]
+          funcionarioIdToUse && funcionarioColorMap[funcionarioIdToUse]
+            ? funcionarioColorMap[funcionarioIdToUse]
             : undefined;
         
         // Processar as datas corretamente
-        let eventStart = schedule.dataInicio;
-        let eventEnd = schedule.dataFim;
+        let eventStart: string | Date = schedule.dataInicio;
+        let eventEnd: string | Date | undefined = schedule.dataFim;
         
         // Para eventos allDay, o FullCalendar espera que a data final seja exclusiva
         if (schedule.diaTodo && schedule.dataInicio && schedule.dataFim) {
@@ -1160,9 +1158,9 @@ const Calendar: React.FC = () => {
       setEventDescription(schedule.descricao || "");
       setEventLocation(schedule.localizacao || "");
       setEventStartDate(
-        schedule.dataInicio ? schedule.dataInicio.slice(0, 16) : ""
+        schedule.dataInicio ? new Date(schedule.dataInicio).toISOString().slice(0, 16) : ""
       );
-      setEventEndDate(schedule.dataFim ? schedule.dataFim.slice(0, 16) : "");
+      setEventEndDate(schedule.dataFim ? new Date(schedule.dataFim).toISOString().slice(0, 16) : "");
       setEventLevel("Primary");
       setSelectedCliente(schedule.clienteId?.toString() || undefined);
       // Usar modalFuncionario para não interferir com o filtro
@@ -1592,23 +1590,23 @@ const Calendar: React.FC = () => {
     );
   };
 
-  // Aplica filtro automático para fisioterapeutas e configurações iniciais
+  // Aplica filtro automático para fisioterapeutas
   useEffect(() => {
     const token = localStorage.getItem("token");
     const currentUserRole = getUserRoleFromToken(token);
     setUserRole(currentUserRole);
 
     if (shouldApplyAgendaFilter(currentUserRole)) {
-      // Se é fisioterapeuta, aplicar filtro por ID do funcionário
-      const funcionarioId = getUserFuncionarioIdFromToken(token);
-      if (funcionarioId) {
-        setSelectedFuncionario(funcionarioId);
-        // Não precisa setar o filter aqui, o useEffect abaixo cuidará disso
+      // Extrai UserLoginId do token e envia para backend
+      // Backend faz a conversão UserLoginId -> FuncionarioId internamente
+      const userLoginId = getUserFuncionarioIdFromToken(token);
+      if (userLoginId) {
+        setSelectedFuncionario(userLoginId);
       }
     }
   }, []);
 
-  // Atualiza o filtro quando selectedFuncionario mudar (consolidado)
+  // Atualiza o filtro quando selectedFuncionario mudar
   useEffect(() => {
     setFilter((prev) => {
       const newFilter = {

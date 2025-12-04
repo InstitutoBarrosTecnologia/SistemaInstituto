@@ -199,6 +199,7 @@ export const userHasRole = (userRoles: string | string[] | null, targetRole: str
 };
 
 // Função para obter o ID do funcionário a partir do token JWT
+// O token retorna IdUserLogin (AspNetUsers.Id) que o backend converte para FuncionarioId
 export const getUserFuncionarioIdFromToken = (token: string | null): string | null => {
   if (!token) return null;
   
@@ -213,8 +214,8 @@ export const getUserFuncionarioIdFromToken = (token: string | null): string | nu
     );
     const decoded = JSON.parse(jsonPayload);
     
-    // Buscar funcionarioId no token - pode estar em diferentes propriedades
-    return decoded.funcionarioId || decoded.FuncionarioId || decoded.IdUserLogin || null;
+    // Prioridade: FuncionarioId (se existir) > unique_name/IdUserLogin (UserLoginId)
+    return decoded.FuncionarioId || decoded.funcionarioId || decoded.unique_name || decoded.IdUserLogin || null;
   } catch (e) {
     console.error("Erro ao decodificar token:", e);
     return null;
