@@ -176,6 +176,13 @@ const Calendar: React.FC = () => {
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
   };
 
+  // Função para converter string ISO do backend para formato datetime-local sem conversão UTC
+  const toDatetimeLocalString = (isoString: string): string => {
+    if (!isoString) return "";
+    // Pegar apenas os primeiros 16 caracteres (YYYY-MM-DDTHH:mm)
+    return isoString.slice(0, 16);
+  };
+
   // Função para calcular as próximas datas baseado em múltiplos dias da semana
   const getNextDatesForMultipleWeekdays = (
     daysOfWeek: string[],
@@ -1158,9 +1165,11 @@ const Calendar: React.FC = () => {
       setEventDescription(schedule.descricao || "");
       setEventLocation(schedule.localizacao || "");
       setEventStartDate(
-        schedule.dataInicio ? new Date(schedule.dataInicio).toISOString().slice(0, 16) : ""
+        schedule.dataInicio ? toDatetimeLocalString(schedule.dataInicio) : ""
       );
-      setEventEndDate(schedule.dataFim ? new Date(schedule.dataFim).toISOString().slice(0, 16) : "");
+      setEventEndDate(
+        schedule.dataFim ? toDatetimeLocalString(schedule.dataFim) : ""
+      );
       setEventLevel("Primary");
       setSelectedCliente(schedule.clienteId?.toString() || undefined);
       // Usar modalFuncionario para não interferir com o filtro
