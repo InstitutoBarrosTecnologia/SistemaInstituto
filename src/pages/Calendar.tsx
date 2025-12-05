@@ -177,8 +177,12 @@ const Calendar: React.FC = () => {
   };
 
   // Função para converter string ISO do backend para formato datetime-local sem conversão UTC
-  const toDatetimeLocalString = (isoString: string): string => {
+  const toDatetimeLocalString = (isoString: string | Date): string => {
     if (!isoString) return "";
+    // Se for um objeto Date, converter para string ISO local primeiro
+    if (isoString instanceof Date) {
+      isoString = toLocalISOString(isoString);
+    }
     // Pegar apenas os primeiros 16 caracteres (YYYY-MM-DDTHH:mm)
     return isoString.slice(0, 16);
   };
