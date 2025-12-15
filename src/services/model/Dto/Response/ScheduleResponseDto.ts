@@ -1,7 +1,8 @@
 import { CustomerResponseDto } from "./CustomerResponseDto";
 import { EmployeeResponseDto } from "./EmployeeResponseDto";
+import { BaseResponseDto } from "./BaseResponseDto";
 
-export interface ScheduleResponseDto {
+export interface ScheduleResponseDto extends BaseResponseDto {
   id: string;
   titulo: string;
   descricao: string;

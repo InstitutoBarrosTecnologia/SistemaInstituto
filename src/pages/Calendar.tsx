@@ -17,7 +17,7 @@ import Select from "../components/form/Select";
 import SelectWithSearch from "../components/form/SelectWithSearch";
 import MultiSelect from "../components/form/MultiSelect";
 import Checkbox from "../components/form/input/Checkbox";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Filter,
   getAllSchedulesAsync,
@@ -43,6 +43,7 @@ interface CalendarEvent extends EventInput {
 }
 
 const Calendar: React.FC = () => {
+  const queryClient = useQueryClient();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
   );
@@ -745,6 +746,10 @@ const Calendar: React.FC = () => {
     enabled: !!filter.data && !!filter.dataFim,
     retry: 3,
     retryDelay: 30000,
+    staleTime: 0,
+    cacheTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   const { data: filiaisData, isError: isErrorFiliais } = useQuery({
@@ -787,6 +792,11 @@ const Calendar: React.FC = () => {
 
     if (schedules) {
       let filteredSchedules = schedules;
+
+      // FILTRO CRÍTICO: Remover schedules desativados (soft delete)
+      filteredSchedules = filteredSchedules.filter(
+        (schedule) => !schedule.dataDesativacao
+      );
 
       // Aplicar filtros adicionais no frontend (caso o backend não filtre corretamente)
       if (filterCliente) {
@@ -1094,6 +1104,8 @@ const Calendar: React.FC = () => {
       closeModal();
       closeModalDelete();
       resetModalFields();
+      // Invalidar todas as queries de schedules para limpar cache de todas as datas
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
       refetchCalendar();
     },
     onError: (error) => {
@@ -1165,6 +1177,9 @@ const Calendar: React.FC = () => {
     setSelectedEvent(event as unknown as CalendarEvent);
 
     if (schedule) {
+      // Salvar o schedule completo para usar no handleDeleteEvent
+      setCurrentEventData(schedule);
+      
       setEventTitle(schedule.titulo || "");
       setEventDescription(schedule.descricao || "");
       setEventLocation(schedule.localizacao || "");
@@ -1343,14 +1358,12 @@ const Calendar: React.FC = () => {
     if (selectedEvent && selectedEvent.id) {
       setIdDeleteRegister(selectedEvent.id);
       
-      // Verificar se é um evento recorrente
-      const schedule = schedules?.find((s) => s.id === selectedEvent.id);
+      // Usar currentEventData que já foi setado no handleEventClick
+      // Em vez de buscar novamente, pois na visão semanal/diária pode não ter todos os dados
       const isRecurrentSession =
-        schedule?.observacao?.includes("Agendamento recorrente") ||
-        schedule?.observacao?.includes("Recorrência atualizada") ||
-        schedule?.titulo?.includes("Sessão");
-
-      setCurrentEventData(schedule);
+        currentEventData?.observacao?.includes("Agendamento recorrente") ||
+        currentEventData?.observacao?.includes("Recorrência atualizada") ||
+        currentEventData?.titulo?.includes("Sessão");
       
       if (isRecurrentSession) {
         // Se for recorrente, abrir modal de opções de exclusão
@@ -1384,6 +1397,9 @@ const Calendar: React.FC = () => {
     try {
       await mutateDeleteEvent(idDeleteRegister);
       toast.success("Evento excluído com sucesso!");
+      // Invalidar todas as queries de schedules para limpar cache de todas as datas
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      await refetchCalendar();
       resetModalFields();
     } catch (error) {
       console.error("Erro ao deletar evento atual:", error);
@@ -1399,29 +1415,34 @@ const Calendar: React.FC = () => {
       return;
     }
 
-    // Buscar todas as sessões futuras do cliente e fisioterapeuta (incluindo a atual)
-    const allSessions = schedules?.filter((schedule: any) => {
-      return (
-        schedule.clienteId === currentEventData.clienteId &&
-        schedule.funcionarioId === currentEventData.funcionarioId &&
-        (schedule.observacao?.includes("Agendamento recorrente") ||
-         schedule.observacao?.includes("Recorrência atualizada") ||
-         schedule.titulo?.includes("Sessão"))
-      );
-    }) || [];
-
-    if (allSessions.length === 0) {
-      toast.error("Nenhuma sessão da recorrência encontrada.");
-      closeModalDeleteRecurrence();
-      closeModal();
-      return;
-    }
-
     // Fechar modais imediatamente
     closeModalDeleteRecurrence();
     closeModal();
 
     try {
+      // Buscar TODAS as sessões do cliente + fisioterapeuta direto da API
+      // sem limitação de data, para pegar sessões em qualquer período
+      const filterAllSessions: Filter = {
+        idCliente: currentEventData.clienteId,
+        idFuncionario: currentEventData.funcionarioId,
+      };
+
+      const allSchedules = await getAllSchedulesAsync(filterAllSessions);
+      
+      // Filtrar apenas as sessões recorrentes deste grupo
+      const allSessions = allSchedules.filter((schedule: any) => {
+        return (
+          schedule.observacao?.includes("Agendamento recorrente") ||
+          schedule.observacao?.includes("Recorrência atualizada") ||
+          schedule.titulo?.includes("Sessão")
+        );
+      });
+
+      if (allSessions.length === 0) {
+        toast.error("Nenhuma sessão da recorrência encontrada.");
+        return;
+      }
+
       // Deletar todas as sessões da recorrência
       const deletePromises = allSessions.map((session: any) => 
         disableScheduleAsync(session.id)
@@ -1436,11 +1457,15 @@ const Calendar: React.FC = () => {
         toast.error(`Apenas ${successfulDeletes.length} de ${allSessions.length} sessões foram excluídas.`);
       }
 
+      // Invalidar todas as queries de schedules para limpar cache de todas as datas
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
       await refetchCalendar();
       resetModalFields();
     } catch (error) {
       console.error("Erro ao deletar recorrência:", error);
       toast.error("Erro ao excluir recorrência. Verifique o calendário.");
+      // Invalidar queries mesmo em caso de erro para garantir dados atualizados
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
       await refetchCalendar();
       resetModalFields();
     }
