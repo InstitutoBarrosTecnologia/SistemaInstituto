@@ -1429,13 +1429,21 @@ const Calendar: React.FC = () => {
 
       const allSchedules = await getAllSchedulesAsync(filterAllSessions);
       
-      // Filtrar apenas as sessões recorrentes deste grupo
+      // Extrair o prefixo do título (antes de " - Sessão") para identificar a recorrência específica
+      const currentTituloBase = currentEventData.titulo?.split(" - Sessão")[0] || currentEventData.titulo;
+      
+      // Filtrar apenas as sessões recorrentes DESTE GRUPO ESPECÍFICO
       const allSessions = allSchedules.filter((schedule: any) => {
-        return (
+        const isRecurrent = 
           schedule.observacao?.includes("Agendamento recorrente") ||
           schedule.observacao?.includes("Recorrência atualizada") ||
-          schedule.titulo?.includes("Sessão")
-        );
+          schedule.titulo?.includes("Sessão");
+        
+        if (!isRecurrent) return false;
+        
+        // Verificar se pertence à mesma recorrência comparando o prefixo do título
+        const scheduleTituloBase = schedule.titulo?.split(" - Sessão")[0] || schedule.titulo;
+        return scheduleTituloBase === currentTituloBase;
       });
 
       if (allSessions.length === 0) {
