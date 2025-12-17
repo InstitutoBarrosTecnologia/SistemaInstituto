@@ -2429,12 +2429,7 @@ const Calendar: React.FC = () => {
                       <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                         Selecione as sessões para excluir ({selectedSessionsToDelete.length} de {allRecurrenceSessions.length} selecionadas)
                       </h5>
-                      <button
-                        onClick={handleToggleAllSessions}
-                        className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
-                      >
-                        {selectedSessionsToDelete.length === allRecurrenceSessions.length ? 'Desmarcar todas' : 'Selecionar todas'}
-                      </button>
+                      
                     </div>
                   </div>
                   
