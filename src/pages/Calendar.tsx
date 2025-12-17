@@ -121,6 +121,11 @@ const Calendar: React.FC = () => {
     EScheduleStatus.AConfirmar
   );
 
+  // Estados para exclusão personalizada de recorrência
+  const [isCustomDelete, setIsCustomDelete] = useState<boolean>(false);
+  const [selectedSessionsToDelete, setSelectedSessionsToDelete] = useState<string[]>([]);
+  const [allRecurrenceSessions, setAllRecurrenceSessions] = useState<any[]>([]);
+
   // Opções para o select de status
   const statusOptions = Object.entries(ScheduleStatusLabels).map(
     ([value, label]) => ({
@@ -1354,7 +1359,7 @@ const Calendar: React.FC = () => {
     }
   };
 
-  const handleDeleteEvent = () => {
+  const handleDeleteEvent = async () => {
     if (selectedEvent && selectedEvent.id) {
       setIdDeleteRegister(selectedEvent.id);
       
@@ -1366,6 +1371,43 @@ const Calendar: React.FC = () => {
         currentEventData?.titulo?.includes("Sessão");
       
       if (isRecurrentSession) {
+        // Buscar todas as sessões da recorrência para exibir na tabela
+        try {
+          const filterAllSessions: Filter = {
+            idCliente: currentEventData.clienteId,
+            idFuncionario: currentEventData.funcionarioId,
+          };
+
+          const allSchedules = await getAllSchedulesAsync(filterAllSessions);
+          
+          // Extrair o prefixo do título para identificar a recorrência específica
+          const currentTituloBase = currentEventData.titulo?.split(" - Sessão")[0] || currentEventData.titulo;
+          
+          // Filtrar apenas as sessões recorrentes DESTE GRUPO ESPECÍFICO
+          const allSessions = allSchedules.filter((schedule: any) => {
+            const isRecurrent = 
+              schedule.observacao?.includes("Agendamento recorrente") ||
+              schedule.observacao?.includes("Recorrência atualizada") ||
+              schedule.titulo?.includes("Sessão");
+            
+            if (!isRecurrent) return false;
+            
+            // Verificar se pertence à mesma recorrência comparando o prefixo do título
+            const scheduleTituloBase = schedule.titulo?.split(" - Sessão")[0] || schedule.titulo;
+            return scheduleTituloBase === currentTituloBase;
+          });
+
+          // Ordenar por data
+          allSessions.sort((a: any, b: any) => 
+            new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime()
+          );
+
+          setAllRecurrenceSessions(allSessions);
+        } catch (error) {
+          console.error("Erro ao buscar sessões da recorrência:", error);
+          toast.error("Erro ao carregar sessões da recorrência");
+        }
+        
         // Se for recorrente, abrir modal de opções de exclusão
         openModalDeleteRecurrence();
       } else {
@@ -1479,6 +1521,68 @@ const Calendar: React.FC = () => {
     }
   };
 
+  // Função para deletar sessões personalizadas selecionadas
+  const handleDeleteCustomSessions = async () => {
+    if (selectedSessionsToDelete.length === 0) {
+      toast.error("Selecione pelo menos uma sessão para excluir.");
+      return;
+    }
+
+    // Fechar modais imediatamente
+    closeModalDeleteRecurrence();
+    closeModal();
+
+    try {
+      // Deletar apenas as sessões selecionadas
+      const deletePromises = selectedSessionsToDelete.map((sessionId: string) => 
+        disableScheduleAsync(sessionId)
+      );
+
+      const results = await Promise.all(deletePromises);
+      const successfulDeletes = results.filter((result) => result?.status === 200);
+
+      if (successfulDeletes.length === selectedSessionsToDelete.length) {
+        toast.success(`${selectedSessionsToDelete.length} sessões excluídas com sucesso!`);
+      } else {
+        toast.error(`Apenas ${successfulDeletes.length} de ${selectedSessionsToDelete.length} sessões foram excluídas.`);
+      }
+
+      // Invalidar todas as queries de schedules para limpar cache de todas as datas
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      await refetchCalendar();
+      resetModalFields();
+    } catch (error) {
+      console.error("Erro ao deletar sessões personalizadas:", error);
+      toast.error("Erro ao excluir sessões. Verifique o calendário.");
+      // Invalidar queries mesmo em caso de erro para garantir dados atualizados
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      await refetchCalendar();
+      resetModalFields();
+    }
+  };
+
+  // Função para selecionar/desselecionar todas as sessões
+  const handleToggleAllSessions = () => {
+    if (selectedSessionsToDelete.length === allRecurrenceSessions.length) {
+      // Se todas estão selecionadas, desselecionar todas
+      setSelectedSessionsToDelete([]);
+    } else {
+      // Senão, selecionar todas
+      setSelectedSessionsToDelete(allRecurrenceSessions.map((session) => session.id));
+    }
+  };
+
+  // Função para selecionar/desselecionar uma sessão individual
+  const handleToggleSession = (sessionId: string) => {
+    setSelectedSessionsToDelete((prev) => {
+      if (prev.includes(sessionId)) {
+        return prev.filter((id) => id !== sessionId);
+      } else {
+        return [...prev, sessionId];
+      }
+    });
+  };
+
   const resetModalFields = () => {
     setEventTitle("");
     setEventStartDate("");
@@ -1503,6 +1607,11 @@ const Calendar: React.FC = () => {
     // Reset dos novos estados
     setCurrentEventData(null);
     setIdDeleteRegister("");
+    
+    // Reset dos estados de exclusão personalizada
+    setIsCustomDelete(false);
+    setSelectedSessionsToDelete([]);
+    setAllRecurrenceSessions([]);
   };
 
   const handleOpenModal = () => {
@@ -2225,10 +2334,14 @@ const Calendar: React.FC = () => {
         {/* Modal de opções de exclusão de recorrência */}
         <Modal
           isOpen={isOpenDeleteRecurrence}
-          onClose={closeModalDeleteRecurrence}
-          className="max-w-[500px] m-4"
+          onClose={() => {
+            closeModalDeleteRecurrence();
+            setIsCustomDelete(false);
+            setSelectedSessionsToDelete([]);
+          }}
+          className="max-w-[800px] m-4"
         >
-          <div className="no-scrollbar relative w-full max-w-[500px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-8">
+          <div className="no-scrollbar relative w-full max-w-[800px] max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-8">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900/20 mb-4">
                 <svg
@@ -2283,11 +2396,131 @@ const Calendar: React.FC = () => {
                   <div className="text-sm text-gray-500 dark:text-gray-400">Excluir todas as sessões desta recorrência</div>
                 </div>
               </button>
+
+              {/* Checkbox para exclusão personalizada */}
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg">
+                  <Checkbox 
+                    checked={isCustomDelete} 
+                    onChange={(checked) => {
+                      setIsCustomDelete(checked);
+                      if (!checked) {
+                        setSelectedSessionsToDelete([]);
+                      }
+                    }} 
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900 dark:text-white">Exclusão Personalizada</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Escolher quais sessões específicas excluir</div>
+                  </div>
+                  <div className="flex items-center justify-center w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                    <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabela de sessões (aparece quando exclusão personalizada está marcada) */}
+              {isCustomDelete && (
+                <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                        Selecione as sessões para excluir ({selectedSessionsToDelete.length} de {allRecurrenceSessions.length} selecionadas)
+                      </h5>
+                      <button
+                        onClick={handleToggleAllSessions}
+                        className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
+                      >
+                        {selectedSessionsToDelete.length === allRecurrenceSessions.length ? 'Desmarcar todas' : 'Selecionar todas'}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="max-h-[300px] overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <input
+                              type="checkbox"
+                              checked={selectedSessionsToDelete.length === allRecurrenceSessions.length && allRecurrenceSessions.length > 0}
+                              onChange={handleToggleAllSessions}
+                              className="h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                            />
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Horário</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dia da Semana</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                        {allRecurrenceSessions.map((session) => {
+                          const dataInicio = new Date(session.dataInicio);
+                          const dataFim = session.dataFim ? new Date(session.dataFim) : null;
+                          const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                          
+                          return (
+                            <tr 
+                              key={session.id}
+                              className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${selectedSessionsToDelete.includes(session.id) ? 'bg-purple-50 dark:bg-purple-900/20' : ''}`}
+                            >
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSessionsToDelete.includes(session.id)}
+                                  onChange={() => handleToggleSession(session.id)}
+                                  className="h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                />
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
+                                {dataInicio.toLocaleDateString('pt-BR')}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">
+                                {dataInicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                {dataFim && ` - ${dataFim.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">
+                                {diasSemana[dataInicio.getDay()]}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                  {ScheduleStatusLabels[session.status as keyof typeof ScheduleStatusLabels] || 'Desconhecido'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <div className="bg-gray-50 dark:bg-gray-800 p-3 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={handleDeleteCustomSessions}
+                      disabled={selectedSessionsToDelete.length === 0}
+                      className={`w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                        selectedSessionsToDelete.length === 0
+                          ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
+                          : 'bg-red-600 hover:bg-red-700 text-white'
+                      }`}
+                    >
+                      Excluir {selectedSessionsToDelete.length} sessão(ões) selecionada(s)
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-center mt-6">
               <button
-                onClick={closeModalDeleteRecurrence}
+                onClick={() => {
+                  closeModalDeleteRecurrence();
+                  setIsCustomDelete(false);
+                  setSelectedSessionsToDelete([]);
+                }}
                 className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
               >
                 Cancelar
