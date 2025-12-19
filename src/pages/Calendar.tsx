@@ -11,7 +11,9 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { BranchOfficeService } from "../services/service/BranchOfficeService";
 import EmployeeService from "../services/service/EmployeeService";
-import { getAllCustomersAsync } from "../services/service/CustomerService";
+import { getAllCustomersAsync, getCustomerIdAsync } from "../services/service/CustomerService";
+import { CustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
+import CustomerInfoDisplay from "../components/common/CustomerInfoDisplay";
 import Label from "../components/form/Label";
 import Select from "../components/form/Select";
 import SelectWithSearch from "../components/form/SelectWithSearch";
@@ -100,6 +102,7 @@ const Calendar: React.FC = () => {
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
   const [userRole, setUserRole] = useState<string | string[] | null>(null);
   const [currentEventData, setCurrentEventData] = useState<any>(null);
+  const [selectedClienteData, setSelectedClienteData] = useState<CustomerResponseDto | null>(null);
 
   // Estados para recorrência
   const [isRecurrent, setIsRecurrent] = useState<boolean>(false);
@@ -1607,6 +1610,7 @@ const Calendar: React.FC = () => {
     // Reset dos novos estados
     setCurrentEventData(null);
     setIdDeleteRegister("");
+    setSelectedClienteData(null);
     
     // Reset dos estados de exclusão personalizada
     setIsCustomDelete(false);
@@ -1777,6 +1781,26 @@ const Calendar: React.FC = () => {
       return newFilter;
     });
   }, [selectedFuncionario]);
+
+  // Buscar dados completos do cliente quando em modo edição
+  useEffect(() => {
+    const fetchClienteData = async () => {
+      // Só busca se estiver editando um evento e houver cliente selecionado
+      if (selectedEvent && selectedCliente) {
+        try {
+          const clienteData = await getCustomerIdAsync(selectedCliente);
+          setSelectedClienteData(clienteData);
+        } catch (error) {
+          console.error("Erro ao buscar dados do cliente:", error);
+          setSelectedClienteData(null);
+        }
+      } else {
+        setSelectedClienteData(null);
+      }
+    };
+
+    fetchClienteData();
+  }, [selectedCliente, selectedEvent]);
 
   return (
     <>
@@ -2014,6 +2038,11 @@ const Calendar: React.FC = () => {
             <div className="mt-8">
               {/* Container com scroll para os campos do formulário */}
               <div className="custom-scrollbar h-[450px] sm:h-[500px] overflow-y-auto px-2 pb-3">
+                {/* Exibir dados do cliente quando em modo edição e houver cliente atrelado */}
+                {selectedEvent && selectedClienteData && (
+                  <CustomerInfoDisplay customer={selectedClienteData} />
+                )}
+                
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-3">
                 <div>
                   <Label>
