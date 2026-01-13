@@ -31,6 +31,7 @@ import BranchOfficeTables from "./pages/Tables/BranchOfficeTable/BranchOfficeTab
 import { Despesas } from "./pages/Financeiro";
 import Notifications from "./pages/Notificacoes/Notifications";
 import Log from "./pages/Log/Log";
+import CustomerAccessPage from "./pages/CustomerAccess/CustomerAccess"; // TEMPORÁRIO - Sistema de acesso clientes
 
 
 export default function App() {
@@ -94,6 +95,16 @@ export default function App() {
             element={
               <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.LOGS}>
                 <Log />
+              </RoleProtectedRoute>
+            } 
+          />
+
+          {/* TEMPORÁRIO - Sistema de acesso automático para clientes - Apenas para Administradores */}
+          <Route 
+            path="/customer-access" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.LOGS}>
+                <CustomerAccessPage />
               </RoleProtectedRoute>
             } 
           />
