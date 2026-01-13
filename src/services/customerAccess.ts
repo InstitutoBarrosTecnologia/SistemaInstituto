@@ -8,7 +8,9 @@ export {
     getCustomersWithoutAccessAsync,
     generateSingleAccessAsync,
     generateBatchAccessAsync,
-    checkAccessByCpfAsync
+    checkAccessByCpfAsync,
+    getAllCustomersWithAccessStatusAsync,
+    disableCustomerAccessAsync
 } from './service/CustomerAccessService';
 
 // Exports de DTOs - Request
@@ -21,3 +23,7 @@ export type {
     CustomerAccessResultDto,
     CustomerAccessResponseDto
 } from './model/Dto/Response/CustomerAccessResponseDto';
+
+export type {
+    CustomerWithAccessStatusDto
+} from './model/Dto/Response/CustomerWithAccessStatusDto';

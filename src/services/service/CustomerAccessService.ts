@@ -6,6 +6,7 @@
 import { GenerateCustomerAccessBatchDto } from "../model/Dto/Request/CustomerAccessRequestDto";
 import { CustomerAccessResponseDto, CustomerAccessResultDto } from "../model/Dto/Response/CustomerAccessResponseDto";
 import { CustomerResponseDto } from "../model/Dto/Response/CustomerResponseDto";
+import { CustomerWithAccessStatusDto } from "../model/Dto/Response/CustomerWithAccessStatusDto";
 import { instanceApi } from "./AxioService";
 
 // GET - Buscar clientes sem acesso cadastrado
@@ -47,3 +48,26 @@ export const checkAccessByCpfAsync = async (cpf: string): Promise<boolean> => {
     const response = await instanceApi.get<boolean>(`/CustomerAccess/CheckAccess/${cpf}`);
     return response.data;
 };
+
+// GET - Buscar todos os clientes com status de acesso (NOVO)
+export const getAllCustomersWithAccessStatusAsync = async (): 
+  Promise<CustomerWithAccessStatusDto[]> => {
+    const response = await instanceApi.get<CustomerWithAccessStatusDto[]>(
+      `/CustomerAccess/GetAllCustomersWithAccessStatus`
+    );
+    return response.data;
+};
+
+// DELETE - Desabilitar acesso de um cliente (NOVO)
+export const disableCustomerAccessAsync = async (
+  customerId: string,
+  reason?: string
+): Promise<{ status: number }> => {
+  const url = reason 
+    ? `/CustomerAccess/DisableAccess/${customerId}?reason=${encodeURIComponent(reason)}`
+    : `/CustomerAccess/DisableAccess/${customerId}`;
+    
+  const response = await instanceApi.delete(url);
+  return { status: response.status };
+};
+
