@@ -67,7 +67,7 @@ export default function CustomerAccessPage() {
   const handleGenerateSingle = async (customerId: string) => {
     setProcessing(true);
     try {
-      const result = await generateSingleAccessAsync({ customerId });
+      const result = await generateSingleAccessAsync(customerId);
       
       if (result.success) {
         toast.success(`Acesso criado para ${result.customerName}`);
@@ -218,7 +218,8 @@ export default function CustomerAccessPage() {
                       <button
                         onClick={() => handleGenerateSingle(customer.id!)}
                         disabled={processing}
-                        className="inline-flex items-center justify-center rounded-md bg-success py-2 px-4 text-center font-medium text-white hover:bg-opacity-90 disabled:opacity-50"
+                        className="inline-flex items-center justify-center rounded-md bg-success py-2 px-4 text-center font-medium text-white hover:bg-opacity-90 disabled:opacity-50 relative z-10"
+                        style={{ backgroundColor: '#10B981', minWidth: '120px' }}
                       >
                         Gerar Acesso
                       </button>

@@ -13,7 +13,6 @@ export {
 
 // Exports de DTOs - Request
 export type { 
-    CustomerAccessRequestDto,
     GenerateCustomerAccessBatchDto
 } from './model/Dto/Request/CustomerAccessRequestDto';
 

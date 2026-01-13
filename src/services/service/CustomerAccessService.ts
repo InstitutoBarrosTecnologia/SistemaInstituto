@@ -3,7 +3,7 @@
  * Pode ser removido no futuro sem afetar funcionalidades existentes
  */
 
-import { CustomerAccessRequestDto, GenerateCustomerAccessBatchDto } from "../model/Dto/Request/CustomerAccessRequestDto";
+import { GenerateCustomerAccessBatchDto } from "../model/Dto/Request/CustomerAccessRequestDto";
 import { CustomerAccessResponseDto, CustomerAccessResultDto } from "../model/Dto/Response/CustomerAccessResponseDto";
 import { CustomerResponseDto } from "../model/Dto/Response/CustomerResponseDto";
 import { instanceApi } from "./AxioService";
@@ -16,11 +16,17 @@ export const getCustomersWithoutAccessAsync = async (): Promise<CustomerResponse
 
 // POST - Gerar acesso para um único cliente
 export const generateSingleAccessAsync = async (
-    request: CustomerAccessRequestDto
+    customerId: string
 ): Promise<CustomerAccessResultDto> => {
+    // Backend espera apenas o Guid como string no body
     const response = await instanceApi.post<CustomerAccessResultDto>(
         `/CustomerAccess/GenerateSingle`, 
-        request
+        `"${customerId}"`, // Enviar como string JSON
+        {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }
     );
     return response.data;
 };
