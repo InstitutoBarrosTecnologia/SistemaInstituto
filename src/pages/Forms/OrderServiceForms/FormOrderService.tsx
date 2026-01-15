@@ -4,6 +4,7 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import Select from "../../../components/form/Select";
+import SelectWithSearch from "../../../components/form/SelectWithSearch";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { Option } from "../../../components/form/MultiSelect";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
@@ -719,17 +720,18 @@ export default function FormOrderService({
 
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-5">
                 <div>
-                  <Label>
+                  <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                     Cliente<span className="text-red-300">*</span>
                   </Label>
-                  <Select
+                  <SelectWithSearch
                     options={customersOptions}
-                    placeholder="Clientes"
+                    placeholder="Buscar cliente..."
                     onChange={handleSelecCustomer}
                     className="dark:bg-dark-900"
                     value={formData.clienteId}
                     disabled={edit}
-                    required={true}
+                    isClearable={false}
+                    noOptionsMessage="Nenhum cliente encontrado"
                   />
                 </div>
               </div>

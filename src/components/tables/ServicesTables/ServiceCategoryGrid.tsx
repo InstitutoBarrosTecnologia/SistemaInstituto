@@ -12,14 +12,17 @@ import { Modal } from "../../ui/modal";
 import Button from "../../ui/button/Button";
 import { useModal } from "../../../hooks/useModal";
 import { useModal as useModelDelete } from "../../../hooks/useModal";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Alert, { AlertProps } from "../../ui/alert/Alert";
 import FormCategoryService from "../../../pages/Forms/ServicesForms/FormCategoryService";
 import { CategoryServiceResponseDto } from "../../../services/model/Dto/Response/CategoryServiceResponseDto";
 import { getAllCategoriasAsync, desativarCategoriaAsync, getCategoriaByIdAsync } from "../../../services/service/ServiceCategoryService";
 
+interface ServiceCategoryGridProps {
+    searchTerm?: string;
+}
 
-export default function ServiceCategoryGrid() {
+export default function ServiceCategoryGrid({ searchTerm = "" }: ServiceCategoryGridProps) {
 
     const [formDataResponse, setFormDataResponse] = useState<CategoryServiceResponseDto>({
         id: "",
@@ -53,12 +56,30 @@ export default function ServiceCategoryGrid() {
 
     // LOADING/ERROR ----------------------
     if (isLoading) return <p className="text-black dark:text-white">Carregando...</p>;
-    const filteredLeads =
-        Array.isArray(categorys) && categorys.length > 0
-            ? categorys.filter((category) =>
-                category.titulo.toLowerCase().includes("")
-            )
-            : [];
+    
+    // Filtro inteligente com múltiplos campos
+    const filteredLeads = useMemo(() => {
+        if (!Array.isArray(categorys) || categorys.length === 0) {
+            return [];
+        }
+
+        if (!searchTerm || searchTerm.trim() === '') {
+            return categorys;
+        }
+
+        const normalizedSearch = searchTerm.toLowerCase().trim();
+
+        return categorys.filter((category) => {
+            // Campos para busca
+            const titulo = category.titulo?.toLowerCase() || '';
+            const desc = category.desc?.toLowerCase() || '';
+            
+            return (
+                titulo.includes(normalizedSearch) ||
+                desc.includes(normalizedSearch)
+            );
+        });
+    }, [categorys, searchTerm]);
 
     const paginatedLeads = filteredLeads.slice(
         (currentPage - 1) * itemsPerPage,

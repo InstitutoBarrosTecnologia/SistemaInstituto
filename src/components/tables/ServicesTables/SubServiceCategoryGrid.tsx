@@ -12,13 +12,16 @@ import { Modal } from "../../ui/modal";
 import Button from "../../ui/button/Button";
 import { useModal } from "../../../hooks/useModal";
 import { useModal as useModelDelete } from "../../../hooks/useModal";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import FormSubCategoryService from "../../../pages/Forms/ServicesForms/FormSubCategoryService";
 import { SubCategoryServiceResponseDto } from "../../../services/model/Dto/Response/SubCategoryServiceResponseDto";
 import { getAllSubCategoriasAsync, desativarSubCategoriaAsync, getSubCategoriaByIdAsync } from "../../../services/service/SubCategoryService";
 
+interface SubServiceCategoryGridProps {
+    searchTerm?: string;
+}
 
-export default function SubServiceCategoryGrid() {
+export default function SubServiceCategoryGrid({ searchTerm = "" }: SubServiceCategoryGridProps) {
 
     const [formDataResponse, setFormDataResponse] = useState<SubCategoryServiceResponseDto>({
         id: "",
@@ -55,12 +58,32 @@ export default function SubServiceCategoryGrid() {
 
     // LOADING/ERROR ----------------------
     if (isLoading) return <p className="text-white">Carregando...</p>;
-    const filteredLeads =
-        Array.isArray(subCategorys) && subCategorys.length > 0
-            ? subCategorys.filter((subCategory) =>
-                subCategory.titulo.toLowerCase().includes("")
-            )
-            : [];
+    
+    // Filtro inteligente com múltiplos campos
+    const filteredLeads = useMemo(() => {
+        if (!Array.isArray(subCategorys) || subCategorys.length === 0) {
+            return [];
+        }
+
+        if (!searchTerm || searchTerm.trim() === '') {
+            return subCategorys;
+        }
+
+        const normalizedSearch = searchTerm.toLowerCase().trim();
+
+        return subCategorys.filter((subCategory) => {
+            // Campos para busca
+            const titulo = subCategory.titulo?.toLowerCase() || '';
+            const desc = subCategory.desc?.toLowerCase() || '';
+            const valorServico = subCategory.valorServico?.toString() || '';
+            
+            return (
+                titulo.includes(normalizedSearch) ||
+                desc.includes(normalizedSearch) ||
+                valorServico.includes(normalizedSearch)
+            );
+        });
+    }, [subCategorys, searchTerm]);
 
     const paginatedLeads = filteredLeads.slice(
         (currentPage - 1) * itemsPerPage,

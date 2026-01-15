@@ -7,7 +7,7 @@ import {
 } from "../../ui/table";
 import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
@@ -17,7 +17,11 @@ import { BranchOfficeService } from "../../../services/service/BranchOfficeServi
 import EmployeeService from "../../../services/service/EmployeeService";
 import Button from "../../ui/button/Button";
 
-export default function BranchOfficeGrid() {
+interface BranchOfficeGridProps {
+  searchTerm?: string;
+}
+
+export default function BranchOfficeGrid({ searchTerm = "" }: BranchOfficeGridProps) {
   const [selectedBranch, setSelectedBranch] = useState<
     BranchOfficeResponseDto | undefined
   >(undefined);
@@ -69,6 +73,36 @@ export default function BranchOfficeGrid() {
       toast.error("Erro ao desativar unidade.");
     },
   });
+
+  // Filtro inteligente com múltiplos campos - DEVE estar ANTES dos returns condicionais
+  const filteredBranches = useMemo(() => {
+    if (!Array.isArray(branches) || branches.length === 0) {
+      return [];
+    }
+
+    if (!searchTerm || searchTerm.trim() === '') {
+      return branches;
+    }
+
+    const normalizedSearch = searchTerm.toLowerCase().trim();
+
+    return branches.filter((branch) => {
+      // Campos para busca
+      const nome = branch.nomeFilial?.toLowerCase() || '';
+      const endereco = branch.endereco?.rua?.toLowerCase() || '';
+      const cep = branch.endereco?.cep?.toLowerCase() || '';
+      const telefone = branch.telefone?.toLowerCase() || '';
+      const gerenteNome = getGerenteName(branch.idGerenteFilial)?.toLowerCase() || '';
+      
+      return (
+        nome.includes(normalizedSearch) ||
+        endereco.includes(normalizedSearch) ||
+        cep.includes(normalizedSearch) ||
+        telefone.includes(normalizedSearch) ||
+        gerenteNome.includes(normalizedSearch)
+      );
+    });
+  }, [branches, searchTerm, funcionarios]);
 
   const handleOpenModal = (branch: BranchOfficeResponseDto) => {
     setSelectedBranch(branch);
@@ -150,8 +184,8 @@ export default function BranchOfficeGrid() {
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-              {branches instanceof Array ? (
-                branches.map((branch) => (
+              {filteredBranches instanceof Array ? (
+                filteredBranches.map((branch) => (
                   <TableRow key={branch.id}>
                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 cursor-pointer hover:text-blue-600">
                       {branch.nomeFilial}
