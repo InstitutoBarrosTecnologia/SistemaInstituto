@@ -27,7 +27,7 @@ export default function BranchOfficeTables() {
                     <SearchInput
                         value={searchTerm}
                         onChange={setSearchTerm}
-                        placeholder="Buscar por nome, endereço, CEP, telefone..."
+                        placeholder="Buscar por nome, endereço, CEP, número, gerente..."
                     />
                 </div>
                 <button onClick={openModal} className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition  px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 ">

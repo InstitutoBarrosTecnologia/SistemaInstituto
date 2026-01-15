@@ -91,14 +91,16 @@ export default function BranchOfficeGrid({ searchTerm = "" }: BranchOfficeGridPr
       const nome = branch.nomeFilial?.toLowerCase() || '';
       const endereco = branch.endereco?.rua?.toLowerCase() || '';
       const cep = branch.endereco?.cep?.toLowerCase() || '';
-      const telefone = branch.telefone?.toLowerCase() || '';
+      const numero = branch.endereco?.numero?.toLowerCase() || '';
+      const observacao = branch.observacao?.toLowerCase() || '';
       const gerenteNome = getGerenteName(branch.idGerenteFilial)?.toLowerCase() || '';
       
       return (
         nome.includes(normalizedSearch) ||
         endereco.includes(normalizedSearch) ||
         cep.includes(normalizedSearch) ||
-        telefone.includes(normalizedSearch) ||
+        numero.includes(normalizedSearch) ||
+        observacao.includes(normalizedSearch) ||
         gerenteNome.includes(normalizedSearch)
       );
     });
