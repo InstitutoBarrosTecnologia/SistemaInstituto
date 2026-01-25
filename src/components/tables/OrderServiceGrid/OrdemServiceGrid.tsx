@@ -139,9 +139,6 @@ export default function OrdemServiceGrid({ searchTerm = "" }: OrdemServiceGridPr
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10; // ou qualquer número que você quiser por página
 
-    // LOADING/ERROR ----------------------
-    if (isLoading) return <p className="text-black dark:text-white">Carregando...</p>;
-    
     // Filtro inteligente com múltiplos campos
     const filteredOrdens = useMemo(() => {
         if (!Array.isArray(ordens) || ordens.length === 0) {
@@ -170,13 +167,21 @@ export default function OrdemServiceGrid({ searchTerm = "" }: OrdemServiceGridPr
         });
     }, [ordens, searchTerm]);
 
-    const paginatedOrdens = filteredOrdens.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    const paginatedOrdens = useMemo(() => {
+        return filteredOrdens.slice(
+            (currentPage - 1) * itemsPerPage,
+            currentPage * itemsPerPage
+        );
+    }, [filteredOrdens, currentPage, itemsPerPage]);
 
-    const totalPages = Math.ceil(filteredOrdens.length / itemsPerPage);
+    const totalPages = useMemo(() => {
+        return Math.ceil(filteredOrdens.length / itemsPerPage);
+    }, [filteredOrdens.length, itemsPerPage]);
+
+    // LOADING/ERROR ----------------------
+    if (isLoading) return <p className="text-black dark:text-white">Carregando...</p>;
     if (isError) return <p className="text-dark dark:text-white">Erro ao carregar dados.</p>;
+
     // FUNÇÕES AUXILIARES -----------------
     const handleOpenModal = (ordem: OrderServiceResponseDto) => {
         setFormDataResponse(ordem);

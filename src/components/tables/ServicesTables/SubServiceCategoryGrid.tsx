@@ -56,9 +56,6 @@ export default function SubServiceCategoryGrid({ searchTerm = "" }: SubServiceCa
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10; // ou qualquer número que você quiser por página
 
-    // LOADING/ERROR ----------------------
-    if (isLoading) return <p className="text-white">Carregando...</p>;
-    
     // Filtro inteligente com múltiplos campos
     const filteredLeads = useMemo(() => {
         if (!Array.isArray(subCategorys) || subCategorys.length === 0) {
@@ -85,13 +82,16 @@ export default function SubServiceCategoryGrid({ searchTerm = "" }: SubServiceCa
         });
     }, [subCategorys, searchTerm]);
 
-    const paginatedLeads = filteredLeads.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+    const paginatedLeads = useMemo(() => {
+        return filteredLeads.slice(
+            (currentPage - 1) * itemsPerPage,
+            currentPage * itemsPerPage
+        );
+    }, [filteredLeads, currentPage, itemsPerPage]);
 
-    const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
-    if (isError) return <p className="text-white">Erro ao carregar dados.</p>;
+    const totalPages = useMemo(() => {
+        return Math.ceil(filteredLeads.length / itemsPerPage);
+    }, [filteredLeads.length, itemsPerPage]);
 
     // FUNÇÕES AUXILIARES -----------------
     const handleOpenModal = (id: string) => {
@@ -121,6 +121,10 @@ export default function SubServiceCategoryGrid({ searchTerm = "" }: SubServiceCa
         }
     };
 
+
+    // LOADING/ERROR ----------------------
+    if (isLoading) return <p className="text-white">Carregando...</p>;
+    if (isError) return <p className="text-white">Erro ao carregar dados.</p>;
 
     return (
         <>

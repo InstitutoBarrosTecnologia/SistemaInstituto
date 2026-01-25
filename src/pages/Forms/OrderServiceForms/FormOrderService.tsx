@@ -651,11 +651,31 @@ export default function FormOrderService({
     const percentual = parseFloat(value) || 0;
 
     const valorComDesconto = totalPrice * (1 - percentual / 100);
+    const valorDescontoEmReais = totalPrice - valorComDesconto;
 
     setFormData((prev) => ({
       ...prev,
       descontoPercentual: percentual,
       valorComDesconto: valorComDesconto,
+      precoDesconto: valorDescontoEmReais,
+    }));
+  };
+
+  const handleChangeDescontoReais = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+    const valorDesconto = parseFloat(value) || 0;
+
+    // Não permitir desconto maior que o total
+    const descontoFinal = Math.min(valorDesconto, totalPrice);
+    
+    // Calcular o percentual equivalente
+    const percentualEquivalente = totalPrice > 0 ? (descontoFinal / totalPrice) * 100 : 0;
+
+    setFormData((prev) => ({
+      ...prev,
+      precoDesconto: descontoFinal,
+      descontoPercentual: percentualEquivalente,
+      valorComDesconto: totalPrice - descontoFinal,
     }));
   };
 
@@ -959,12 +979,10 @@ export default function FormOrderService({
                   <Label>Desconto R$</Label>
                   <Input
                     type="text"
-                    placeholder="Valor do Desconto"
-                    disabled
-                    value={new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(valorDesconto)}
+                    placeholder="Valor do desconto"
+                    disabled={edit}
+                    onChange={handleChangeDescontoReais}
+                    value={formData.precoDesconto?.toFixed(2) || '0.00'}
                     className="text-black"
                   />
                 </div>

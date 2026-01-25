@@ -54,9 +54,6 @@ export default function ServiceCategoryGrid({ searchTerm = "" }: ServiceCategory
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10; // ou qualquer número que você quiser por página
 
-    // LOADING/ERROR ----------------------
-    if (isLoading) return <p className="text-black dark:text-white">Carregando...</p>;
-    
     // Filtro inteligente com múltiplos campos
     const filteredLeads = useMemo(() => {
         if (!Array.isArray(categorys) || categorys.length === 0) {
@@ -87,7 +84,11 @@ export default function ServiceCategoryGrid({ searchTerm = "" }: ServiceCategory
     );
 
     const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+
+    // LOADING/ERROR ----------------------
+    if (isLoading) return <p className="text-black dark:text-white">Carregando...</p>;
     if (isError) return <p className="text-dark dark:text-white">Erro ao carregar dados.</p>;
+    
     // FUNÇÕES AUXILIARES -----------------
     const handleOpenModal = (id: string) => {
         loadCategoryData(id);

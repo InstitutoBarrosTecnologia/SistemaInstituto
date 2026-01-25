@@ -13,6 +13,8 @@ import { BranchOfficeService } from "../services/service/BranchOfficeService";
 import EmployeeService from "../services/service/EmployeeService";
 import { getAllCustomersAsync, getCustomerIdAsync } from "../services/service/CustomerService";
 import { CustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
+import { getAllSessionsAsync } from "../services/service/SessionService";
+import { OrderServiceSessionResponseDto } from "../services/model/Dto/Response/OrderServiceSessionResponseDto";
 import CustomerInfoDisplay from "../components/common/CustomerInfoDisplay";
 import Label from "../components/form/Label";
 import Select from "../components/form/Select";
@@ -37,6 +39,11 @@ import {
   EScheduleStatus,
   ScheduleStatusLabels,
 } from "../services/model/Enum/EScheduleStatus";
+import Badge from "../components/ui/badge/Badge";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "../components/ui/table";
+import { formatCPF, formatDate, formatPhone, formatRG, formatCEP } from "../components/helper/formatUtils";
+import FormSession from "./Forms/OrderServiceForms/FormSession";
+import FormCustomer from "./Forms/Customer/FormCustomer";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -67,6 +74,16 @@ const Calendar: React.FC = () => {
     isOpen: isOpenDeleteRecurrence,
     openModal: openModalDeleteRecurrence,
     closeModal: closeModalDeleteRecurrence,
+  } = useModal();
+  const {
+    isOpen: isOpenCheckIn,
+    openModal: openModalCheckIn,
+    closeModal: closeModalCheckIn,
+  } = useModal();
+  const {
+    isOpen: isOpenNewCustomer,
+    openModal: openModalNewCustomer,
+    closeModal: closeModalNewCustomer,
   } = useModal();
   const [selectedFilial, setSelectedFilial] = useState<string | undefined>(
     undefined
@@ -118,6 +135,14 @@ const Calendar: React.FC = () => {
 
   // Estado para controlar loading do botão de salvar
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Estados para controlar acordeões dos dados do paciente
+  const [showCustomerDetails, setShowCustomerDetails] = useState<boolean>(false);
+  const [showHistorico, setShowHistorico] = useState<boolean>(false);
+  const [showServicos, setShowServicos] = useState<boolean>(false);
+  const [isLoadingCustomerData, setIsLoadingCustomerData] = useState<boolean>(false);
+  const [isLoadingHistorico, setIsLoadingHistorico] = useState<boolean>(false);
+  const [sessoesData, setSessoesData] = useState<OrderServiceSessionResponseDto[] | null>(null);
 
   // Estado para status do agendamento
   const [selectedStatus, setSelectedStatus] = useState<number>(
@@ -238,15 +263,6 @@ const Calendar: React.FC = () => {
       }
 
       const targetDate = new Date(searchDate);
-
-      console.log('Debug - Geração de data:', {
-        today: today.toISOString(),
-        searchDate: searchDate.toISOString(),
-        targetDayNumber,
-        calculatedDate: targetDate.toISOString(),
-        dayOfWeek: targetDate.getDay(),
-        dayName: Object.keys(days).find(key => days[key as keyof typeof days] === targetDate.getDay())
-      });
 
       // Verificar se a data é válida (hoje ou futuro)
       let isValidDate = targetDate >= today;
@@ -1782,25 +1798,95 @@ const Calendar: React.FC = () => {
     });
   }, [selectedFuncionario]);
 
-  // Buscar dados completos do cliente quando em modo edição
+  // Buscar dados completos do cliente SOMENTE quando o accordion for aberto
   useEffect(() => {
     const fetchClienteData = async () => {
-      // Só busca se estiver editando um evento e houver cliente selecionado
-      if (selectedEvent && selectedCliente) {
-        try {
-          const clienteData = await getCustomerIdAsync(selectedCliente);
-          setSelectedClienteData(clienteData);
-        } catch (error) {
-          console.error("Erro ao buscar dados do cliente:", error);
-          setSelectedClienteData(null);
+      // Só busca se estiver editando um evento, houver cliente selecionado E o accordion estiver aberto
+      if (selectedEvent && selectedCliente && showCustomerDetails) {
+        // Só faz a requisição se os dados ainda não foram carregados
+        if (!selectedClienteData || selectedClienteData.id !== selectedCliente) {
+          try {
+            setIsLoadingCustomerData(true);
+            // Busca todos os clientes e filtra pelo ID
+            const allClientes = await getAllCustomersAsync();
+            const clienteData = allClientes?.find(c => c.id === selectedCliente);
+            
+            console.log("Dados do cliente carregados:", clienteData);
+            console.log("Histórico:", clienteData?.historico);
+            console.log("Histórico length:", clienteData?.historico?.length);
+            console.log("Serviços:", clienteData?.servicos);
+            console.log("Serviços length:", clienteData?.servicos?.length);
+            setSelectedClienteData(clienteData || null);
+          } catch (error) {
+            console.error("Erro ao buscar dados do cliente:", error);
+            setSelectedClienteData(null);
+          } finally {
+            setIsLoadingCustomerData(false);
+          }
         }
-      } else {
-        setSelectedClienteData(null);
       }
     };
 
     fetchClienteData();
-  }, [selectedCliente, selectedEvent]);
+  }, [showCustomerDetails]); // Só observa mudanças no showCustomerDetails
+
+  // Reset dos estados dos accordions quando o modal é fechado
+  useEffect(() => {
+    if (!isOpen) {
+      setShowCustomerDetails(false);
+      setShowHistorico(false);
+      setShowServicos(false);
+      setSelectedClienteData(null);
+      setSessoesData(null);
+    }
+  }, [isOpen]);
+
+  // Buscar sessões quando o accordion de Evolução for aberto
+  useEffect(() => {
+    const fetchSessoes = async () => {
+      if (showHistorico && selectedCliente) {
+        // Só faz a requisição se os dados ainda não foram carregados
+        if (!sessoesData) {
+          try {
+            setIsLoadingHistorico(true);
+            const sessoes = await getAllSessionsAsync(selectedCliente);
+            console.log("Sessões carregadas:", sessoes);
+            console.log("Total de sessões:", sessoes?.length);
+            setSessoesData(sessoes);
+          } catch (error) {
+            console.error("Erro ao buscar sessões:", error);
+            setSessoesData(null);
+          } finally {
+            setIsLoadingHistorico(false);
+          }
+        }
+      }
+    };
+
+    fetchSessoes();
+  }, [showHistorico, selectedCliente]);
+
+  // Função para recarregar sessões após check-in
+  const handleReloadSessoes = async () => {
+    if (selectedCliente) {
+      try {
+        setIsLoadingHistorico(true);
+        const sessoes = await getAllSessionsAsync(selectedCliente);
+        console.log("Sessões recarregadas após check-in:", sessoes);
+        setSessoesData(sessoes);
+      } catch (error) {
+        console.error("Erro ao recarregar sessões:", error);
+      } finally {
+        setIsLoadingHistorico(false);
+      }
+    }
+  };
+
+  // Função para recarregar lista de clientes após cadastro
+  const handleReloadClientes = () => {
+    console.log("Recarregando lista de clientes...");
+    queryClient.invalidateQueries({ queryKey: ["clientes"] });
+  };
 
   return (
     <>
@@ -2117,17 +2203,31 @@ const Calendar: React.FC = () => {
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
                 <div>
                   <Label>Cliente</Label>
-                  <SelectWithSearch
-                    options={optionsCliente}
-                    value={selectedCliente}
-                    placeholder="Buscar cliente..."
-                    onChange={(value) =>
-                      setSelectedCliente(value === "" ? undefined : value)
-                    }
-                    className="dark:bg-dark-900"
-                    isClearable={true}
-                    noOptionsMessage="Nenhum cliente encontrado"
-                  />
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <SelectWithSearch
+                        options={optionsCliente}
+                        value={selectedCliente}
+                        placeholder="Buscar cliente..."
+                        onChange={(value) =>
+                          setSelectedCliente(value === "" ? undefined : value)
+                        }
+                        className="dark:bg-dark-900"
+                        isClearable={true}
+                        noOptionsMessage="Nenhum cliente encontrado"
+                      />
+                    </div>
+                    <button
+                      onClick={openModalNewCustomer}
+                      type="button"
+                      className="flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+                      title="Cadastrar novo cliente"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
@@ -2314,6 +2414,349 @@ const Calendar: React.FC = () => {
                   </span>
                 </div>
               )}
+
+              {/* Accordion de dados do paciente - só exibe quando está editando e tem cliente selecionado */}
+              {selectedEvent && selectedCliente && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => setShowCustomerDetails(!showCustomerDetails)}
+                    type="button"
+                    className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <span>Dados do Paciente</span>
+                    <svg className={`w-4 h-4 transform transition-transform ${showCustomerDetails ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {showCustomerDetails && (
+                    <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-md">
+                      {isLoadingCustomerData ? (
+                        <div className="text-center py-4">
+                          <span className="text-gray-600 dark:text-gray-400">Carregando dados do paciente...</span>
+                        </div>
+                      ) : selectedClienteData ? (
+                        <>
+                      {/* Status Badge */}
+                      <div className="mb-4">
+                        <Badge
+                          size="sm"
+                          color={
+                            selectedClienteData.status === 0 ? "primary" :
+                            selectedClienteData.status === 1 ? "info" :
+                            selectedClienteData.status === 2 ? "info" :
+                            selectedClienteData.status === 3 ? "success" :
+                            selectedClienteData.status === 4 ? "success" :
+                            selectedClienteData.status === 5 ? "warning" :
+                            selectedClienteData.status === 6 ? "success" :
+                            selectedClienteData.status === 7 ? "success" :
+                            selectedClienteData.status === 8 ? "error" :
+                            selectedClienteData.status === 9 ? "error" : "light"
+                          }
+                        >
+                          {selectedClienteData.status === 0 ? "Novo Paciente" :
+                           selectedClienteData.status === 1 ? "Aguardando Avaliação" :
+                           selectedClienteData.status === 2 ? "Em Avaliação" :
+                           selectedClienteData.status === 3 ? "Plano de Tratamento" :
+                           selectedClienteData.status === 4 ? "Em Atendimento" :
+                           selectedClienteData.status === 5 ? "Faltou Atendimento" :
+                           selectedClienteData.status === 6 ? "Tratamento Concluído" :
+                           selectedClienteData.status === 7 ? "Alta" :
+                           selectedClienteData.status === 8 ? "Cancelado" :
+                           selectedClienteData.status === 9 ? "Inativo" : "Desconhecido"}
+                        </Badge>
+                      </div>
+
+                      {/* Informações Básicas */}
+                      <h5 className="mb-3 text-sm font-medium text-gray-800 dark:text-white/90">Informações</h5>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-3">
+                        <div>
+                          <Label>Nome:</Label>
+                          <Label>{selectedClienteData.nome}</Label>
+                        </div>
+                        <div>
+                          <Label>Data de Nascimento:</Label>
+                          <Label>{formatDate(selectedClienteData.dataNascimento)}</Label>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-3">
+                        <div>
+                          <Label>CPF:</Label>
+                          <Label>{formatCPF(selectedClienteData.cpf)}</Label>
+                        </div>
+                        <div>
+                          <Label>RG:</Label>
+                          <Label>{formatRG(selectedClienteData.rg)}</Label>
+                        </div>
+                        <div>
+                          <Label>Sexo:</Label>
+                          <Label>{selectedClienteData.sexo === 0 ? "Masculino" : "Feminino"}</Label>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-3">
+                        <div>
+                          <Label>E-mail:</Label>
+                          <Label>{selectedClienteData.email}</Label>
+                        </div>
+                        <div>
+                          <Label>Telefone:</Label>
+                          <Label>{formatPhone(selectedClienteData.nrTelefone)}</Label>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-3">
+                        <div>
+                          <Label>Altura (m):</Label>
+                          <Label>{selectedClienteData.altura}</Label>
+                        </div>
+                        <div>
+                          <Label>Peso (kg):</Label>
+                          <Label>{selectedClienteData.peso}</Label>
+                        </div>
+                        <div>
+                          <Label>IMC:</Label>
+                          <Label>{selectedClienteData.imc}</Label>
+                        </div>
+                      </div>
+
+                      <div className="mb-3">
+                        <Label>Patologia:</Label>
+                        <Label>{selectedClienteData.patologia}</Label>
+                      </div>
+
+                      {/* Endereço */}
+                      <h5 className="mb-3 text-sm font-medium text-gray-800 dark:text-white/90">Endereço</h5>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-4">
+                        <div>
+                          <Label>Rua:</Label>
+                          <Label>{selectedClienteData.endereco?.rua}</Label>
+                        </div>
+                        <div>
+                          <Label>Número:</Label>
+                          <Label>{selectedClienteData.endereco?.numero}</Label>
+                        </div>
+                        <div>
+                          <Label>Bairro:</Label>
+                          <Label>{selectedClienteData.endereco?.bairro}</Label>
+                        </div>
+                        <div>
+                          <Label>Cidade:</Label>
+                          <Label>{selectedClienteData.endereco?.cidade}</Label>
+                        </div>
+                        <div>
+                          <Label>Estado:</Label>
+                          <Label>{selectedClienteData.endereco?.estado}</Label>
+                        </div>
+                        <div>
+                          <Label>CEP:</Label>
+                          <Label>{formatCEP(selectedClienteData.endereco?.cep)}</Label>
+                        </div>
+                      </div>
+
+                      {/* Accordion Evolução */}
+                      <div className="mb-2">
+                        <button
+                          onClick={() => setShowHistorico(!showHistorico)}
+                          type="button"
+                          className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+                        >
+                          <span>Evolução</span>
+                          <svg className={`w-4 h-4 transform transition-transform ${showHistorico ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+
+                        {showHistorico && (
+                          <div className="mt-3">
+                            {isLoadingHistorico ? (
+                              <div className="text-center py-4">
+                                <span className="text-gray-600 dark:text-gray-400">Carregando sessões...</span>
+                              </div>
+                            ) : (
+                              <Table>
+                                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                                  <TableRow>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                      Data
+                                    </TableCell>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                      Hora
+                                    </TableCell>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                      Profissional
+                                    </TableCell>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                      Status
+                                    </TableCell>
+                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                      Observação
+                                    </TableCell>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                                  {sessoesData && sessoesData.length > 0 ? (
+                                    sessoesData.map((sessao, index) => (
+                                      <TableRow key={index}>
+                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                            {sessao.dataSessao ? new Date(sessao.dataSessao).toLocaleDateString("pt-BR") : "—"}
+                                          </span>
+                                        </TableCell>
+                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                            {sessao.horaSessao || "—"}
+                                          </span>
+                                        </TableCell>
+                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                            {sessao.funcionario?.nome || "—"}
+                                          </span>
+                                        </TableCell>
+                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                          <Badge
+                                            size="sm"
+                                            color={
+                                              sessao.statusSessao === 0 ? "success" :
+                                              sessao.statusSessao === 1 ? "error" :
+                                              sessao.statusSessao === 2 ? "warning" :
+                                              sessao.statusSessao === 3 ? "dark" : "light"
+                                            }
+                                          >
+                                            {sessao.statusSessao === 0 ? "Realizada" :
+                                             sessao.statusSessao === 1 ? "Faltou" :
+                                             sessao.statusSessao === 2 ? "Reagendada" :
+                                             sessao.statusSessao === 3 ? "Cancelada" : "Desconhecido"}
+                                          </Badge>
+                                        </TableCell>
+                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                            {sessao.observacaoSessao || "—"}
+                                          </span>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))
+                                  ) : (
+                                    <TableRow>
+                                      <TableCell colSpan={5} className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
+                                        Nenhuma sessão disponível para este paciente.
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </TableBody>
+                              </Table>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Accordion Serviços */}
+                      <div className="mb-2">
+                        <button
+                          onClick={() => setShowServicos(!showServicos)}
+                          type="button"
+                          className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+                        >
+                          <span>Serviços</span>
+                          <svg className={`w-4 h-4 transform transition-transform ${showServicos ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+
+                        {showServicos && (
+                          <div className="mt-3">
+                            <Table>
+                              <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                                <TableRow>
+                                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                    Serviço
+                                  </TableCell>
+                                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                    Data Cadastro
+                                  </TableCell>
+                                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                    Sessões
+                                  </TableCell>
+                                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                    Status
+                                  </TableCell>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                                {selectedClienteData?.servicos && selectedClienteData.servicos.length > 0 ? (
+                                  selectedClienteData.servicos.map((servico, index) => (
+                                    <TableRow key={index}>
+                                      <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                          {servico.servicos?.map(s => s.descricao).join(" - ")}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                          {servico.dataCadastro ? new Date(servico.dataCadastro).toLocaleDateString("pt-BR") : "—"}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                        {(() => {
+                                          const sessoesRealizadas = servico.sessoes?.filter(s => s.statusSessao === 0).length ?? 0;
+                                          const totalSessoes = servico.qtdSessaoTotal ?? 0;
+                                          return (
+                                            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                              {`${sessoesRealizadas}/${totalSessoes}`}
+                                            </span>
+                                          );
+                                        })()}
+                                      </TableCell>
+                                      <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                        <Badge
+                                          size="sm"
+                                          color={
+                                            servico.status === 0 ? "primary" :
+                                            servico.status === 1 ? "info" :
+                                            servico.status === 2 ? "warning" :
+                                            servico.status === 3 ? "dark" :
+                                            servico.status === 4 ? "success" :
+                                            servico.status === 5 ? "error" :
+                                            servico.status === 6 ? "success" : "light"
+                                          }
+                                        >
+                                          {servico.status === 0 && "Novo Paciente"}
+                                          {servico.status === 1 && "Aguardando Avaliação"}
+                                          {servico.status === 2 && "Em Avaliação"}
+                                          {servico.status === 3 && "Plano de Tratamento"}
+                                          {servico.status === 4 && "Em Atendimento"}
+                                          {servico.status === 5 && "Faltou Atendimento"}
+                                          {servico.status === 6 && "Tratamento Concluído"}
+                                          {servico.status === 7 && "Alta"}
+                                          {servico.status === 8 && "Cancelado"}
+                                          {servico.status === 9 && "Inativo"}
+                                        </Badge>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))
+                                ) : (
+                                  <TableRow>
+                                    <TableCell colSpan={4} className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
+                                      Nenhum serviço registrado para este paciente.
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </div>
+                        </>
+                      ) : (
+                        <div className="text-center py-4">
+                          <span className="text-gray-600 dark:text-gray-400">Nenhum dado disponível para este paciente.</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               </div>
               {/* Fim do container com scroll */}
             </div>
@@ -2325,12 +2768,24 @@ const Calendar: React.FC = () => {
               >
                 Fechar
               </button>
+              
+              {/* Botão Check-in - só aparece quando está editando um evento e tem cliente selecionado */}
+              {selectedEvent && selectedCliente && (
+                <button
+                  onClick={openModalCheckIn}
+                  type="button"
+                  className="flex w-full justify-center rounded-lg border border-green-500 bg-green-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-600 sm:w-auto"
+                >
+                  Check-in
+                </button>
+              )}
+              
               <button
                 onClick={handleAddOrUpdateEvent}
                 type="button"
                 disabled={isSaving}
                 className={`btn btn-success btn-update-event flex w-full justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white sm:w-auto ${
-                  isSaving 
+                  isSaving
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : 'bg-brand-500 hover:bg-brand-600'
                 }`}
@@ -2358,6 +2813,31 @@ const Calendar: React.FC = () => {
             </div>
           </div>
           <Toaster position="bottom-right" />
+        </Modal>
+
+        {/* Modal de Check-in / Sessão de Fisioterapia */}
+        <Modal
+          isOpen={isOpenCheckIn}
+          onClose={closeModalCheckIn}
+          className="max-w-[700px] m-4"
+        >
+          <FormSession 
+            clienteId={selectedCliente} 
+            closeModal={closeModalCheckIn}
+            onSuccess={handleReloadSessoes}
+          />
+        </Modal>
+
+        {/* Modal de Cadastro de Novo Cliente */}
+        <Modal
+          isOpen={isOpenNewCustomer}
+          onClose={closeModalNewCustomer}
+          className="max-w-[700px] m-4"
+        >
+          <FormCustomer 
+            closeModal={closeModalNewCustomer}
+            onSuccess={handleReloadClientes}
+          />
         </Modal>
 
         {/* Modal de opções de exclusão de recorrência */}

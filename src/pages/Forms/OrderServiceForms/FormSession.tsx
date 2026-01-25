@@ -20,9 +20,10 @@ import { HistoryCustomerResponseDto, CustomerResponseDto } from "../../../servic
 interface FormSessionProps {
     clienteId?: string;
     closeModal?: () => void;
+    onSuccess?: () => void;
 }
 
-export default function FormSession({ clienteId, closeModal }: FormSessionProps) {
+export default function FormSession({ clienteId, closeModal, onSuccess }: FormSessionProps) {
     const [historicoTemp, setHistoricoTemp] = useState("");
 
     const getCurrentTime = () => {
@@ -59,6 +60,11 @@ export default function FormSession({ clienteId, closeModal }: FormSessionProps)
                 queryClient.invalidateQueries<CustomerResponseDto[]>({
                     queryKey: ["allCustomer"],
                 });
+
+                // Chamar callback onSuccess se fornecido
+                if (onSuccess) {
+                    onSuccess();
+                }
 
                 setTimeout(() => {
                     if (closeModal) closeModal();
