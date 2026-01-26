@@ -30,6 +30,7 @@ interface TableCellProps {
   isHeader?: boolean; // If true, renders as <th>, otherwise <td>
   className?: string;
   onClick?: () => void; // Optional className for styling
+  colSpan?: number; // Number of columns to span
 }
 
 
@@ -67,10 +68,11 @@ const TableCell: React.FC<TableCellProps> = ({
   children,
   isHeader = false,
   className,
-  onClick
+  onClick,
+  colSpan
 }) => {
   const CellTag = isHeader ? "th" : "td";
-  return <CellTag className={` ${className}`} onClick={onClick}>{children}</CellTag>;
+  return <CellTag className={` ${className}`} onClick={onClick} colSpan={colSpan}>{children}</CellTag>;
 };
 
 //Pagination Component

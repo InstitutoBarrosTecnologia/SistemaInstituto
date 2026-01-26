@@ -11,7 +11,7 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { BranchOfficeService } from "../services/service/BranchOfficeService";
 import EmployeeService from "../services/service/EmployeeService";
-import { getAllCustomersAsync, getCustomerIdAsync } from "../services/service/CustomerService";
+import { getAllCustomersAsync } from "../services/service/CustomerService";
 import { CustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
 import { getAllSessionsAsync } from "../services/service/SessionService";
 import { OrderServiceSessionResponseDto } from "../services/model/Dto/Response/OrderServiceSessionResponseDto";

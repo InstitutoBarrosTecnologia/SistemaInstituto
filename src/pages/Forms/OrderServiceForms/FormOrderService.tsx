@@ -485,7 +485,6 @@ export default function FormOrderService({
   }, [selectedServices]);
   const totalComDesconto =
     totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
-  const valorDesconto = totalPrice - totalComDesconto;
   const totalComGanho =
     totalComDesconto * (1 + (formData.percentualGanho ?? 0) / 100);
 
