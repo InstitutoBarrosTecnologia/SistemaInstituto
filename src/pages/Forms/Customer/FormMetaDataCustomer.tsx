@@ -3,7 +3,7 @@ import Label from "../../../components/form/Label";
 import { CustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/ui/table";
 import Badge from "../../../components/ui/badge/Badge";
-import { formatCPF, formatDate, formatPhone, formatRG, formatCEP } from "../../../components/helper/formatUtils";
+import { formatCPF, formatDate, formatPhone, formatRG, formatCEP, formatCurrencyPtBr, formatPaymentMethod } from "../../../components/helper/formatUtils";
 
 interface FormCustomerProps {
     data?: CustomerRequestDto;
@@ -346,6 +346,18 @@ export default function FormMetaDataCustomer({ data, edit }: FormCustomerProps) 
                                                         Serviço
                                                     </TableCell>
                                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                                        Preço
+                                                    </TableCell>
+                                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                                        Desconto
+                                                    </TableCell>
+                                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                                        Valor Final
+                                                    </TableCell>
+                                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                                        Forma Pagamento
+                                                    </TableCell>
+                                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                                                         Data Cadastro
                                                     </TableCell>
                                                     <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
@@ -359,64 +371,88 @@ export default function FormMetaDataCustomer({ data, edit }: FormCustomerProps) 
 
                                             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                                                 {formData?.servicos && formData.servicos.length > 0 ? (
-                                                    formData.servicos.map((servico, index) => (
-                                                        <TableRow key={index}>
-                                                            <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                                                <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                                                    {servico.servicos?.map(s => s.descricao).join(" - ")}
-                                                                </span>
-                                                            </TableCell>
-                                                            <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                                                <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                                                    {servico.dataCadastro
-                                                                        ? new Date(servico.dataCadastro).toLocaleDateString("pt-BR")
-                                                                        : "—"}
-                                                                </span>
-                                                            </TableCell>
+                                                    formData.servicos.map((servico, index) => {
+                                                        const sessoesRealizadas = servico.sessoes?.filter(s => s.statusSessao === 0).length ?? 0;
+                                                        const totalSessoes = servico.qtdSessaoTotal ?? 0;
+                                                        const precoOriginal = servico.precoOrdem ?? 0;
+                                                        const desconto = servico.precoDesconto ?? 0;
+                                                        const valorFinal = precoOriginal - desconto;
 
-                                                            <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                                                {(() => {
-                                                                    const sessoesRealizadas = servico.sessoes?.filter(s => s.statusSessao === 0).length ?? 0;
-                                                                    const totalSessoes = servico.qtdSessaoTotal ?? 0;
-                                                                    return (
-                                                                        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                                                            {`${sessoesRealizadas}/${totalSessoes}`}
-                                                                        </span>
-                                                                    );
-                                                                })()}
-                                                            </TableCell>
+                                                        return (
+                                                            <TableRow key={index}>
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {servico.servicos?.map(s => s.descricao).join(" - ") || "—"}
+                                                                    </span>
+                                                                </TableCell>
 
-                                                            <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                                                <Badge
-                                                                    size="sm"
-                                                                    color={
-                                                                        servico.status === 0 ? "primary" :
-                                                                            servico.status === 1 ? "info" :
-                                                                                servico.status === 2 ? "warning" :
-                                                                                    servico.status === 3 ? "dark" :
-                                                                                        servico.status === 4 ? "success" :
-                                                                                            servico.status === 5 ? "error" :
-                                                                                                servico.status === 6 ? "success" :
-                                                                                                    "light"
-                                                                    }
-                                                                >
-                                                                    {servico.status === 0 && "Novo Paciente"}
-                                                                    {servico.status === 1 && "Aguardando Avaliação"}
-                                                                    {servico.status === 2 && "Em Avaliação"}
-                                                                    {servico.status === 3 && "Plano de Tratamento"}
-                                                                    {servico.status === 4 && "Em Atendimento"}
-                                                                    {servico.status === 5 && "Faltou Atendimento"}
-                                                                    {servico.status === 6 && "Tratamento Concluído"}
-                                                                    {servico.status === 7 && "Alta"}
-                                                                    {servico.status === 8 && "Cancelado"}
-                                                                    {servico.status === 9 && "Inativo"}
-                                                                </Badge>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {formatCurrencyPtBr(precoOriginal)}
+                                                                    </span>
+                                                                </TableCell>
+
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className={`block font-medium text-theme-sm ${desconto > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-800 dark:text-white/90'}`}>
+                                                                        {desconto > 0 ? `- ${formatCurrencyPtBr(desconto)}` : '—'}
+                                                                    </span>
+                                                                </TableCell>
+
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className="block font-semibold text-brand-600 text-theme-sm dark:text-brand-400">
+                                                                        {formatCurrencyPtBr(valorFinal)}
+                                                                    </span>
+                                                                </TableCell>
+
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {formatPaymentMethod(servico.formaPagamento)}
+                                                                    </span>
+                                                                </TableCell>
+
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {servico.dataCadastro
+                                                                            ? new Date(servico.dataCadastro).toLocaleDateString("pt-BR")
+                                                                            : "—"}
+                                                                    </span>
+                                                                </TableCell>
+
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                                        {`${sessoesRealizadas}/${totalSessoes}`}
+                                                                    </span>
+                                                                </TableCell>
+
+                                                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                                    <Badge
+                                                                        size="sm"
+                                                                        color={
+                                                                            servico.status === 0 ? "primary" :
+                                                                                servico.status === 1 ? "info" :
+                                                                                    servico.status === 2 ? "warning" :
+                                                                                        servico.status === 3 ? "dark" :
+                                                                                            servico.status === 4 ? "success" :
+                                                                                                servico.status === 5 ? "error" :
+                                                                                                    servico.status === 6 ? "success" :
+                                                                                                        "light"
+                                                                        }
+                                                                    >
+                                                                        {servico.status === 0 && "Aberto"}
+                                                                        {servico.status === 1 && "Análise"}
+                                                                        {servico.status === 2 && "Aprovado"}
+                                                                        {servico.status === 3 && "Rejeitado"}
+                                                                        {servico.status === 4 && "Andamento"}
+                                                                        {servico.status === 5 && "Teste"}
+                                                                        {servico.status === 6 && "Concluído"}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })
                                                 ) : (
                                                     <TableRow>
-                                                        <TableCell className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
+                                                        <TableCell colSpan={8} className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
                                                             Nenhum serviço registrado para este paciente.
                                                         </TableCell>
                                                     </TableRow>

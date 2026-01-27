@@ -1,4 +1,5 @@
 import {
+    Pagination,
     Table,
     TableBody,
     TableCell,
@@ -25,6 +26,8 @@ export default function EmployeeGrid({ searchTerm = "" }: EmployeeGridProps) {
     const { isOpen, openModal, closeModal } = useModal();
     const { isOpen: isOpenDelete, openModal: openModalDelete, closeModal: closeModalDelete } = useModal();
     const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const queryClient = useQueryClient();
 
@@ -77,6 +80,21 @@ export default function EmployeeGrid({ searchTerm = "" }: EmployeeGridProps) {
         });
     }, [employees, searchTerm]);
 
+    // Paginação
+    const paginatedEmployees = useMemo(() => {
+        if (!Array.isArray(filteredEmployees) || filteredEmployees.length === 0) {
+            return [];
+        }
+        return filteredEmployees.slice(
+            (currentPage - 1) * itemsPerPage,
+            currentPage * itemsPerPage
+        );
+    }, [filteredEmployees, currentPage, itemsPerPage]);
+
+    const totalPages = useMemo(() => {
+        return Math.ceil((filteredEmployees?.length || 0) / itemsPerPage);
+    }, [filteredEmployees, itemsPerPage]);
+
     const handleOpenModal = (employee: EmployeeResponseDto) => {
         employee.dataNascimento = employee.dataNascimento
             ? employee.dataNascimento.split("T")[0] // PEGA SÓ YYYY-MM-DD
@@ -122,7 +140,7 @@ export default function EmployeeGrid({ searchTerm = "" }: EmployeeGridProps) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredEmployees instanceof Array ? filteredEmployees.map((employee) => (
+                            {paginatedEmployees instanceof Array ? paginatedEmployees.map((employee) => (
                                 <TableRow key={employee.id}>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 cursor-pointer hover:text-blue-600">
                                         {employee.nome}</TableCell>
@@ -181,6 +199,12 @@ export default function EmployeeGrid({ searchTerm = "" }: EmployeeGridProps) {
                             )) : <></>}
                         </TableBody>
                     </Table>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                    />
                 </div>
             </div>
 

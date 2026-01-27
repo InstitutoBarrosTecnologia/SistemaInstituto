@@ -12,9 +12,14 @@ import { useState } from "react";
 import { CustomerFilterRequestDto } from "../../../services/model/Dto/Request/CustomerFilterRequestDto";
 import InputMask from "react-input-mask";
 
+type SortField = 'nome' | 'sessoes' | 'status' | null;
+type SortDirection = 'asc' | 'desc';
+
 export default function CustomerTables() {
   const [showFilter, setShowFilter] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   // Estados para os valores dos inputs (para exibição imediata)
   const [inputValues, setInputValues] = useState<CustomerFilterRequestDto>({
@@ -76,6 +81,18 @@ export default function CustomerTables() {
     };
     setInputValues(emptyFilters);
     setFilters(emptyFilters);
+  };
+
+  // Função para alternar ordenação
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Se já está ordenando por esse campo, inverte a direção
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Se é um novo campo, define como ascendente
+      setSortField(field);
+      setSortDirection('asc');
+    }
   };
 
   const statusOptions = [
@@ -279,12 +296,76 @@ export default function CustomerTables() {
         <FileInputExample />
       </div>
 
+      {/* Botões de Ordenação */}
+      <div className="mb-6 flex flex-wrap gap-3">
+        <button
+          onClick={() => handleSort('nome')}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            sortField === 'nome'
+              ? 'bg-brand-500 text-white shadow-md hover:bg-brand-600'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+          }`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
+          </svg>
+          Nome {sortField === 'nome' && (sortDirection === 'asc' ? '(A-Z)' : '(Z-A)')}
+        </button>
+
+        <button
+          onClick={() => handleSort('sessoes')}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            sortField === 'sessoes'
+              ? 'bg-brand-500 text-white shadow-md hover:bg-brand-600'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+          }`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+          </svg>
+          Sessões {sortField === 'sessoes' && (sortDirection === 'asc' ? '(Menor-Maior)' : '(Maior-Menor)')}
+        </button>
+
+        <button
+          onClick={() => handleSort('status')}
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            sortField === 'status'
+              ? 'bg-brand-500 text-white shadow-md hover:bg-brand-600'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+          }`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Status {sortField === 'status' && (sortDirection === 'asc' ? '(0-9)' : '(9-0)')}
+        </button>
+        
+        {sortField && (
+          <button
+            onClick={() => {
+              setSortField(null);
+              setSortDirection('asc');
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 transition-all"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Limpar Ordenação
+          </button>
+        )}
+      </div>
+
       <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
         <FormCustomer closeModal={closeModal} />
       </Modal>
 
       <div className="space-y-6">
-        <CustomerGrid filters={filters} />
+        <CustomerGrid 
+          filters={filters} 
+          sortField={sortField}
+          sortDirection={sortDirection}
+        />
       </div>
     </>
   );

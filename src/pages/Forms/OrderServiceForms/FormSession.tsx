@@ -2,7 +2,7 @@
 import Input from "../../../components/form/input/InputField";
 import Label from "../../../components/form/Label";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import Select from "../../../components/form/Select";
 import { getAllOrderServicesAsync } from "../../../services/service/OrderServiceService";
@@ -113,8 +113,69 @@ export default function FormSession({ clienteId, closeModal, onSuccess }: FormSe
     }, [clienteId]);
 
 
+    // Calcular informações da ordem de serviço selecionada
+    const ordemSelecionada = useMemo(() => {
+        if (!formData.orderServiceId || !ordensServico.length) {
+            return null;
+        }
+        return ordensServico.find(ordem => ordem.id === formData.orderServiceId);
+    }, [formData.orderServiceId, ordensServico]);
+
+    // Calcular sessões realizadas e validação
+    const sessaoInfo = useMemo(() => {
+        if (!ordemSelecionada) {
+            return {
+                sessoesRealizadas: 0,
+                sessaoTotal: 0,
+                limiteAtingido: false,
+                percentual: 0
+            };
+        }
+
+        const sessaoTotal = ordemSelecionada.qtdSessaoTotal ?? 0;
+        const sessoesRealizadas = (ordemSelecionada.sessoes ?? [])
+            .filter(s => s.statusSessao === 0) // 0 = Realizada
+            .length;
+
+        const limiteAtingido = sessoesRealizadas >= sessaoTotal;
+        const percentual = sessaoTotal > 0 ? (sessoesRealizadas / sessaoTotal) * 100 : 0;
+
+        return {
+            sessoesRealizadas,
+            sessaoTotal,
+            limiteAtingido,
+            percentual
+        };
+    }, [ordemSelecionada]);
+
+    // Validar se pode fazer check-in
+    const podeRealizarCheckIn = useMemo(() => {
+        // Precisa ter uma ordem selecionada
+        if (!formData.orderServiceId) {
+            return false;
+        }
+
+        // Se o status for "Realizada" (0), precisa validar o limite
+        if (formData.statusSessao === ESessionStatus.Realizada) {
+            return !sessaoInfo.limiteAtingido;
+        }
+
+        // Para outros status (Faltou, Reagendada, Cancelada), pode registrar
+        return true;
+    }, [formData.orderServiceId, formData.statusSessao, sessaoInfo.limiteAtingido]);
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validação adicional de limite de sessões
+        if (formData.statusSessao === ESessionStatus.Realizada && sessaoInfo.limiteAtingido) {
+            toast.error(
+                `Limite de sessões atingido! Este paciente já completou todas as ${sessaoInfo.sessaoTotal} sessões desta ordem de serviço.`,
+                { duration: 5000 }
+            );
+            return;
+        }
 
         // Usar valores dos campos ou aplicar padrões se estiverem vazios
         const finalDataSessao = formData.dataSessao || new Date().toISOString().split("T")[0];
@@ -225,6 +286,67 @@ export default function FormSession({ clienteId, closeModal, onSuccess }: FormSe
                                         required={true}
                                         className="dark:bg-dark-900"
                                     />
+                                    
+                                    {/* Mostrar informações da ordem selecionada */}
+                                    {ordemSelecionada && (
+                                        <div className="mt-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                    Sessões Realizadas
+                                                </span>
+                                                <span className={`text-sm font-bold ${
+                                                    sessaoInfo.limiteAtingido 
+                                                        ? 'text-red-600 dark:text-red-400' 
+                                                        : 'text-brand-600 dark:text-brand-400'
+                                                }`}>
+                                                    {sessaoInfo.sessoesRealizadas}/{sessaoInfo.sessaoTotal}
+                                                </span>
+                                            </div>
+                                            
+                                            {/* Barra de progresso */}
+                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                <div 
+                                                    className={`h-2 rounded-full transition-all ${
+                                                        sessaoInfo.limiteAtingido 
+                                                            ? 'bg-red-500' 
+                                                            : sessaoInfo.percentual > 75 
+                                                                ? 'bg-yellow-500' 
+                                                                : 'bg-green-500'
+                                                    }`}
+                                                    style={{ width: `${Math.min(sessaoInfo.percentual, 100)}%` }}
+                                                ></div>
+                                            </div>
+                                            
+                                            {/* Alerta de limite atingido */}
+                                            {sessaoInfo.limiteAtingido && formData.statusSessao === ESessionStatus.Realizada && (
+                                                <div className="mt-2 flex items-start gap-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                                    </svg>
+                                                    <div className="flex-1">
+                                                        <p className="text-xs font-semibold text-red-800 dark:text-red-300">
+                                                            Limite de sessões atingido!
+                                                        </p>
+                                                        <p className="text-xs text-red-700 dark:text-red-400 mt-1">
+                                                            Este paciente já completou todas as {sessaoInfo.sessaoTotal} sessões. Não é possível registrar check-in como "Realizada". Selecione outro status ou outra ordem de serviço.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Aviso quando próximo do limite */}
+                                            {!sessaoInfo.limiteAtingido && sessaoInfo.percentual > 75 && (
+                                                <div className="mt-2 flex items-start gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                                                    </svg>
+                                                    <p className="text-xs text-yellow-800 dark:text-yellow-300">
+                                                        Faltam apenas {sessaoInfo.sessaoTotal - sessaoInfo.sessoesRealizadas} sessões para completar o pacote.
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <Label>Status<span className="text-red-300">*</span></Label>
@@ -466,9 +588,16 @@ export default function FormSession({ clienteId, closeModal, onSuccess }: FormSe
                                 Cancelar
                             </button>
                             <button
-                                className="bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+                                className="bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
                                 type="submit"
-                                disabled={mutation.isPending}
+                                disabled={mutation.isPending || !podeRealizarCheckIn}
+                                title={
+                                    !podeRealizarCheckIn 
+                                        ? sessaoInfo.limiteAtingido 
+                                            ? "Limite de sessões atingido para esta ordem de serviço"
+                                            : "Selecione uma ordem de serviço"
+                                        : "Registrar check-in"
+                                }
                             >
                                 {mutation.isPending ? (
                                     <>
@@ -479,7 +608,23 @@ export default function FormSession({ clienteId, closeModal, onSuccess }: FormSe
                                         Processando...
                                     </>
                                 ) : (
-                                    "Check-in"
+                                    <>
+                                        {!podeRealizarCheckIn && sessaoInfo.limiteAtingido ? (
+                                            <>
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                </svg>
+                                                Limite Atingido
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                </svg>
+                                                Check-in
+                                            </>
+                                        )}
+                                    </>
                                 )}
                             </button>
                         </div>

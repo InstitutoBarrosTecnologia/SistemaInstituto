@@ -1,4 +1,5 @@
 import {
+    Pagination,
     Table,
     TableBody,
     TableCell,
@@ -17,7 +18,7 @@ import Label from "../../form/Label";
 import Input from "../../form/input/InputField";
 import Button from "../../ui/button/Button";
 import Select from "../../form/Select";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import TextArea from "../../form/input/TextArea";
 import FormCustomer from "../../../pages/Forms/Customer/FormCustomer";
 import { disableCustomerAsync, getAllCustomersAsync } from "../../../services/service/CustomerService";
@@ -30,11 +31,16 @@ import FormSession from "../../../pages/Forms/OrderServiceForms/FormSession";
 import { CustomerFilterRequestDto } from "../../../services/model/Dto/Request/CustomerFilterRequestDto";
 import { getUserRoleFromToken, userHasRole, USER_ROLES } from "../../../services/util/rolePermissions";
 
+type SortField = 'nome' | 'sessoes' | 'status' | null;
+type SortDirection = 'asc' | 'desc';
+
 interface CustomerGridProps {
     filters?: CustomerFilterRequestDto;
+    sortField?: SortField;
+    sortDirection?: SortDirection;
 }
 
-export default function CustomerTableComponent({ filters }: CustomerGridProps) {
+export default function CustomerTableComponent({ filters, sortField, sortDirection }: CustomerGridProps) {
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerRequestDto | undefined>(undefined);
     const [selectedCustomerData, setSelectedCustomerData] = useState<CustomerRequestDto | undefined>(undefined);
     const { isOpen, openModal, closeModal } = useModal();
@@ -44,6 +50,8 @@ export default function CustomerTableComponent({ filters }: CustomerGridProps) {
     const { isOpen: isOpenSession, openModal: openModalSession, closeModal: closeModalSession } = useModalSession();
     const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
     const [idSessionRegister, setIdSessionRegister] = useState<string>("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     // Obter role do usuário para controlar exibição dos botões
     const userRoles = getUserRoleFromToken(localStorage.getItem("token"));
@@ -58,6 +66,61 @@ export default function CustomerTableComponent({ filters }: CustomerGridProps) {
         queryKey: ["allCustomer", filters],
         queryFn: () => getAllCustomersAsync(filters),
     })
+
+    // Paginação
+    const paginatedClientes = useMemo(() => {
+        if (!Array.isArray(clientes) || clientes.length === 0) {
+            return [];
+        }
+
+        let sortedClientes = [...clientes];
+
+        // Aplicar ordenação se houver
+        if (sortField && sortDirection) {
+            sortedClientes.sort((a, b) => {
+                let compareValue = 0;
+
+                if (sortField === 'nome') {
+                    const nomeA = a.nome?.toLowerCase() || '';
+                    const nomeB = b.nome?.toLowerCase() || '';
+                    compareValue = nomeA.localeCompare(nomeB);
+                } else if (sortField === 'sessoes') {
+                    // Calcula quantidade de sessões realizadas para cada paciente
+                    const sessoesA = (a.servicos ?? [])
+                        .filter(s => s && (s.qtdSessaoTotal ?? 0) > 0)
+                        .reduce((total, s) => {
+                            const realizadas = (s.sessoes ?? []).filter(sessao => sessao.statusSessao === 0).length;
+                            return total + realizadas;
+                        }, 0);
+
+                    const sessoesB = (b.servicos ?? [])
+                        .filter(s => s && (s.qtdSessaoTotal ?? 0) > 0)
+                        .reduce((total, s) => {
+                            const realizadas = (s.sessoes ?? []).filter(sessao => sessao.statusSessao === 0).length;
+                            return total + realizadas;
+                        }, 0);
+
+                    compareValue = sessoesA - sessoesB;
+                } else if (sortField === 'status') {
+                    const statusA = a.status ?? 0;
+                    const statusB = b.status ?? 0;
+                    compareValue = statusA - statusB;
+                }
+
+                // Inverte se for descendente
+                return sortDirection === 'asc' ? compareValue : -compareValue;
+            });
+        }
+
+        return sortedClientes.slice(
+            (currentPage - 1) * itemsPerPage,
+            currentPage * itemsPerPage
+        );
+    }, [clientes, currentPage, itemsPerPage, sortField, sortDirection]);
+
+    const totalPages = useMemo(() => {
+        return Math.ceil((clientes?.length || 0) / itemsPerPage);
+    }, [clientes, itemsPerPage]);
 
     const mutationDelete = useMutation({
         mutationFn: disableCustomerAsync,
@@ -190,7 +253,7 @@ export default function CustomerTableComponent({ filters }: CustomerGridProps) {
                         </TableHeader>
 
                         <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                            {clientes instanceof Array ? clientes.map((customer: CustomerResponseDto) => (
+                            {paginatedClientes instanceof Array ? paginatedClientes.map((customer: CustomerResponseDto) => (
                                 <TableRow key={customer.id}>
                                     <TableCell onClick={() => MetaData(customer)}
                                         className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 cursor-pointer hover:text-blue-600">
@@ -395,6 +458,12 @@ export default function CustomerTableComponent({ filters }: CustomerGridProps) {
                             )) : <></>}
                         </TableBody>
                     </Table>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                    />
                 </div>
             </div>
 
