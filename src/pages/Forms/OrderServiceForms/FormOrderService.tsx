@@ -67,12 +67,14 @@ export default function FormOrderService({
     funcionarioId: "",
     dataPagamento: new Date().toISOString().split("T")[0],
     qtdSessaoTotal: 0,
-    qtdSessaoRealizada: 0,
+    qtdSessaoRealizada: 1, // Sempre fixo em 1
     servicos: [],
     sessoes: [],
   });
   const [numeroParcelas, setNumeroParcelas] = useState<number>(1);
   const [observacao, setObservacao] = useState<string>("");
+  const [descontoReaisInput, setDescontoReaisInput] = useState<string>("");
+  const [descontoPercentualInput, setDescontoPercentualInput] = useState<string>("");
   const [customersOptions, setCustomersOptions] = useState<
     { value: string; label: string }[]
   >([]);
@@ -433,7 +435,7 @@ export default function FormOrderService({
         funcionarioId: data.funcionarioId,
         dataPagamento: data.dataPagamento?.split("T")[0],
         qtdSessaoTotal: data.qtdSessaoTotal,
-        qtdSessaoRealizada: data.qtdSessaoRealizada,
+        qtdSessaoRealizada: 1, // Sempre fixo em 1
         funcionario: data.funcionario,
         cliente: data.cliente,
         servicos: data.servicos,
@@ -458,6 +460,14 @@ export default function FormOrderService({
         setNumeroParcelas(2);
       } else {
         setNumeroParcelas(1);
+      }
+      
+      // Inicializar campos de desconto
+      if (data.precoDesconto) {
+        setDescontoReaisInput(data.precoDesconto.toFixed(2).replace('.', ','));
+      }
+      if (data.descontoPercentual) {
+        setDescontoPercentualInput(data.descontoPercentual.toFixed(2).replace('.', ','));
       }
     }
   }, [edit, data, servicesOptions]);
@@ -635,7 +645,19 @@ export default function FormOrderService({
 
   const handleChanceDescont = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const percentual = parseFloat(value) || 0;
+    
+    // Permitir apenas números e vírgula (e apenas uma vírgula)
+    const cleanValue = value.replace(/[^\d,]/g, '');
+    
+    // Evitar múltiplas vírgulas
+    const parts = cleanValue.split(',');
+    const finalValue = parts.length > 2 ? parts[0] + ',' + parts.slice(1).join('') : cleanValue;
+    
+    // Atualizar o input visualmente
+    setDescontoPercentualInput(finalValue);
+    
+    // Converter vírgula para ponto para parseFloat
+    const percentual = parseFloat(finalValue.replace(',', '.')) || 0;
 
     const valorComDesconto = totalPrice * (1 - percentual / 100);
     const valorDescontoEmReais = totalPrice - valorComDesconto;
@@ -646,11 +668,26 @@ export default function FormOrderService({
       valorComDesconto: valorComDesconto,
       precoDesconto: valorDescontoEmReais,
     }));
+    
+    // Atualizar também o campo de desconto em reais
+    setDescontoReaisInput(valorDescontoEmReais.toFixed(2).replace('.', ','));
   };
 
   const handleChangeDescontoReais = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
-    const valorDesconto = parseFloat(value) || 0;
+    const value = e.target.value;
+    
+    // Permitir apenas números e vírgula (e apenas uma vírgula)
+    const cleanValue = value.replace(/[^\d,]/g, '');
+    
+    // Evitar múltiplas vírgulas
+    const parts = cleanValue.split(',');
+    const finalValue = parts.length > 2 ? parts[0] + ',' + parts.slice(1).join('') : cleanValue;
+    
+    // Atualizar o input visualmente
+    setDescontoReaisInput(finalValue);
+    
+    // Converter vírgula para ponto para parseFloat
+    const valorDesconto = parseFloat(finalValue.replace(',', '.')) || 0;
 
     // Não permitir desconto maior que o total
     const descontoFinal = Math.min(valorDesconto, totalPrice);
@@ -664,6 +701,9 @@ export default function FormOrderService({
       descontoPercentual: percentualEquivalente,
       valorComDesconto: totalPrice - descontoFinal,
     }));
+    
+    // Atualizar também o campo de percentual
+    setDescontoPercentualInput(percentualEquivalente.toFixed(2).replace('.', ','));
   };
 
   const optionsPayment = Object.entries(EFormaPagamento)
@@ -756,26 +796,7 @@ export default function FormOrderService({
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
                 <div>
                   <Label>
-                    Qtd. Sessão Mínima<span className="text-red-300">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    placeholder="1"
-                    value={formData.qtdSessaoRealizada?.toString()}
-                    min="1"
-                    disabled={edit}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        qtdSessaoRealizada: parseInt(e.target.value) || 0,
-                      }))
-                    }
-                    required={true}
-                  />
-                </div>
-                <div>
-                  <Label>
-                    Qtd. Sessão Máxima<span className="text-red-300">*</span>
+                    Qtd. Sessão Total<span className="text-red-300">*</span>
                   </Label>
                   <Input
                     type="number"
@@ -787,9 +808,20 @@ export default function FormOrderService({
                       setFormData((prev) => ({
                         ...prev,
                         qtdSessaoTotal: parseInt(e.target.value) || 0,
+                        qtdSessaoRealizada: 1, // Sempre fixo em 1
                       }))
                     }
                     required={true}
+                  />
+                </div>
+                <div>
+                  <Label>Desconto %</Label>
+                  <Input
+                    type="text"
+                    placeholder="Ex: 10,5 ou 4,4"
+                    onChange={handleChanceDescont}
+                    value={descontoPercentualInput}
+                    disabled={edit}
                   />
                 </div>
               </div>
@@ -913,30 +945,6 @@ export default function FormOrderService({
                   </div>
                 </>
               )}
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
-                {/* <div>
-                                    <Label>Percentual de ganho %<span className="text-red-300">*</span></Label>
-                                    <Input
-                                        type="number"
-                                        placeholder="Percentual de ganho %"
-                                        onChange={handleChangeGanho}
-                                        value={formData.percentualGanho?.toString()}
-                                        min="1"
-                                        disabled={edit}
-                                        required={true}
-                                    />
-                                </div> */}
-                <div>
-                  <Label>Desconto %</Label>
-                  <Input
-                    type="text"
-                    placeholder="Percentual de Desconto %"
-                    onChange={handleChanceDescont}
-                    value={formData.descontoPercentual?.toString()}
-                    disabled={edit}
-                  />
-                </div>
-              </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-3 mb-5">
                 <div>
                   <Label>Total da Ordem</Label>
@@ -947,7 +955,7 @@ export default function FormOrderService({
                       style: "currency",
                       currency: "BRL",
                     }).format(formData.precoOrdem || 0)}
-                    disabled
+                    disabled={edit}
                   />
                 </div>
                 <div>
@@ -955,22 +963,22 @@ export default function FormOrderService({
                   <Input
                     type="text"
                     placeholder="Valor Final com Ganho"
-                    disabled
                     value={new Intl.NumberFormat("pt-BR", {
                       style: "currency",
                       currency: "BRL",
                     }).format(totalComGanho)}
+                    disabled={edit}
                   />
                 </div>
                 <div>
                   <Label>Desconto R$</Label>
                   <Input
                     type="text"
-                    placeholder="Valor do desconto"
-                    disabled={edit}
+                    placeholder="Ex: 105 ou 10,50"
                     onChange={handleChangeDescontoReais}
-                    value={formData.precoDesconto?.toFixed(2) || '0.00'}
+                    value={descontoReaisInput}
                     className="text-black"
+                    disabled={edit}
                   />
                 </div>
               </div>

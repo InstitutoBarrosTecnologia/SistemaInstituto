@@ -297,7 +297,7 @@ export default function FormSession({ clienteId, closeModal, onSuccess }: FormSe
                                     {/* Mostrar informações da ordem selecionada */}
                                     {ordemSelecionada && (
                                         <div className="mt-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                                            <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                     Sessões Realizadas
                                                 </span>
@@ -308,20 +308,6 @@ export default function FormSession({ clienteId, closeModal, onSuccess }: FormSe
                                                 }`}>
                                                     {sessaoInfo.sessoesRealizadas}/{sessaoInfo.sessaoTotal}
                                                 </span>
-                                            </div>
-                                            
-                                            {/* Barra de progresso */}
-                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                                <div 
-                                                    className={`h-2 rounded-full transition-all ${
-                                                        sessaoInfo.limiteAtingido 
-                                                            ? 'bg-red-500' 
-                                                            : sessaoInfo.percentual > 75 
-                                                                ? 'bg-yellow-500' 
-                                                                : 'bg-green-500'
-                                                    }`}
-                                                    style={{ width: `${Math.min(sessaoInfo.percentual, 100)}%` }}
-                                                ></div>
                                             </div>
                                             
                                             {/* Alerta de limite atingido */}

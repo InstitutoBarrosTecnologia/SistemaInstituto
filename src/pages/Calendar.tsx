@@ -56,6 +56,9 @@ import {
 import FormSession from "./Forms/OrderServiceForms/FormSession";
 import FormCustomer from "./Forms/Customer/FormCustomer";
 import { useSessionValidation } from "../hooks/useSessionValidation";
+import { getAllOrderServicesAsync } from "../services/service/OrderServiceService";
+import { OrderServiceResponseDto } from "../services/model/Dto/Response/OrderServiceResponseDto";
+import { USER_ROLES, userHasRole } from "../services/util/rolePermissions";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -161,6 +164,11 @@ const Calendar: React.FC = () => {
   const [sessoesData, setSessoesData] = useState<
     OrderServiceSessionResponseDto[] | null
   >(null);
+
+  // Estados para Timeline de tratamentos
+  const [showTimeline, setShowTimeline] = useState<boolean>(false);
+  const [ordensServico, setOrdensServico] = useState<OrderServiceResponseDto[]>([]);
+  const [isLoadingTimeline, setIsLoadingTimeline] = useState<boolean>(false);
 
   // Validação de sessões disponíveis para check-in
   const {
@@ -1918,8 +1926,10 @@ const Calendar: React.FC = () => {
       setShowCustomerDetails(false);
       setShowHistorico(false);
       setShowServicos(false);
+      setShowTimeline(false);
       setSelectedClienteData(null);
       setSessoesData(null);
+      setOrdensServico([]);
     }
   }, [isOpen]);
 
@@ -1945,6 +1955,33 @@ const Calendar: React.FC = () => {
 
     fetchSessoes();
   }, [showHistorico, selectedCliente]);
+
+  // Buscar ordens de serviço (tratamentos) quando o accordion de Timeline for aberto
+  useEffect(() => {
+    const fetchOrdensServico = async () => {
+      if (showTimeline && selectedCliente) {
+        // Só faz a requisição se os dados ainda não foram carregados
+        if (ordensServico.length === 0) {
+          try {
+            setIsLoadingTimeline(true);
+            const ordens = await getAllOrderServicesAsync({ clienteId: selectedCliente });
+            if (Array.isArray(ordens)) {
+              setOrdensServico(ordens);
+            } else {
+              setOrdensServico([]);
+            }
+          } catch (error) {
+            console.error("Erro ao buscar ordens de serviço:", error);
+            setOrdensServico([]);
+          } finally {
+            setIsLoadingTimeline(false);
+          }
+        }
+      }
+    };
+
+    fetchOrdensServico();
+  }, [showTimeline, selectedCliente]);
 
   // Função para recarregar sessões após check-in
   const handleReloadSessoes = async () => {
@@ -2944,6 +2981,162 @@ const Calendar: React.FC = () => {
                                         )}
                                       </TableBody>
                                     </Table>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Accordion Timeline de Tratamentos */}
+                            <div className="mb-2">
+                              <button
+                                onClick={() => setShowTimeline(!showTimeline)}
+                                type="button"
+                                className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+                              >
+                                <span>Timeline de Tratamentos</span>
+                                <svg
+                                  className={`w-4 h-4 transform transition-transform ${showTimeline ? "rotate-180" : ""}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M19 9l-7 7-7-7"
+                                  />
+                                </svg>
+                              </button>
+
+                              {showTimeline && (
+                                <div className="mt-3">
+                                  {isLoadingTimeline ? (
+                                    <div className="text-center py-4">
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        Carregando tratamentos...
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-3">
+                                      {ordensServico && ordensServico.length > 0 ? (
+                                        ordensServico
+                                          .filter(ordem => ordem.status === 0 || ordem.status === 1)
+                                          .map((ordem, index) => {
+                                            const sessaoTotal = ordem.qtdSessaoTotal ?? 0;
+                                            const sessoesRealizadas = (ordem.sessoes ?? [])
+                                              .filter(s => s.statusSessao === 0)
+                                              .length;
+                                            const sessoesRestantes = sessaoTotal - sessoesRealizadas;
+                                            const limiteAtingido = sessoesRealizadas >= sessaoTotal;
+                                            const percentual = sessaoTotal > 0 ? (sessoesRealizadas / sessaoTotal) * 100 : 0;
+
+                                            const ultimasSessoes = (ordem.sessoes ?? [])
+                                              .filter(s => s.statusSessao === 0)
+                                              .sort((a, b) => new Date(b.dataSessao).getTime() - new Date(a.dataSessao).getTime())
+                                              .slice(0, 3);
+
+                                            const nomeTratamento = ordem.servicos && ordem.servicos.length > 0 && ordem.servicos[0]?.descricao
+                                              ? ordem.servicos[0].descricao
+                                              : `Tratamento ${ordem.id?.substring(0, 8)}`;
+
+                                            const isFisioterapeuta = userHasRole(userRole, USER_ROLES.FISIOTERAPEUTA) && 
+                                                                      !userHasRole(userRole, USER_ROLES.COORDENADOR_FISIOTERAPEUTA);
+
+                                            return (
+                                              <div key={index} className="p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+                                                <div className="flex items-start justify-between mb-3">
+                                                  <div className="flex-1">
+                                                    <h6 className="font-semibold text-gray-800 dark:text-white text-sm mb-1">
+                                                      {nomeTratamento}
+                                                    </h6>
+                                                    {!isFisioterapeuta && (
+                                                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                                        <span className="font-medium">
+                                                          R$ {ordem.precoOrdem?.toFixed(2).replace('.', ',') || '0,00'}
+                                                        </span>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                  <Badge
+                                                    size="sm"
+                                                    color={ordem.status === 0 ? "success" : "info"}
+                                                  >
+                                                    {ordem.status === 0 ? "Em Andamento" : "Pendente"}
+                                                  </Badge>
+                                                </div>
+
+                                                <div className="mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                                  <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                      Sessões
+                                                    </span>
+                                                    <span className={`text-sm font-bold ${
+                                                      limiteAtingido 
+                                                        ? 'text-red-600 dark:text-red-400' 
+                                                        : 'text-brand-600 dark:text-brand-400'
+                                                    }`}>
+                                                      {sessoesRealizadas}/{sessaoTotal}
+                                                    </span>
+                                                  </div>
+                                                  
+                                                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+                                                    <div 
+                                                      className={`h-2 rounded-full transition-all ${
+                                                        limiteAtingido 
+                                                          ? 'bg-red-500' 
+                                                          : percentual > 75 
+                                                            ? 'bg-yellow-500' 
+                                                            : 'bg-green-500'
+                                                      }`}
+                                                      style={{ width: `${Math.min(percentual, 100)}%` }}
+                                                    ></div>
+                                                  </div>
+
+                                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                                    {limiteAtingido 
+                                                      ? 'Limite de sessões atingido' 
+                                                      : `${sessoesRestantes} sessão(ões) disponível(is)`
+                                                    }
+                                                  </div>
+                                                </div>
+
+                                                {ultimasSessoes.length > 0 && (
+                                                  <div>
+                                                    <h6 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                      Últimas Sessões:
+                                                    </h6>
+                                                    <div className="space-y-1">
+                                                      {ultimasSessoes.map((sessao, idx) => (
+                                                        <div key={idx} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                                          <span className="text-green-500">✓</span>
+                                                          <span>
+                                                            {new Date(sessao.dataSessao).toLocaleDateString('pt-BR')}
+                                                          </span>
+                                                          <span className="text-gray-400">-</span>
+                                                          <span className="text-gray-500 dark:text-gray-500">
+                                                            {sessao.funcionario?.nome || 'Sem fisioterapeuta'}
+                                                          </span>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                )}
+
+                                                {ultimasSessoes.length === 0 && (
+                                                  <div className="text-xs text-gray-500 dark:text-gray-400 italic">
+                                                    Nenhuma sessão realizada ainda
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })
+                                      ) : (
+                                        <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                                          <p className="text-sm">Nenhum tratamento ativo encontrado.</p>
+                                        </div>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
                               )}
