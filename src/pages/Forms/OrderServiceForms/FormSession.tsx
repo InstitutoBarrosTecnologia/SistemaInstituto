@@ -52,7 +52,6 @@ export default function FormSession({ clienteId, closeModal, onSuccess }: FormSe
     const mutation = useMutation({
         mutationFn: createSessionAsync,
         onSuccess: async (response) => {
-            console.log("🎯 onSuccess chamado:", response);
             if (response.status === 200) {
                 toast.success("Sessão registrada com sucesso!");
                 
@@ -200,15 +199,6 @@ export default function FormSession({ clienteId, closeModal, onSuccess }: FormSe
             dataSessao: finalDataSessao,
             horaSessao: convertToTimeSpan(finalHoraSessao)
         };
-
-        console.log("📅 Dados da sessão:", {
-            dataOriginal: formData.dataSessao,
-            horaOriginal: formData.horaSessao,
-            dataFinal: finalDataSessao,
-            horaFinal: finalHoraSessao,
-            horaSessaoConvertida: convertToTimeSpan(finalHoraSessao),
-            payload
-        });
 
         mutation.mutate(payload);
 

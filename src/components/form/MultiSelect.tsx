@@ -104,7 +104,6 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                             onClick={(e) => {
                               e.stopPropagation();
                               removeOption(selectedOptions[index]);
-                              console.log("Removendo opção:", selectedOptions[index]);
                             }}
                             className="pl-2 text-gray-500 cursor-pointer group-hover:text-gray-400 dark:text-gray-400"
                           >

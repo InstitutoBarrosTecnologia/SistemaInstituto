@@ -224,11 +224,6 @@ export default function FormOrderService({
     orderServiceData: OrderServiceResponseDto
   ) => {
     try {
-      console.log(
-        "💰 Criando transação financeira para tratamento:",
-        orderServiceData
-      );
-
       // Calcular valor total dos serviços
       const valorTotal =
         orderServiceData.servicos?.reduce((total, servico) => {
@@ -279,8 +274,7 @@ export default function FormOrderService({
         numeroParcelas: orderServiceData.formaPagamento === EFormaPagamento.CartaoCreditoParcelado ? numeroParcelas : 0,
       };
 
-      const result = await FinancialTransactionService.create(transactionData);
-      console.log("✅ Transação financeira criada com sucesso:", result);
+      await FinancialTransactionService.create(transactionData);
       toast.success("Transação financeira criada automaticamente!");
     } catch (error) {
       console.error("❌ Erro ao criar transação financeira:", error);
@@ -302,13 +296,7 @@ export default function FormOrderService({
 
         // Criar transação financeira automaticamente
         if (response.data) {
-          console.log(
-            "💰 Chamando createFinancialTransaction com:",
-            response.data
-          );
           await createFinancialTransaction(response.data);
-        } else {
-          console.warn("⚠️ response.data está vazio:", response);
         }
 
         setTimeout(() => {

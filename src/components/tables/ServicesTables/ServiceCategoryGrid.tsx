@@ -113,7 +113,6 @@ export default function ServiceCategoryGrid({ searchTerm = "" }: ServiceCategory
             const category = await getCategoriaByIdAsync(id);
             if (typeof category !== "string")
                 setFormDataResponse(category);
-            else console.log(category);
         } catch (error) {
             console.error("Erro ao buscar o lead:", error);
         }

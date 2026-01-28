@@ -186,13 +186,9 @@ export default function FormEmployee({
 
   useEffect(() => {
     if (data) {
-      console.log("Data recebida no useEffect:", data);
-      console.log("dataNascimento raw:", data.dataNascimento);
-
       const formattedDate = data.dataNascimento
         ? formatDateToBrazilian(data.dataNascimento)
         : "";
-      console.log("Data formatada final:", formattedDate);
 
       setFormData({
         id: data.id ?? undefined,

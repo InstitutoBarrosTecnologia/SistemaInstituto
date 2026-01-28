@@ -34,17 +34,9 @@ export default function EntradaSaidaExample() {
   };
 
   const handleChartAction = (action: string) => {
-    console.log(`Ação "${action}" executada no gráfico Entrada & Saída`);
-    
     switch (action) {
       case "export":
         // Simular exportação dos dados
-        const dataToExport = entradaSaidaData.map(item => ({
-          Tipo: item.tipo,
-          Quantidade: item.quantidade,
-          Percentual: `${item.percentual.toFixed(1)}%`
-        }));
-        console.log('Dados para exportação:', dataToExport);
         alert('Dados exportados! Verifique o console.');
         break;
       case "details":
@@ -59,18 +51,9 @@ export default function EntradaSaidaExample() {
   };
 
   const handleChartCategoriaAction = (action: string) => {
-    console.log(`Ação "${action}" executada no gráfico Faturamento por Categoria`);
-    
     switch (action) {
       case "export":
         // Simular exportação dos dados
-        const dataToExport = faturamentoCategoriaData.map(item => ({
-          Categoria: item.tipo,
-          Quantidade: item.quantidade,
-          Percentual: `${item.percentual.toFixed(1)}%`,
-          'Valor Receita': `R$ ${item.valorReceita.toFixed(2)}`
-        }));
-        console.log('Dados para exportação:', dataToExport);
         alert('Dados exportados! Verifique o console.');
         break;
       case "details":

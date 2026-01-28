@@ -115,7 +115,6 @@ export default function SubServiceCategoryGrid({ searchTerm = "" }: SubServiceCa
             const subCategory = await getSubCategoriaByIdAsync(id);
             if (typeof subCategory !== "string")
                 setFormDataResponse(subCategory);
-            else console.log(subCategory);
         } catch (error) {
             console.error("Erro ao buscar a categoria:", error);
         }
