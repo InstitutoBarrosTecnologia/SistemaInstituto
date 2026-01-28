@@ -58,7 +58,8 @@ export function useSessionValidation(clienteId: string | null): SessionValidatio
   // - 0 tratamentos ativos: Bloquear botão
   // - 1 tratamento ativo SEM sessões: Bloquear botão
   // - 1 tratamento ativo COM sessões: Permitir botão
-  // - 2+ tratamentos ativos: SEMPRE permitir (validação acontece no FormSession)
+  // - 2+ tratamentos e TODOS sem sessões: Bloquear botão
+  // - 2+ tratamentos e PELO MENOS 1 com sessões: Permitir botão (validação no FormSession)
   const validationResult = useMemo((): SessionValidationResult => {
     // Estado inicial/loading
     if (!clienteId || isLoading) {
@@ -111,8 +112,34 @@ export function useSessionValidation(clienteId: string | null): SessionValidatio
     }
 
     // Caso 2: Tem MÚLTIPLOS tratamentos ativos (2 ou mais)
-    // SEMPRE permite check-in, validação será feita no FormSession
+    // Verifica se PELO MENOS 1 tratamento tem sessões disponíveis
     if (ordensAtivas.length > 1) {
+      // Verificar se pelo menos um tratamento tem sessões disponíveis
+      const algumTratamentoDisponivel = ordensAtivas.some(ordem => {
+        const sessaoTotal = ordem.qtdSessaoTotal ?? 0;
+        const sessoesRealizadas = (ordem.sessoes ?? [])
+          .filter(s => s.statusSessao === 0) // 0 = Realizada
+          .length;
+        return sessoesRealizadas < sessaoTotal; // Tem sessões disponíveis
+      });
+
+      if (!algumTratamentoDisponivel) {
+        // TODOS os tratamentos estão no limite - bloquear botão
+        return {
+          isLoading: false,
+          temSessoesDisponiveis: false,
+          quantidadeTratamentos: ordensAtivas.length,
+          sessaoInfo: {
+            sessoesRealizadas: 0,
+            sessaoTotal: 0,
+            limiteAtingido: true,
+            percentual: 0
+          },
+          mensagemBloqueio: 'Todos os tratamentos deste paciente atingiram o limite de sessões.'
+        };
+      }
+
+      // Pelo menos 1 tratamento tem sessões disponíveis - permite check-in
       return {
         isLoading: false,
         temSessoesDisponiveis: true,
