@@ -55,6 +55,7 @@ import {
 } from "../components/helper/formatUtils";
 import FormSession from "./Forms/OrderServiceForms/FormSession";
 import FormCustomer from "./Forms/Customer/FormCustomer";
+import { useSessionValidation } from "../hooks/useSessionValidation";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -160,6 +161,13 @@ const Calendar: React.FC = () => {
   const [sessoesData, setSessoesData] = useState<
     OrderServiceSessionResponseDto[] | null
   >(null);
+
+  // Validação de sessões disponíveis para check-in
+  const {
+    temSessoesDisponiveis,
+    mensagemBloqueio,
+    isLoading: isLoadingSessionValidation
+  } = useSessionValidation(selectedCliente || null);
 
   // Estado para status do agendamento
   const [selectedStatus, setSelectedStatus] = useState<number>(
@@ -3125,14 +3133,25 @@ const Calendar: React.FC = () => {
                 Fechar
               </button>
 
-              {/* Botão Check-in - só aparece quando está editando um evento e tem cliente selecionado */}
+              {/* Botão Check-in com validação de sessões disponíveis */}
               {selectedEvent && selectedCliente && (
                 <button
                   onClick={openModalCheckIn}
                   type="button"
-                  className="flex w-full justify-center rounded-lg border border-green-500 bg-green-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-600 sm:w-auto"
+                  disabled={!temSessoesDisponiveis || isLoadingSessionValidation}
+                  className={`flex w-full justify-center rounded-lg border px-4 py-2.5 text-sm font-medium sm:w-auto transition-colors
+                    ${temSessoesDisponiveis && !isLoadingSessionValidation
+                      ? 'border-green-500 bg-green-500 text-white hover:bg-green-600' 
+                      : 'border-gray-300 bg-gray-200 text-gray-500 cursor-not-allowed dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                    }
+                  `}
+                  title={
+                    isLoadingSessionValidation 
+                      ? 'Validando sessões disponíveis...' 
+                      : mensagemBloqueio || 'Realizar check-in desta sessão'
+                  }
                 >
-                  Check-in
+                  {isLoadingSessionValidation ? 'Validando...' : 'Check-in'}
                 </button>
               )}
 
