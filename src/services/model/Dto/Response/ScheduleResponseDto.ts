@@ -23,4 +23,5 @@ export interface ScheduleResponseDto extends BaseResponseDto {
   minutosAntesNotificacao?: number | null;
   status: number;
   corFuncionario?: string;
+  isAvaliacao?: boolean;
 }

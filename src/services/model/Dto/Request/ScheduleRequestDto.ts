@@ -15,4 +15,5 @@ export interface ScheduleRequestDto {
     minutosAntesNotificacao?: number;
     status: number;
     corFuncionario?: string;
+    isAvaliacao?: boolean;
   }

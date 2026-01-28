@@ -15,7 +15,6 @@ import { getAllCustomersAsync } from "../services/service/CustomerService";
 import { CustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
 import { getAllSessionsAsync } from "../services/service/SessionService";
 import { OrderServiceSessionResponseDto } from "../services/model/Dto/Response/OrderServiceSessionResponseDto";
-import CustomerInfoDisplay from "../components/common/CustomerInfoDisplay";
 import Label from "../components/form/Label";
 import Select from "../components/form/Select";
 import SelectWithSearch from "../components/form/SelectWithSearch";
@@ -40,8 +39,20 @@ import {
   ScheduleStatusLabels,
 } from "../services/model/Enum/EScheduleStatus";
 import Badge from "../components/ui/badge/Badge";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "../components/ui/table";
-import { formatCPF, formatDate, formatPhone, formatRG, formatCEP } from "../components/helper/formatUtils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import {
+  formatCPF,
+  formatDate,
+  formatPhone,
+  formatRG,
+  formatCEP,
+} from "../components/helper/formatUtils";
 import FormSession from "./Forms/OrderServiceForms/FormSession";
 import FormCustomer from "./Forms/Customer/FormCustomer";
 
@@ -54,7 +65,7 @@ interface CalendarEvent extends EventInput {
 const Calendar: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-    null
+    null,
   );
   const [eventTitle, setEventTitle] = useState("");
   const [eventDescription, setEventDescription] = useState("");
@@ -86,26 +97,27 @@ const Calendar: React.FC = () => {
     closeModal: closeModalNewCustomer,
   } = useModal();
   const [selectedFilial, setSelectedFilial] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [selectedCliente, setSelectedCliente] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [selectedFuncionario, setSelectedFuncionario] = useState<
     string | undefined
   >(undefined);
   const [filterCliente, setFilterCliente] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [filterStatus, setFilterStatus] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [showFilters, setShowFilters] = useState(false);
   const [modalFuncionario, setModalFuncionario] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [modalFilial, setModalFilial] = useState<string | undefined>(undefined);
   const [isChecked, setIsChecked] = useState(false);
+  const [isAvaliacao, setIsAvaliacao] = useState(false);
   const [optionsFilial, setOptionsFilial] = useState<
     { label: string; value: string }[]
   >([]);
@@ -119,7 +131,8 @@ const Calendar: React.FC = () => {
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
   const [userRole, setUserRole] = useState<string | string[] | null>(null);
   const [currentEventData, setCurrentEventData] = useState<any>(null);
-  const [selectedClienteData, setSelectedClienteData] = useState<CustomerResponseDto | null>(null);
+  const [selectedClienteData, setSelectedClienteData] =
+    useState<CustomerResponseDto | null>(null);
 
   // Estados para recorrência
   const [isRecurrent, setIsRecurrent] = useState<boolean>(false);
@@ -137,21 +150,27 @@ const Calendar: React.FC = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // Estados para controlar acordeões dos dados do paciente
-  const [showCustomerDetails, setShowCustomerDetails] = useState<boolean>(false);
+  const [showCustomerDetails, setShowCustomerDetails] =
+    useState<boolean>(false);
   const [showHistorico, setShowHistorico] = useState<boolean>(false);
   const [showServicos, setShowServicos] = useState<boolean>(false);
-  const [isLoadingCustomerData, setIsLoadingCustomerData] = useState<boolean>(false);
+  const [isLoadingCustomerData, setIsLoadingCustomerData] =
+    useState<boolean>(false);
   const [isLoadingHistorico, setIsLoadingHistorico] = useState<boolean>(false);
-  const [sessoesData, setSessoesData] = useState<OrderServiceSessionResponseDto[] | null>(null);
+  const [sessoesData, setSessoesData] = useState<
+    OrderServiceSessionResponseDto[] | null
+  >(null);
 
   // Estado para status do agendamento
   const [selectedStatus, setSelectedStatus] = useState<number>(
-    EScheduleStatus.AConfirmar
+    EScheduleStatus.AConfirmar,
   );
 
   // Estados para exclusão personalizada de recorrência
   const [isCustomDelete, setIsCustomDelete] = useState<boolean>(false);
-  const [selectedSessionsToDelete, setSelectedSessionsToDelete] = useState<string[]>([]);
+  const [selectedSessionsToDelete, setSelectedSessionsToDelete] = useState<
+    string[]
+  >([]);
   const [allRecurrenceSessions, setAllRecurrenceSessions] = useState<any[]>([]);
 
   // Opções para o select de status
@@ -159,7 +178,7 @@ const Calendar: React.FC = () => {
     ([value, label]) => ({
       label,
       value: value.toString(),
-    })
+    }),
   );
 
   // Estados para horários de funcionamento por filial
@@ -201,12 +220,12 @@ const Calendar: React.FC = () => {
   // Função helper para construir string ISO sem conversão UTC
   const toLocalISOString = (date: Date): string => {
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
   };
 
@@ -224,7 +243,7 @@ const Calendar: React.FC = () => {
   // Função para calcular as próximas datas baseado em múltiplos dias da semana
   const getNextDatesForMultipleWeekdays = (
     daysOfWeek: string[],
-    count: number
+    count: number,
   ): Date[] => {
     const days = {
       "Segunda-Feira": 1,
@@ -256,7 +275,7 @@ const Calendar: React.FC = () => {
 
     while (sessionsCreated < count) {
       const targetDayNumber = selectedDayNumbers[dayIndex];
-      
+
       // Encontrar a próxima ocorrência do dia da semana desejado
       while (searchDate.getDay() !== targetDayNumber) {
         searchDate.setDate(searchDate.getDate() + 1);
@@ -301,14 +320,14 @@ const Calendar: React.FC = () => {
   };
 
   // Nova função para calcular datas baseado no tipo de recorrência
-  // Exemplo: 
+  // Exemplo:
   // - Semanal + Segunda,Quarta + 6 sessões = distribui 6 sessões em 3 semanas (2 por semana)
   // - Quinzenal + Segunda,Sexta + 6 sessões = distribui 6 sessões em 6 semanas (1 por semana a cada 2 semanas)
   // - Mensal + Terça + 5 sessões = distribui 5 sessões em 5 meses (1 por mês)
   const getNextDatesWithRecurrenceType = (
     daysOfWeek: string[],
     count: number,
-    recurrenceType: string
+    recurrenceType: string,
   ): Date[] => {
     const days = {
       "Segunda-Feira": 1,
@@ -336,12 +355,13 @@ const Calendar: React.FC = () => {
 
     // Definir o intervalo baseado no tipo de recorrência
     const intervals = {
-      semanal: 1,      // A cada 1 semana
-      quinzenal: 2,    // A cada 2 semanas
-      mensal: 4        // A cada 4 semanas
+      semanal: 1, // A cada 1 semana
+      quinzenal: 2, // A cada 2 semanas
+      mensal: 4, // A cada 4 semanas
     };
 
-    const weekInterval = intervals[recurrenceType as keyof typeof intervals] || 1;
+    const weekInterval =
+      intervals[recurrenceType as keyof typeof intervals] || 1;
     let currentWeek = 0;
     let sessionsCreated = 0;
 
@@ -353,11 +373,12 @@ const Calendar: React.FC = () => {
 
         // Calcular a data base desta semana (segunda-feira)
         const baseDate = new Date(today);
-        baseDate.setDate(baseDate.getDate() + (currentWeek * 7));
-        
+        baseDate.setDate(baseDate.getDate() + currentWeek * 7);
+
         // Encontrar o primeiro dia da semana (domingo = 0, segunda = 1, etc)
         const currentDayOfWeek = baseDate.getDay();
-        const daysUntilMonday = currentDayOfWeek === 0 ? 1 : (1 - currentDayOfWeek + 7) % 7;
+        const daysUntilMonday =
+          currentDayOfWeek === 0 ? 1 : (1 - currentDayOfWeek + 7) % 7;
         const monday = new Date(baseDate);
         monday.setDate(monday.getDate() + daysUntilMonday);
 
@@ -376,7 +397,9 @@ const Calendar: React.FC = () => {
           targetDate.toDateString() === today.toDateString() &&
           selectedHorarioRecorrente
         ) {
-          const [hours, minutes] = selectedHorarioRecorrente.split(":").map(Number);
+          const [hours, minutes] = selectedHorarioRecorrente
+            .split(":")
+            .map(Number);
           const targetTime = new Date(today);
           targetTime.setHours(hours, minutes, 0, 0);
 
@@ -401,7 +424,7 @@ const Calendar: React.FC = () => {
   // Função para buscar sessões futuras de um cliente e fisioterapeuta específicos
   const getFutureSessionsByClientAndPhysiotherapist = (
     clienteId: string,
-    funcionarioId: string
+    funcionarioId: string,
   ): any[] => {
     if (!schedules || !clienteId || !funcionarioId) return [];
 
@@ -443,7 +466,7 @@ const Calendar: React.FC = () => {
       // Buscar todas as sessões futuras do cliente e fisioterapeuta
       const futureSessions = getFutureSessionsByClientAndPhysiotherapist(
         selectedCliente,
-        modalFuncionario
+        modalFuncionario,
       );
 
       if (futureSessions.length === 0) {
@@ -468,25 +491,14 @@ const Calendar: React.FC = () => {
         [endHours, endMinutes] = horarioFinalRecorrente.split(":").map(Number);
       }
 
-      console.log("Horários extraídos dos campos:", {
-        eventStartDate,
-        eventEndDate,
-        startHours,
-        startMinutes,
-        endHours,
-        endMinutes,
-        horarioFinalRecorrente,
-      });
-
       // Se há dias da semana selecionados, gerar novas datas baseadas na recorrência
       // Caso contrário, manter as datas existentes e apenas atualizar os horários
       let updatedSessions;
       if (selectedDiasSemana && selectedDiasSemana.length > 0) {
-        console.log("Entrando no caminho: NOVA RECORRÊNCIA com dias da semana");
         // Gerar novas datas baseadas na nova recorrência
         const newDates = getNextDatesForMultipleWeekdays(
           selectedDiasSemana,
-          sessionsToUpdate.length
+          sessionsToUpdate.length,
         );
 
         if (newDates.length === 0) {
@@ -506,23 +518,12 @@ const Calendar: React.FC = () => {
             const endDateTime = new Date(newDate);
             endDateTime.setHours(endHours, endMinutes, 0, 0);
 
-            console.log(`Sessão ${index + 1} - Nova recorrência:`, {
-              originalDate: session.dataInicio,
-              newDate: newDate.toISOString(),
-              startDateTime: startDateTime.toISOString(),
-              endDateTime: endDateTime.toISOString(),
-              startHours,
-              startMinutes,
-              endHours,
-              endMinutes,
-            });
-
             // Atualizar os campos dataInicio e dataFim no objeto session
             // Combinar a NOVA data com os horários extraídos dos campos
-            const newDateOnly = newDate.toISOString().split('T')[0]; // Apenas a data (YYYY-MM-DD)
-            const startTimeFormatted = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}:00`;
-            const endTimeFormatted = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:00`;
-            
+            const newDateOnly = newDate.toISOString().split("T")[0]; // Apenas a data (YYYY-MM-DD)
+            const startTimeFormatted = `${startHours.toString().padStart(2, "0")}:${startMinutes.toString().padStart(2, "0")}:00`;
+            const endTimeFormatted = `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}:00`;
+
             const dataInicioFinal = `${newDateOnly}T${startTimeFormatted}`;
             const dataFimFinal = `${newDateOnly}T${endTimeFormatted}`;
 
@@ -533,59 +534,41 @@ const Calendar: React.FC = () => {
             };
 
             return updatedSession;
-          }
+          },
         );
       } else {
-        console.log("Entrando no caminho: APENAS ATUALIZAR HORÁRIOS");
         // Apenas atualizar os horários nas datas existentes
-        updatedSessions = sessionsToUpdate.map(
-          (session: any, index: number) => {
-            const existingDate = new Date(session.dataInicio);
+        updatedSessions = sessionsToUpdate.map((session: any) => {
+          const existingDate = new Date(session.dataInicio);
 
-            const startDateTime = new Date(existingDate);
-            startDateTime.setHours(startHours, startMinutes, 0, 0);
+          const startDateTime = new Date(existingDate);
+          startDateTime.setHours(startHours, startMinutes, 0, 0);
 
-            const endDateTime = new Date(existingDate);
-            endDateTime.setHours(endHours, endMinutes, 0, 0);
+          const endDateTime = new Date(existingDate);
+          endDateTime.setHours(endHours, endMinutes, 0, 0);
 
-            console.log(`Sessão ${index + 1} - Apenas horários:`, {
-              originalDate: session.dataInicio,
-              existingDate: existingDate.toISOString(),
-              startDateTime: startDateTime.toISOString(),
-              endDateTime: endDateTime.toISOString(),
-            });
+          // Atualizar os campos dataInicio e dataFim no objeto session
+          // Combinar a data EXISTENTE com os horários extraídos dos campos
+          const existingDateOnly = existingDate.toISOString().split("T")[0]; // Apenas a data (YYYY-MM-DD)
+          const startTimeFormatted = `${startHours.toString().padStart(2, "0")}:${startMinutes.toString().padStart(2, "0")}:00`;
+          const endTimeFormatted = `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}:00`;
 
-            // Atualizar os campos dataInicio e dataFim no objeto session
-            // Combinar a data EXISTENTE com os horários extraídos dos campos
-            const existingDateOnly = existingDate.toISOString().split('T')[0]; // Apenas a data (YYYY-MM-DD)
-            const startTimeFormatted = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}:00`;
-            const endTimeFormatted = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}:00`;
-            
-            const dataInicioFinal = `${existingDateOnly}T${startTimeFormatted}`;
-            const dataFimFinal = `${existingDateOnly}T${endTimeFormatted}`;
+          const dataInicioFinal = `${existingDateOnly}T${startTimeFormatted}`;
+          const dataFimFinal = `${existingDateOnly}T${endTimeFormatted}`;
 
-            const updatedSession = {
-              ...session,
-              dataInicio: dataInicioFinal,
-              dataFim: dataFimFinal,
-            };
+          const updatedSession = {
+            ...session,
+            dataInicio: dataInicioFinal,
+            dataFim: dataFimFinal,
+          };
 
-            return updatedSession;
-          }
-        );
+          return updatedSession;
+        });
       }
 
       // Atualizar cada sessão
       const updatePromises = updatedSessions.map(
         (session: any, index: number) => {
-          console.log("Dados da sessão antes do PUT:", {
-            sessionId: session.id,
-            dataInicioAtualizada: session.dataInicio,
-            dataFimAtualizada: session.dataFim,
-            eventStartDate,
-            eventEndDate,
-          });
-
           return putScheduleAsync({
             id: session.id,
             titulo: session.titulo, // Manter o título original da sessão
@@ -603,7 +586,7 @@ const Calendar: React.FC = () => {
             funcionarioId: modalFuncionario,
             filialId: modalFilial,
           });
-        }
+        },
       );
 
       // Aguardar todas as atualizações serem concluídas
@@ -611,7 +594,7 @@ const Calendar: React.FC = () => {
 
       // Verificar se todas as atualizações foram bem-sucedidas
       const successfulUpdates = results.filter(
-        (result) => result?.status === 200
+        (result) => result?.status === 200,
       );
 
       if (successfulUpdates.length === sessionsToUpdate.length) {
@@ -619,7 +602,7 @@ const Calendar: React.FC = () => {
           `${sessionsToUpdate.length} sessões atualizadas com sucesso!`,
           {
             duration: 3000,
-          }
+          },
         );
         // Refetch apenas após todas as atualizações serem concluídas com sucesso
         await refetchCalendar();
@@ -628,26 +611,31 @@ const Calendar: React.FC = () => {
           `Apenas ${successfulUpdates.length} de ${sessionsToUpdate.length} sessões foram atualizadas.`,
           {
             duration: 3000,
-          }
+          },
         );
         // Refetch mesmo com falhas parciais para mostrar o estado atual
         await refetchCalendar();
       }
     } catch (error: any) {
       console.error("Erro ao atualizar recorrência:", error);
-      
+
       // Tratar erro 409 (Conflito - cliente já possui agendamento neste horário)
-      let errorMessage = "Erro ao atualizar algumas sessões. Verifique o calendário.";
+      let errorMessage =
+        "Erro ao atualizar algumas sessões. Verifique o calendário.";
       if (error?.response?.status === 409) {
-        if (Array.isArray(error?.response?.data) && error.response.data.length > 0) {
+        if (
+          Array.isArray(error?.response?.data) &&
+          error.response.data.length > 0
+        ) {
           errorMessage = error.response.data[0];
         } else if (error?.response?.data?.message) {
           errorMessage = error.response.data.message;
         } else {
-          errorMessage = "Cliente já possui um agendamento em um dos horários selecionados";
+          errorMessage =
+            "Cliente já possui um agendamento em um dos horários selecionados";
         }
       }
-      
+
       toast.error(errorMessage, {
         duration: 4000,
       });
@@ -671,10 +659,10 @@ const Calendar: React.FC = () => {
     const dates = getNextDatesWithRecurrenceType(
       selectedDiasSemana,
       qtdSessoes,
-      tipoRecorrencia
+      tipoRecorrencia,
     );
     const [hours, minutes] = selectedHorarioRecorrente.split(":").map(Number);
-    
+
     // Processar horário final
     let endHours = hours + 1;
     let endMinutes = minutes;
@@ -682,7 +670,6 @@ const Calendar: React.FC = () => {
       [endHours, endMinutes] = horarioFinalRecorrente.split(":").map(Number);
     }
 
-    
     const schedulePromises = dates.map((date: Date, index: number) => {
       const startDateTime = new Date(date);
       startDateTime.setHours(hours, minutes, 0, 0);
@@ -714,7 +701,7 @@ const Calendar: React.FC = () => {
 
       // Verificar se todas as criações foram bem-sucedidas
       const successfulCreations = results.filter(
-        (result) => result?.status === 200
+        (result) => result?.status === 200,
       );
 
       if (successfulCreations.length === qtdSessoes) {
@@ -722,7 +709,7 @@ const Calendar: React.FC = () => {
           `${qtdSessoes} agendamentos recorrentes criados com sucesso!`,
           {
             duration: 3000,
-          }
+          },
         );
         // Refetch apenas após todas as criações serem concluídas com sucesso
         await refetchCalendar();
@@ -731,26 +718,31 @@ const Calendar: React.FC = () => {
           `Apenas ${successfulCreations.length} de ${qtdSessoes} agendamentos foram criados.`,
           {
             duration: 3000,
-          }
+          },
         );
         // Refetch mesmo com falhas parciais para mostrar o estado atual
         await refetchCalendar();
       }
     } catch (error: any) {
       console.error("Erro ao criar agendamentos recorrentes:", error);
-      
+
       // Tratar erro 409 (Conflito - cliente já possui agendamento neste horário)
-      let errorMessage = "Erro ao criar alguns agendamentos. Verifique o calendário.";
+      let errorMessage =
+        "Erro ao criar alguns agendamentos. Verifique o calendário.";
       if (error?.response?.status === 409) {
-        if (Array.isArray(error?.response?.data) && error.response.data.length > 0) {
+        if (
+          Array.isArray(error?.response?.data) &&
+          error.response.data.length > 0
+        ) {
           errorMessage = error.response.data[0];
         } else if (error?.response?.data?.message) {
           errorMessage = error.response.data.message;
         } else {
-          errorMessage = "Cliente já possui um agendamento em um dos horários selecionados";
+          errorMessage =
+            "Cliente já possui um agendamento em um dos horários selecionados";
         }
       }
-      
+
       toast.error(errorMessage, {
         duration: 4000,
       });
@@ -763,7 +755,7 @@ const Calendar: React.FC = () => {
     isLoading,
     data: schedules,
     refetch: refetchCalendar,
-    isError: isErrorSchedules
+    isError: isErrorSchedules,
   } = useQuery({
     queryKey: ["schedules", filter],
     queryFn: () => getAllSchedulesAsync(filter),
@@ -799,10 +791,12 @@ const Calendar: React.FC = () => {
 
   useEffect(() => {
     // Garantir que todos os dados sejam arrays
-    const funcionariosArray = Array.isArray(funcionariosData) ? funcionariosData : [];
+    const funcionariosArray = Array.isArray(funcionariosData)
+      ? funcionariosData
+      : [];
     const clientesArray = Array.isArray(clientesData) ? clientesData : [];
     const filiaisArray = Array.isArray(filiaisData) ? filiaisData : [];
-    
+
     // Cria o map de id do funcionário para cor
     const funcionarioColorMap = funcionariosArray.reduce(
       (acc: Record<string, string>, funcionario: any) => {
@@ -811,7 +805,7 @@ const Calendar: React.FC = () => {
         }
         return acc;
       },
-      {}
+      {},
     );
 
     if (schedules) {
@@ -819,20 +813,22 @@ const Calendar: React.FC = () => {
 
       // FILTRO CRÍTICO: Remover schedules desativados (soft delete)
       filteredSchedules = filteredSchedules.filter(
-        (schedule) => !schedule.dataDesativacao
+        (schedule) => !schedule.dataDesativacao,
       );
 
       // Aplicar filtros adicionais no frontend (caso o backend não filtre corretamente)
       if (filterCliente) {
         filteredSchedules = filteredSchedules.filter(
-          (schedule) => (schedule.clienteId === filterCliente || schedule.idCliente === filterCliente)
+          (schedule) =>
+            schedule.clienteId === filterCliente ||
+            schedule.idCliente === filterCliente,
         );
       }
 
       if (filterStatus) {
         const statusNumber = parseInt(filterStatus);
         filteredSchedules = filteredSchedules.filter(
-          (schedule) => schedule.status === statusNumber
+          (schedule) => schedule.status === statusNumber,
         );
       }
 
@@ -841,60 +837,84 @@ const Calendar: React.FC = () => {
 
       if (selectedFilial) {
         filteredSchedules = filteredSchedules.filter(
-          (schedule) => schedule.filialId === selectedFilial
+          (schedule) => schedule.filialId === selectedFilial,
         );
       }
 
       const formattedEvents = filteredSchedules.map((schedule) => {
         // Buscar nome do cliente
         const cliente = clientesArray.find(
-          (c: any) => c.id === (schedule.clienteId || schedule.idCliente)
+          (c: any) => c.id === (schedule.clienteId || schedule.idCliente),
         );
         // Buscar nome do funcionário
         const funcionario = funcionariosArray.find(
-          (f: any) => f.id === (schedule.funcionarioId || schedule.idFuncionario)
+          (f: any) =>
+            f.id === (schedule.funcionarioId || schedule.idFuncionario),
         );
         // Buscar nome da filial
         const filial = filiaisArray.find(
-          (f: any) => f.id === schedule.filialId
+          (f: any) => f.id === schedule.filialId,
         );
 
-        const funcionarioIdToUse = schedule.funcionarioId || schedule.idFuncionario;
+        const funcionarioIdToUse =
+          schedule.funcionarioId || schedule.idFuncionario;
         const corFuncionario =
           funcionarioIdToUse && funcionarioColorMap[funcionarioIdToUse]
             ? funcionarioColorMap[funcionarioIdToUse]
             : undefined;
-        
+
         // Processar as datas corretamente
         let eventStart: string | Date = schedule.dataInicio;
         let eventEnd: string | Date | undefined = schedule.dataFim;
-        
+
         // Para eventos allDay, o FullCalendar espera que a data final seja exclusiva
         if (schedule.diaTodo && schedule.dataInicio && schedule.dataFim) {
           const start = new Date(schedule.dataInicio);
           const end = new Date(schedule.dataFim);
-          
+
           // Normalizar as datas para comparação (ignorar hora)
-          const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-          const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-          
+          const startDate = new Date(
+            start.getFullYear(),
+            start.getMonth(),
+            start.getDate(),
+          );
+          const endDate = new Date(
+            end.getFullYear(),
+            end.getMonth(),
+            end.getDate(),
+          );
+
           // Se são do mesmo dia, não definir end
           if (startDate.getTime() === endDate.getTime()) {
             eventEnd = undefined;
           }
         }
-        
+
         // Para eventos com horário específico (não allDay)
         if (!schedule.diaTodo && schedule.dataFim) {
           const end = new Date(schedule.dataFim);
-          const start = schedule.dataInicio ? new Date(schedule.dataInicio) : null;
-          
+          const start = schedule.dataInicio
+            ? new Date(schedule.dataInicio)
+            : null;
+
           // Se termina à meia-noite exata e começou em outro dia
-          if (end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0) {
+          if (
+            end.getHours() === 0 &&
+            end.getMinutes() === 0 &&
+            end.getSeconds() === 0
+          ) {
             if (start) {
-              const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-              const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-              
+              const startDate = new Date(
+                start.getFullYear(),
+                start.getMonth(),
+                start.getDate(),
+              );
+              const endDate = new Date(
+                end.getFullYear(),
+                end.getMonth(),
+                end.getDate(),
+              );
+
               // Se são datas diferentes, o evento realmente passa pela meia-noite
               // Ajustar para 23:59 do dia anterior para não mostrar no dia seguinte
               if (startDate.getTime() !== endDate.getTime()) {
@@ -904,7 +924,7 @@ const Calendar: React.FC = () => {
             }
           }
         }
-        
+
         return {
           id: schedule.id,
           title: schedule.titulo,
@@ -925,7 +945,16 @@ const Calendar: React.FC = () => {
       });
       setEvents(formattedEvents);
     }
-  }, [schedules, funcionariosData, clientesData, filiaisData, filterCliente, filterStatus, selectedFuncionario, selectedFilial]);
+  }, [
+    schedules,
+    funcionariosData,
+    clientesData,
+    filiaisData,
+    filterCliente,
+    filterStatus,
+    selectedFuncionario,
+    selectedFilial,
+  ]);
 
   useEffect(() => {
     if (filiaisData && Array.isArray(filiaisData)) {
@@ -933,7 +962,7 @@ const Calendar: React.FC = () => {
         filiaisData.map((item: any) => ({
           label: item.nomeFilial,
           value: item.id,
-        }))
+        })),
       );
     }
     if (clientesData && Array.isArray(clientesData)) {
@@ -943,7 +972,7 @@ const Calendar: React.FC = () => {
             label: item.nome,
             value: item.id,
           }))
-          .sort((a, b) => a.label.localeCompare(b.label))
+          .sort((a, b) => a.label.localeCompare(b.label)),
       );
     }
     if (funcionariosData && Array.isArray(funcionariosData)) {
@@ -951,7 +980,7 @@ const Calendar: React.FC = () => {
         funcionariosData.map((item: any) => ({
           label: item.nome,
           value: item.id,
-        }))
+        })),
       );
     }
   }, [filiaisData, clientesData, funcionariosData]);
@@ -959,9 +988,12 @@ const Calendar: React.FC = () => {
   // useEffect para exibir erros após 3 tentativas falharem
   useEffect(() => {
     if (isErrorSchedules) {
-      toast.error("Erro ao carregar agendamentos após 3 tentativas. Verifique sua conexão.", {
-        duration: 5000,
-      });
+      toast.error(
+        "Erro ao carregar agendamentos após 3 tentativas. Verifique sua conexão.",
+        {
+          duration: 5000,
+        },
+      );
     }
   }, [isErrorSchedules]);
 
@@ -1049,11 +1081,14 @@ const Calendar: React.FC = () => {
     },
     onError: (error: any) => {
       let message = "Erro ao criar evento. Tente novamente.";
-      
+
       // Tratar erro 409 (Conflito - cliente já possui agendamento neste horário)
       if (error?.response?.status === 409) {
         // Tentar extrair a mensagem do array retornado pela API
-        if (Array.isArray(error?.response?.data) && error.response.data.length > 0) {
+        if (
+          Array.isArray(error?.response?.data) &&
+          error.response.data.length > 0
+        ) {
           message = error.response.data[0];
         } else if (error?.response?.data?.message) {
           message = error.response.data.message;
@@ -1065,7 +1100,7 @@ const Calendar: React.FC = () => {
       } else if (error?.message) {
         message = error.message;
       }
-      
+
       toast.error(message, {
         duration: 4000,
       });
@@ -1096,11 +1131,14 @@ const Calendar: React.FC = () => {
     },
     onError: (error: any) => {
       let message = "Erro ao atualizar evento. Tente novamente.";
-      
+
       // Tratar erro 409 (Conflito - cliente já possui agendamento neste horário)
       if (error?.response?.status === 409) {
         // Tentar extrair a mensagem do array retornado pela API
-        if (Array.isArray(error?.response?.data) && error.response.data.length > 0) {
+        if (
+          Array.isArray(error?.response?.data) &&
+          error.response.data.length > 0
+        ) {
           message = error.response.data[0];
         } else if (error?.response?.data?.message) {
           message = error.response.data.message;
@@ -1112,7 +1150,7 @@ const Calendar: React.FC = () => {
       } else if (error?.message) {
         message = error.message;
       }
-      
+
       toast.error(message, {
         duration: 4000,
       });
@@ -1140,28 +1178,30 @@ const Calendar: React.FC = () => {
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     resetModalFields();
-    
+
     // Converter as datas para o formato compatível com datetime-local (YYYY-MM-DDTHH:mm)
     const startDate = new Date(selectInfo.start);
-    const endDate = selectInfo.end ? new Date(selectInfo.end) : new Date(selectInfo.start);
-    
+    const endDate = selectInfo.end
+      ? new Date(selectInfo.end)
+      : new Date(selectInfo.start);
+
     // Se for um clique em um dia (sem horário específico), definir horários padrão
     // FullCalendar retorna 00:00 quando clica em um dia no month view
     if (startDate.getHours() === 0 && startDate.getMinutes() === 0) {
       startDate.setHours(8, 0); // Início às 8h
-      endDate.setHours(9, 0);   // Fim às 9h
+      endDate.setHours(9, 0); // Fim às 9h
     }
-    
+
     // Formato YYYY-MM-DDTHH:mm para datetime-local
     const formatDateTimeLocal = (date: Date): string => {
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
-    
+
     setEventStartDate(formatDateTimeLocal(startDate));
     setEventEndDate(formatDateTimeLocal(endDate));
     openModal();
@@ -1172,8 +1212,8 @@ const Calendar: React.FC = () => {
     // Formatar datas para o padrão esperado pela API (YYYY-MM-DD)
     const formatDate = (date: Date): string => {
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     };
 
@@ -1185,7 +1225,7 @@ const Calendar: React.FC = () => {
       if (prev.data === dataInicio && prev.dataFim === dataFim) {
         return prev; // Não atualiza se as datas são as mesmas
       }
-       
+
       return {
         ...prev,
         data: dataInicio,
@@ -1203,15 +1243,15 @@ const Calendar: React.FC = () => {
     if (schedule) {
       // Salvar o schedule completo para usar no handleDeleteEvent
       setCurrentEventData(schedule);
-      
+
       setEventTitle(schedule.titulo || "");
       setEventDescription(schedule.descricao || "");
       setEventLocation(schedule.localizacao || "");
       setEventStartDate(
-        schedule.dataInicio ? toDatetimeLocalString(schedule.dataInicio) : ""
+        schedule.dataInicio ? toDatetimeLocalString(schedule.dataInicio) : "",
       );
       setEventEndDate(
-        schedule.dataFim ? toDatetimeLocalString(schedule.dataFim) : ""
+        schedule.dataFim ? toDatetimeLocalString(schedule.dataFim) : "",
       );
       setEventLevel("Primary");
       setSelectedCliente(schedule.clienteId?.toString() || undefined);
@@ -1221,6 +1261,7 @@ const Calendar: React.FC = () => {
       setModalFilial(schedule.filialId?.toString() || undefined);
       setSelectedStatus(schedule.status || EScheduleStatus.AConfirmar);
       setIsChecked(!!schedule.diaTodo);
+      setIsAvaliacao(!!schedule.isAvaliacao);
 
       // Detectar se é parte de uma recorrência baseado na observação
       const isRecurrentSession =
@@ -1243,7 +1284,7 @@ const Calendar: React.FC = () => {
         // Buscar sessões futuras para determinar quantidade
         const futureSessions = getFutureSessionsByClientAndPhysiotherapist(
           schedule.clienteId,
-          schedule.funcionarioId
+          schedule.funcionarioId,
         );
         setQtdSessoes(futureSessions.length);
       } else {
@@ -1256,9 +1297,9 @@ const Calendar: React.FC = () => {
   const handleAddOrUpdateEvent = async () => {
     // Prevenir múltiplos cliques
     if (isSaving) return;
-    
+
     setIsSaving(true);
-    
+
     try {
       // Se for recorrência, usar a função específica
       if (isRecurrent && !selectedEvent) {
@@ -1270,7 +1311,7 @@ const Calendar: React.FC = () => {
         }
         if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
           toast.error(
-            "Selecione pelo menos um dia da semana para a recorrência."
+            "Selecione pelo menos um dia da semana para a recorrência.",
           );
           setIsSaving(false);
           return;
@@ -1306,7 +1347,7 @@ const Calendar: React.FC = () => {
         }
         if (!selectedDiasSemana || selectedDiasSemana.length === 0) {
           toast.error(
-            "Selecione pelo menos um dia da semana para a recorrência."
+            "Selecione pelo menos um dia da semana para a recorrência.",
           );
           setIsSaving(false);
           return;
@@ -1323,7 +1364,7 @@ const Calendar: React.FC = () => {
         }
         if (!selectedCliente || !modalFuncionario) {
           toast.error(
-            "Cliente e fisioterapeuta são obrigatórios para editar recorrência."
+            "Cliente e fisioterapeuta são obrigatórios para editar recorrência.",
           );
           setIsSaving(false);
           return;
@@ -1355,6 +1396,7 @@ const Calendar: React.FC = () => {
           clienteId: selectedCliente,
           funcionarioId: modalFuncionario,
           filialId: modalFilial,
+          isAvaliacao: isAvaliacao,
         });
       } else {
         await mutateAddEvent({
@@ -1370,6 +1412,7 @@ const Calendar: React.FC = () => {
           observacao: eventTitle,
           notificar: false,
           status: selectedStatus,
+          isAvaliacao: isAvaliacao,
         });
       }
     } catch (error) {
@@ -1381,14 +1424,14 @@ const Calendar: React.FC = () => {
   const handleDeleteEvent = async () => {
     if (selectedEvent && selectedEvent.id) {
       setIdDeleteRegister(selectedEvent.id);
-      
+
       // Usar currentEventData que já foi setado no handleEventClick
       // Em vez de buscar novamente, pois na visão semanal/diária pode não ter todos os dados
       const isRecurrentSession =
         currentEventData?.observacao?.includes("Agendamento recorrente") ||
         currentEventData?.observacao?.includes("Recorrência atualizada") ||
         currentEventData?.titulo?.includes("Sessão");
-      
+
       if (isRecurrentSession) {
         // Buscar todas as sessões da recorrência para exibir na tabela
         try {
@@ -1398,27 +1441,32 @@ const Calendar: React.FC = () => {
           };
 
           const allSchedules = await getAllSchedulesAsync(filterAllSessions);
-          
+
           // Extrair o prefixo do título para identificar a recorrência específica
-          const currentTituloBase = currentEventData.titulo?.split(" - Sessão")[0] || currentEventData.titulo;
-          
+          const currentTituloBase =
+            currentEventData.titulo?.split(" - Sessão")[0] ||
+            currentEventData.titulo;
+
           // Filtrar apenas as sessões recorrentes DESTE GRUPO ESPECÍFICO
           const allSessions = allSchedules.filter((schedule: any) => {
-            const isRecurrent = 
+            const isRecurrent =
               schedule.observacao?.includes("Agendamento recorrente") ||
               schedule.observacao?.includes("Recorrência atualizada") ||
               schedule.titulo?.includes("Sessão");
-            
+
             if (!isRecurrent) return false;
-            
+
             // Verificar se pertence à mesma recorrência comparando o prefixo do título
-            const scheduleTituloBase = schedule.titulo?.split(" - Sessão")[0] || schedule.titulo;
+            const scheduleTituloBase =
+              schedule.titulo?.split(" - Sessão")[0] || schedule.titulo;
             return scheduleTituloBase === currentTituloBase;
           });
 
           // Ordenar por data
-          allSessions.sort((a: any, b: any) => 
-            new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime()
+          allSessions.sort(
+            (a: any, b: any) =>
+              new Date(a.dataInicio).getTime() -
+              new Date(b.dataInicio).getTime(),
           );
 
           setAllRecurrenceSessions(allSessions);
@@ -1426,7 +1474,7 @@ const Calendar: React.FC = () => {
           console.error("Erro ao buscar sessões da recorrência:", error);
           toast.error("Erro ao carregar sessões da recorrência");
         }
-        
+
         // Se for recorrente, abrir modal de opções de exclusão
         openModalDeleteRecurrence();
       } else {
@@ -1489,21 +1537,24 @@ const Calendar: React.FC = () => {
       };
 
       const allSchedules = await getAllSchedulesAsync(filterAllSessions);
-      
+
       // Extrair o prefixo do título (antes de " - Sessão") para identificar a recorrência específica
-      const currentTituloBase = currentEventData.titulo?.split(" - Sessão")[0] || currentEventData.titulo;
-      
+      const currentTituloBase =
+        currentEventData.titulo?.split(" - Sessão")[0] ||
+        currentEventData.titulo;
+
       // Filtrar apenas as sessões recorrentes DESTE GRUPO ESPECÍFICO
       const allSessions = allSchedules.filter((schedule: any) => {
-        const isRecurrent = 
+        const isRecurrent =
           schedule.observacao?.includes("Agendamento recorrente") ||
           schedule.observacao?.includes("Recorrência atualizada") ||
           schedule.titulo?.includes("Sessão");
-        
+
         if (!isRecurrent) return false;
-        
+
         // Verificar se pertence à mesma recorrência comparando o prefixo do título
-        const scheduleTituloBase = schedule.titulo?.split(" - Sessão")[0] || schedule.titulo;
+        const scheduleTituloBase =
+          schedule.titulo?.split(" - Sessão")[0] || schedule.titulo;
         return scheduleTituloBase === currentTituloBase;
       });
 
@@ -1513,17 +1564,23 @@ const Calendar: React.FC = () => {
       }
 
       // Deletar todas as sessões da recorrência
-      const deletePromises = allSessions.map((session: any) => 
-        disableScheduleAsync(session.id)
+      const deletePromises = allSessions.map((session: any) =>
+        disableScheduleAsync(session.id),
       );
 
       const results = await Promise.all(deletePromises);
-      const successfulDeletes = results.filter((result) => result?.status === 200);
+      const successfulDeletes = results.filter(
+        (result) => result?.status === 200,
+      );
 
       if (successfulDeletes.length === allSessions.length) {
-        toast.success(`${allSessions.length} sessões da recorrência excluídas com sucesso!`);
+        toast.success(
+          `${allSessions.length} sessões da recorrência excluídas com sucesso!`,
+        );
       } else {
-        toast.error(`Apenas ${successfulDeletes.length} de ${allSessions.length} sessões foram excluídas.`);
+        toast.error(
+          `Apenas ${successfulDeletes.length} de ${allSessions.length} sessões foram excluídas.`,
+        );
       }
 
       // Invalidar todas as queries de schedules para limpar cache de todas as datas
@@ -1553,17 +1610,23 @@ const Calendar: React.FC = () => {
 
     try {
       // Deletar apenas as sessões selecionadas
-      const deletePromises = selectedSessionsToDelete.map((sessionId: string) => 
-        disableScheduleAsync(sessionId)
+      const deletePromises = selectedSessionsToDelete.map((sessionId: string) =>
+        disableScheduleAsync(sessionId),
       );
 
       const results = await Promise.all(deletePromises);
-      const successfulDeletes = results.filter((result) => result?.status === 200);
+      const successfulDeletes = results.filter(
+        (result) => result?.status === 200,
+      );
 
       if (successfulDeletes.length === selectedSessionsToDelete.length) {
-        toast.success(`${selectedSessionsToDelete.length} sessões excluídas com sucesso!`);
+        toast.success(
+          `${selectedSessionsToDelete.length} sessões excluídas com sucesso!`,
+        );
       } else {
-        toast.error(`Apenas ${successfulDeletes.length} de ${selectedSessionsToDelete.length} sessões foram excluídas.`);
+        toast.error(
+          `Apenas ${successfulDeletes.length} de ${selectedSessionsToDelete.length} sessões foram excluídas.`,
+        );
       }
 
       // Invalidar todas as queries de schedules para limpar cache de todas as datas
@@ -1587,7 +1650,9 @@ const Calendar: React.FC = () => {
       setSelectedSessionsToDelete([]);
     } else {
       // Senão, selecionar todas
-      setSelectedSessionsToDelete(allRecurrenceSessions.map((session) => session.id));
+      setSelectedSessionsToDelete(
+        allRecurrenceSessions.map((session) => session.id),
+      );
     }
   };
 
@@ -1615,6 +1680,7 @@ const Calendar: React.FC = () => {
     setModalFilial(undefined);
     setSelectedStatus(EScheduleStatus.AConfirmar);
     setIsChecked(false);
+    setIsAvaliacao(false);
 
     setIsRecurrent(false);
     setTipoRecorrencia("semanal");
@@ -1622,12 +1688,12 @@ const Calendar: React.FC = () => {
     setSelectedHorarioRecorrente("");
     setQtdSessoes(1);
     setIsEditingRecurrence(false);
-    
+
     // Reset dos novos estados
     setCurrentEventData(null);
     setIdDeleteRegister("");
     setSelectedClienteData(null);
-    
+
     // Reset dos estados de exclusão personalizada
     setIsCustomDelete(false);
     setSelectedSessionsToDelete([]);
@@ -1680,8 +1746,14 @@ const Calendar: React.FC = () => {
     // Define cor do texto baseada no fundo
     const textColor = isLightColor(cor) ? "#000000" : "#ffffff";
 
-    const { cliente, clienteTelefone, funcionario, filial, observacao, status } =
-      eventInfo.event.extendedProps;
+    const {
+      cliente,
+      clienteTelefone,
+      funcionario,
+      filial,
+      observacao,
+      status,
+    } = eventInfo.event.extendedProps;
 
     // Função para truncar o nome do cliente
     const truncateText = (text: string, maxLength: number = 15) => {
@@ -1715,7 +1787,9 @@ const Calendar: React.FC = () => {
           {eventInfo.timeText}
         </div>
         <div className="fc-event-title" style={{ color: textColor }}>
-          {truncateText(cliente === "Não informado" ? eventInfo.event.title : cliente)}
+          {truncateText(
+            cliente === "Não informado" ? eventInfo.event.title : cliente,
+          )}
         </div>
 
         {/* Tooltip personalizado */}
@@ -1788,12 +1862,12 @@ const Calendar: React.FC = () => {
         ...prev,
         idFuncionario: selectedFuncionario || undefined,
       };
-      
+
       // Só atualiza se realmente mudou
       if (JSON.stringify(prev) === JSON.stringify(newFilter)) {
         return prev;
       }
-      
+
       return newFilter;
     });
   }, [selectedFuncionario]);
@@ -1804,18 +1878,18 @@ const Calendar: React.FC = () => {
       // Só busca se estiver editando um evento, houver cliente selecionado E o accordion estiver aberto
       if (selectedEvent && selectedCliente && showCustomerDetails) {
         // Só faz a requisição se os dados ainda não foram carregados
-        if (!selectedClienteData || selectedClienteData.id !== selectedCliente) {
+        if (
+          !selectedClienteData ||
+          selectedClienteData.id !== selectedCliente
+        ) {
           try {
             setIsLoadingCustomerData(true);
             // Busca todos os clientes e filtra pelo ID
             const allClientes = await getAllCustomersAsync();
-            const clienteData = allClientes?.find(c => c.id === selectedCliente);
-            
-            console.log("Dados do cliente carregados:", clienteData);
-            console.log("Histórico:", clienteData?.historico);
-            console.log("Histórico length:", clienteData?.historico?.length);
-            console.log("Serviços:", clienteData?.servicos);
-            console.log("Serviços length:", clienteData?.servicos?.length);
+            const clienteData = allClientes?.find(
+              (c) => c.id === selectedCliente,
+            );
+
             setSelectedClienteData(clienteData || null);
           } catch (error) {
             console.error("Erro ao buscar dados do cliente:", error);
@@ -1850,8 +1924,6 @@ const Calendar: React.FC = () => {
           try {
             setIsLoadingHistorico(true);
             const sessoes = await getAllSessionsAsync(selectedCliente);
-            console.log("Sessões carregadas:", sessoes);
-            console.log("Total de sessões:", sessoes?.length);
             setSessoesData(sessoes);
           } catch (error) {
             console.error("Erro ao buscar sessões:", error);
@@ -1872,7 +1944,6 @@ const Calendar: React.FC = () => {
       try {
         setIsLoadingHistorico(true);
         const sessoes = await getAllSessionsAsync(selectedCliente);
-        console.log("Sessões recarregadas após check-in:", sessoes);
         setSessoesData(sessoes);
       } catch (error) {
         console.error("Erro ao recarregar sessões:", error);
@@ -1884,7 +1955,6 @@ const Calendar: React.FC = () => {
 
   // Função para recarregar lista de clientes após cadastro
   const handleReloadClientes = () => {
-    console.log("Recarregando lista de clientes...");
     queryClient.invalidateQueries({ queryKey: ["clientes"] });
   };
 
@@ -1894,7 +1964,7 @@ const Calendar: React.FC = () => {
         title="Sistema Instituto Barros - Agenda"
         description="Sistema Instituto Barros - Página para gerenciamento de Agenda"
       />
-      
+
       {/* Header com Título e Botão Novo Evento */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <PageBreadcrumb pageTitle="Agenda" />
@@ -1904,8 +1974,19 @@ const Calendar: React.FC = () => {
           className="sm:hidden flex items-center justify-center w-10 h-10 text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-full transition-colors shadow-lg hover:shadow-xl"
           title="Novo Evento"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4v16m8-8H4"
+            />
           </svg>
         </button>
         {/* Botão com texto para desktop */}
@@ -1913,8 +1994,19 @@ const Calendar: React.FC = () => {
           onClick={handleOpenModal}
           className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors shadow-sm"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
           </svg>
           <span>Novo Evento</span>
         </button>
@@ -1926,11 +2018,27 @@ const Calendar: React.FC = () => {
           {/* Header dos Filtros com Toggle */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-gray-600 dark:text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
               </svg>
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Filtros</h3>
-              {(selectedFilial || selectedFuncionario || filterCliente || filterStatus) && (
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                Filtros
+              </h3>
+              {(selectedFilial ||
+                selectedFuncionario ||
+                filterCliente ||
+                filterStatus) && (
                 <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full">
                   Ativos
                 </span>
@@ -1940,15 +2048,28 @@ const Calendar: React.FC = () => {
               onClick={() => setShowFilters(!showFilters)}
               className="lg:hidden flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
             >
-              {showFilters ? 'Ocultar' : 'Mostrar'}
-              <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              {showFilters ? "Ocultar" : "Mostrar"}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-4 w-4 transition-transform ${showFilters ? "rotate-180" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
           </div>
 
           {/* Grid de Filtros */}
-          <div className={`${showFilters ? 'grid' : 'hidden'} lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4`}>
+          <div
+            className={`${showFilters ? "grid" : "hidden"} lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4`}
+          >
             {/* Filtro Filial */}
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-medium text-gray-600 dark:text-gray-400">
@@ -1972,7 +2093,10 @@ const Calendar: React.FC = () => {
                   Fisioterapeuta
                 </Label>
                 <Select
-                  options={[{ label: "Todos", value: "" }, ...optionsFuncionario]}
+                  options={[
+                    { label: "Todos", value: "" },
+                    ...optionsFuncionario,
+                  ]}
                   value={selectedFuncionario || ""}
                   placeholder="Selecione o fisioterapeuta"
                   onChange={(value) =>
@@ -2017,8 +2141,13 @@ const Calendar: React.FC = () => {
           </div>
 
           {/* Botão Limpar Filtros */}
-          {(selectedFilial || selectedFuncionario || filterCliente || filterStatus) && (
-            <div className={`${showFilters ? 'block' : 'hidden'} lg:block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700`}>
+          {(selectedFilial ||
+            selectedFuncionario ||
+            filterCliente ||
+            filterStatus) && (
+            <div
+              className={`${showFilters ? "block" : "hidden"} lg:block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700`}
+            >
               <button
                 onClick={() => {
                   setSelectedFilial(undefined);
@@ -2028,8 +2157,19 @@ const Calendar: React.FC = () => {
                 }}
                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
                 Limpar filtros
               </button>
@@ -2070,9 +2210,9 @@ const Calendar: React.FC = () => {
               defaultAllDayEventDuration={{ days: 1 }}
               defaultTimedEventDuration="01:00"
               eventTimeFormat={{
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
               }}
             />
           </div>
@@ -2124,639 +2264,855 @@ const Calendar: React.FC = () => {
             <div className="mt-8">
               {/* Container com scroll para os campos do formulário */}
               <div className="custom-scrollbar h-[450px] sm:h-[500px] overflow-y-auto px-2 pb-3">
-                {/* Exibir dados do cliente quando em modo edição e houver cliente atrelado */}
-                {selectedEvent && selectedClienteData && (
-                  <CustomerInfoDisplay customer={selectedClienteData} />
-                )}
-                
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-3">
-                <div>
-                  <Label>
-                    Título Evento
-                    <span className="text-red-300">*</span>
-                  </Label>
-                  <input
-                    id="event-title"
-                    type="text"
-                    value={eventTitle}
-                    onChange={(e) => setEventTitle(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-                <div>
-                  <Label>Descrição</Label>
-                  <input
-                    id="event-description"
-                    type="text"
-                    value={eventDescription}
-                    onChange={(e) => setEventDescription(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-                <div>
-                  <Label>Localização</Label>
-                  <input
-                    id="event-location"
-                    type="text"
-                    value={eventLocation}
-                    onChange={(e) => setEventLocation(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-              </div>
-
-              {/* Campos de data/hora - ocultos quando recorrência está ativa */}
-              {(!isRecurrent || selectedEvent) && (
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-3">
                   <div>
                     <Label>
-                      Data & Hora Início
+                      Título Evento
                       <span className="text-red-300">*</span>
                     </Label>
-                    <div className="relative">
-                      <input
-                        id="event-start-date"
-                        type="datetime-local"
-                        value={eventStartDate}
-                        onChange={(e) => setEventStartDate(e.target.value)}
-                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                      />
+                    <input
+                      id="event-title"
+                      type="text"
+                      value={eventTitle}
+                      onChange={(e) => setEventTitle(e.target.value)}
+                      className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    />
+                  </div>
+                  <div>
+                    <Label>Descrição</Label>
+                    <input
+                      id="event-description"
+                      type="text"
+                      value={eventDescription}
+                      onChange={(e) => setEventDescription(e.target.value)}
+                      className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    />
+                  </div>
+                  <div className="flex items-center mt-2">
+                    <input
+                      id="is-avaliacao"
+                      type="checkbox"
+                      checked={isAvaliacao}
+                      onChange={(e) => setIsAvaliacao(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900"
+                    />
+                    <Label htmlFor="is-avaliacao" className="ml-2 mb-0">
+                      É uma avaliação?
+                    </Label>
+                  </div>
+                  <div>
+                    <Label>Localização</Label>
+                    <input
+                      id="event-location"
+                      type="text"
+                      value={eventLocation}
+                      onChange={(e) => setEventLocation(e.target.value)}
+                      className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    />
+                  </div>
+                </div>
+
+                {/* Campos de data/hora - ocultos quando recorrência está ativa */}
+                {(!isRecurrent || selectedEvent) && (
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-3">
+                    <div>
+                      <Label>
+                        Data & Hora Início
+                        <span className="text-red-300">*</span>
+                      </Label>
+                      <div className="relative">
+                        <input
+                          id="event-start-date"
+                          type="datetime-local"
+                          value={eventStartDate}
+                          onChange={(e) => setEventStartDate(e.target.value)}
+                          className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>
+                        Data & Hora Fim
+                        <span className="text-red-300">*</span>
+                      </Label>
+                      <div className="relative">
+                        <input
+                          id="event-end-date"
+                          type="datetime-local"
+                          value={eventEndDate}
+                          onChange={(e) => setEventEndDate(e.target.value)}
+                          className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
+                  <div>
+                    <Label>Cliente</Label>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <SelectWithSearch
+                          options={optionsCliente}
+                          value={selectedCliente}
+                          placeholder="Buscar cliente..."
+                          onChange={(value) =>
+                            setSelectedCliente(value === "" ? undefined : value)
+                          }
+                          className="dark:bg-dark-900"
+                          isClearable={true}
+                          noOptionsMessage="Nenhum cliente encontrado"
+                        />
+                      </div>
+                      <button
+                        onClick={openModalNewCustomer}
+                        type="button"
+                        className="flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+                        title="Cadastrar novo cliente"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 4v16m8-8H4"
+                          />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                   <div>
-                    <Label>
-                      Data & Hora Fim
+                    <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                      Fisioterapeuta
+                    </Label>
+                    <Select
+                      options={optionsFuncionario}
+                      value={modalFuncionario}
+                      placeholder="Selecione um fisioterapeuta"
+                      onChange={(value) =>
+                        setModalFuncionario(value === "" ? undefined : value)
+                      }
+                      className="dark:bg-dark-900"
+                    />
+                  </div>
+                  <div>
+                    <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                      Unidade / Filial
+                    </Label>
+                    <Select
+                      options={optionsFilial}
+                      value={modalFilial}
+                      placeholder="Selecione uma filial"
+                      onChange={(value) =>
+                        setModalFilial(value === "" ? undefined : value)
+                      }
+                      className="dark:bg-dark-900"
+                    />
+                  </div>
+                  <div>
+                    <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                      Status do Agendamento{" "}
                       <span className="text-red-300">*</span>
                     </Label>
-                    <div className="relative">
-                      <input
-                        id="event-end-date"
-                        type="datetime-local"
-                        value={eventEndDate}
-                        onChange={(e) => setEventEndDate(e.target.value)}
-                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                      />
-                    </div>
+                    <Select
+                      options={statusOptions}
+                      value={selectedStatus.toString()}
+                      placeholder="Selecione o status"
+                      onChange={(value) => setSelectedStatus(parseInt(value))}
+                      className="dark:bg-dark-900"
+                    />
                   </div>
                 </div>
-              )}
-              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
-                <div>
-                  <Label>Cliente</Label>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <SelectWithSearch
-                        options={optionsCliente}
-                        value={selectedCliente}
-                        placeholder="Buscar cliente..."
-                        onChange={(value) =>
-                          setSelectedCliente(value === "" ? undefined : value)
-                        }
-                        className="dark:bg-dark-900"
-                        isClearable={true}
-                        noOptionsMessage="Nenhum cliente encontrado"
-                      />
-                    </div>
-                    <button
-                      onClick={openModalNewCustomer}
-                      type="button"
-                      className="flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
-                      title="Cadastrar novo cliente"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Fisioterapeuta
-                  </Label>
-                  <Select
-                    options={optionsFuncionario}
-                    value={modalFuncionario}
-                    placeholder="Selecione um fisioterapeuta"
-                    onChange={(value) =>
-                      setModalFuncionario(value === "" ? undefined : value)
-                    }
-                    className="dark:bg-dark-900"
-                  />
-                </div>
-                <div>
-                  <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Unidade / Filial
-                  </Label>
-                  <Select
-                    options={optionsFilial}
-                    value={modalFilial}
-                    placeholder="Selecione uma filial"
-                    onChange={(value) =>
-                      setModalFilial(value === "" ? undefined : value)
-                    }
-                    className="dark:bg-dark-900"
-                  />
-                </div>
-                <div>
-                  <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Status do Agendamento{" "}
-                    <span className="text-red-300">*</span>
-                  </Label>
-                  <Select
-                    options={statusOptions}
-                    value={selectedStatus.toString()}
-                    placeholder="Selecione o status"
-                    onChange={(value) => setSelectedStatus(parseInt(value))}
-                    className="dark:bg-dark-900"
-                  />
-                </div>
-              </div>
 
-              {/* Checkbox para recorrência - apenas para novos eventos ou edição de recorrência */}
-              {(!selectedEvent || isEditingRecurrence) && (
-                <div className="mb-5">
+                {/* Checkbox para recorrência - apenas para novos eventos ou edição de recorrência */}
+                {(!selectedEvent || isEditingRecurrence) && (
+                  <div className="mb-5">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={isRecurrent}
+                        onChange={setIsRecurrent}
+                      />
+                      <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
+                        {selectedEvent && isEditingRecurrence
+                          ? "Editar recorrência (alterará sessões futuras)"
+                          : "Criar agendamento recorrente"}
+                        {isRecurrent && (
+                          <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                            (Múltiplos agendamentos)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    {selectedEvent && isEditingRecurrence && (
+                      <p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
+                        ⚠️ Apenas sessões futuras (a partir de hoje) serão
+                        alteradas. Sessões passadas permanecerão inalteradas.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Configuração de recorrência */}
+                {isRecurrent && (
+                  <>
+                    <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <h6 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                        Configuração de Recorrência
+                      </h6>
+                      {qtdSessoes > 0 &&
+                        selectedDiasSemana &&
+                        selectedDiasSemana.length > 0 && (
+                          <p className="text-sm text-blue-800 dark:text-blue-200">
+                            <strong>Informação:</strong> Serão criados{" "}
+                            {qtdSessoes} agendamentos com recorrência{" "}
+                            <strong>{tipoRecorrencia}</strong> alternando entre:{" "}
+                            {selectedDiasSemana
+                              .map((dia) => dia.toLowerCase())
+                              .join(", ")}
+                            {selectedHorarioRecorrente &&
+                              horarioFinalRecorrente &&
+                              ` das ${selectedHorarioRecorrente} às ${horarioFinalRecorrente}`}
+                            {selectedHorarioRecorrente &&
+                              !horarioFinalRecorrente &&
+                              ` às ${selectedHorarioRecorrente}`}
+                            .
+                          </p>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
+                      <div>
+                        <Label>
+                          Tipo de Recorrência
+                          <span className="text-red-300">*</span>
+                        </Label>
+                        <Select
+                          options={[
+                            { label: "Semanal", value: "semanal" },
+                            { label: "Quinzenal", value: "quinzenal" },
+                            { label: "Mensal", value: "mensal" },
+                          ]}
+                          value={tipoRecorrencia}
+                          onChange={(value) => setTipoRecorrencia(value)}
+                          placeholder="Selecione o tipo"
+                          className="dark:bg-dark-900"
+                        />
+                      </div>
+                      <div>
+                        <MultiSelect
+                          label="Dias da semana*"
+                          options={[
+                            { text: "Segunda-Feira", value: "Segunda-Feira" },
+                            { text: "Terça-Feira", value: "Terça-Feira" },
+                            { text: "Quarta-Feira", value: "Quarta-Feira" },
+                            { text: "Quinta-Feira", value: "Quinta-Feira" },
+                            { text: "Sexta-Feira", value: "Sexta-Feira" },
+                            { text: "Sábado", value: "Sábado" },
+                            { text: "Domingo", value: "Domingo" },
+                          ]}
+                          defaultSelected={selectedDiasSemana}
+                          onChange={(selectedDays) => {
+                            setSelectedDiasSemana(selectedDays);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label>
+                          Horário<span className="text-red-300">*</span>
+                        </Label>
+                        <input
+                          type="time"
+                          value={selectedHorarioRecorrente}
+                          onChange={(e) =>
+                            setSelectedHorarioRecorrente(e.target.value)
+                          }
+                          className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                        />
+                      </div>
+                      <div>
+                        <Label>
+                          Horário Final<span className="text-red-300">*</span>
+                        </Label>
+                        <input
+                          type="time"
+                          value={horarioFinalRecorrente}
+                          onChange={(e) =>
+                            setHorarioFinalRecorrente(e.target.value)
+                          }
+                          className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                        />
+                      </div>
+                      <div>
+                        <Label>
+                          Qtd. Sessões<span className="text-red-300">*</span>
+                        </Label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="52"
+                          value={qtdSessoes}
+                          onChange={(e) =>
+                            setQtdSessoes(parseInt(e.target.value) || 1)
+                          }
+                          className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                          placeholder="Ex: 10"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <br></br>
+                {/* Checkbox "Dia todo" - oculto quando recorrência está ativa */}
+                {(!isRecurrent || selectedEvent) && (
                   <div className="flex items-center gap-3">
-                    <Checkbox checked={isRecurrent} onChange={setIsRecurrent} />
+                    <Checkbox checked={isChecked} onChange={setIsChecked} />
                     <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
-                      {selectedEvent && isEditingRecurrence
-                        ? "Editar recorrência (alterará sessões futuras)"
-                        : "Criar agendamento recorrente"}
-                      {isRecurrent && (
-                        <span className="ml-2 text-xs text-green-600 dark:text-green-400">
-                          (Múltiplos agendamentos)
-                        </span>
-                      )}
+                      Dia todo
                     </span>
                   </div>
-                  {selectedEvent && isEditingRecurrence && (
-                    <p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
-                      ⚠️ Apenas sessões futuras (a partir de hoje) serão
-                      alteradas. Sessões passadas permanecerão inalteradas.
-                    </p>
-                  )}
-                </div>
-              )}
+                )}
 
-              {/* Configuração de recorrência */}
-              {isRecurrent && (
-                <>
-                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <h6 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-                      Configuração de Recorrência
-                    </h6>
-                    {qtdSessoes > 0 &&
-                      selectedDiasSemana &&
-                      selectedDiasSemana.length > 0 && (
-                        <p className="text-sm text-blue-800 dark:text-blue-200">
-                          <strong>Informação:</strong> Serão criados{" "}
-                          {qtdSessoes} agendamentos com recorrência{" "}
-                          <strong>{tipoRecorrencia}</strong> alternando entre:{" "}
-                          {selectedDiasSemana
-                            .map((dia) => dia.toLowerCase())
-                            .join(", ")}
-                          {selectedHorarioRecorrente && horarioFinalRecorrente &&
-                            ` das ${selectedHorarioRecorrente} às ${horarioFinalRecorrente}`}
-                          {selectedHorarioRecorrente && !horarioFinalRecorrente &&
-                            ` às ${selectedHorarioRecorrente}`}
-                          .
-                        </p>
-                      )}
-                  </div>
+                {/* Accordion de dados do paciente - só exibe quando está editando e tem cliente selecionado */}
+                {selectedEvent && selectedCliente && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() =>
+                        setShowCustomerDetails(!showCustomerDetails)
+                      }
+                      type="button"
+                      className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+                    >
+                      <span>Dados do Paciente</span>
+                      <svg
+                        className={`w-4 h-4 transform transition-transform ${showCustomerDetails ? "rotate-180" : ""}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
 
-                  <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
-                    <div>
-                      <Label>
-                        Tipo de Recorrência<span className="text-red-300">*</span>
-                      </Label>
-                      <Select
-                        options={[
-                          { label: "Semanal", value: "semanal" },
-                          { label: "Quinzenal", value: "quinzenal" },
-                          { label: "Mensal", value: "mensal" }
-                        ]}
-                        value={tipoRecorrencia}
-                        onChange={(value) => setTipoRecorrencia(value)}
-                        placeholder="Selecione o tipo"
-                        className="dark:bg-dark-900"
-                      />
-                    </div>
-                    <div>
-                      <MultiSelect
-                        label="Dias da semana*"
-                        options={[
-                          { text: "Segunda-Feira", value: "Segunda-Feira" },
-                          { text: "Terça-Feira", value: "Terça-Feira" },
-                          { text: "Quarta-Feira", value: "Quarta-Feira" },
-                          { text: "Quinta-Feira", value: "Quinta-Feira" },
-                          { text: "Sexta-Feira", value: "Sexta-Feira" },
-                          { text: "Sábado", value: "Sábado" },
-                          { text: "Domingo", value: "Domingo" },
-                        ]}
-                        defaultSelected={selectedDiasSemana}
-                        onChange={(selectedDays) => {
-                          setSelectedDiasSemana(selectedDays);
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <Label>
-                        Horário<span className="text-red-300">*</span>
-                      </Label>
-                      <input
-                        type="time"
-                        value={selectedHorarioRecorrente}
-                        onChange={(e) =>
-                          setSelectedHorarioRecorrente(e.target.value)
-                        }
-                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                      />
-                    </div>
-                    <div>
-                      <Label>
-                        Horário Final<span className="text-red-300">*</span>
-                      </Label>
-                      <input
-                        type="time"
-                        value={horarioFinalRecorrente}
-                        onChange={(e) =>
-                          setHorarioFinalRecorrente(e.target.value)
-                        }
-                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                      />
-                    </div>
-                    <div>
-                      <Label>
-                        Qtd. Sessões<span className="text-red-300">*</span>
-                      </Label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="52"
-                        value={qtdSessoes}
-                        onChange={(e) =>
-                          setQtdSessoes(parseInt(e.target.value) || 1)
-                        }
-                        className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                        placeholder="Ex: 10"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
+                    {showCustomerDetails && (
+                      <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-md">
+                        {isLoadingCustomerData ? (
+                          <div className="text-center py-4">
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Carregando dados do paciente...
+                            </span>
+                          </div>
+                        ) : selectedClienteData ? (
+                          <>
+                            {/* Status Badge */}
+                            <div className="mb-4">
+                              <Badge
+                                size="sm"
+                                color={
+                                  selectedClienteData.status === 0
+                                    ? "primary"
+                                    : selectedClienteData.status === 1
+                                      ? "info"
+                                      : selectedClienteData.status === 2
+                                        ? "info"
+                                        : selectedClienteData.status === 3
+                                          ? "success"
+                                          : selectedClienteData.status === 4
+                                            ? "success"
+                                            : selectedClienteData.status === 5
+                                              ? "warning"
+                                              : selectedClienteData.status === 6
+                                                ? "success"
+                                                : selectedClienteData.status ===
+                                                    7
+                                                  ? "success"
+                                                  : selectedClienteData.status ===
+                                                      8
+                                                    ? "error"
+                                                    : selectedClienteData.status ===
+                                                        9
+                                                      ? "error"
+                                                      : "light"
+                                }
+                              >
+                                {selectedClienteData.status === 0
+                                  ? "Novo Paciente"
+                                  : selectedClienteData.status === 1
+                                    ? "Aguardando Avaliação"
+                                    : selectedClienteData.status === 2
+                                      ? "Em Avaliação"
+                                      : selectedClienteData.status === 3
+                                        ? "Plano de Tratamento"
+                                        : selectedClienteData.status === 4
+                                          ? "Em Atendimento"
+                                          : selectedClienteData.status === 5
+                                            ? "Faltou Atendimento"
+                                            : selectedClienteData.status === 6
+                                              ? "Tratamento Concluído"
+                                              : selectedClienteData.status === 7
+                                                ? "Alta"
+                                                : selectedClienteData.status ===
+                                                    8
+                                                  ? "Cancelado"
+                                                  : selectedClienteData.status ===
+                                                      9
+                                                    ? "Inativo"
+                                                    : "Desconhecido"}
+                              </Badge>
+                            </div>
 
-              <br></br>
-              {/* Checkbox "Dia todo" - oculto quando recorrência está ativa */}
-              {(!isRecurrent || selectedEvent) && (
-                <div className="flex items-center gap-3">
-                  <Checkbox checked={isChecked} onChange={setIsChecked} />
-                  <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Dia todo
-                  </span>
-                </div>
-              )}
-
-              {/* Accordion de dados do paciente - só exibe quando está editando e tem cliente selecionado */}
-              {selectedEvent && selectedCliente && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => setShowCustomerDetails(!showCustomerDetails)}
-                    type="button"
-                    className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
-                  >
-                    <span>Dados do Paciente</span>
-                    <svg className={`w-4 h-4 transform transition-transform ${showCustomerDetails ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {showCustomerDetails && (
-                    <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-md">
-                      {isLoadingCustomerData ? (
-                        <div className="text-center py-4">
-                          <span className="text-gray-600 dark:text-gray-400">Carregando dados do paciente...</span>
-                        </div>
-                      ) : selectedClienteData ? (
-                        <>
-                      {/* Status Badge */}
-                      <div className="mb-4">
-                        <Badge
-                          size="sm"
-                          color={
-                            selectedClienteData.status === 0 ? "primary" :
-                            selectedClienteData.status === 1 ? "info" :
-                            selectedClienteData.status === 2 ? "info" :
-                            selectedClienteData.status === 3 ? "success" :
-                            selectedClienteData.status === 4 ? "success" :
-                            selectedClienteData.status === 5 ? "warning" :
-                            selectedClienteData.status === 6 ? "success" :
-                            selectedClienteData.status === 7 ? "success" :
-                            selectedClienteData.status === 8 ? "error" :
-                            selectedClienteData.status === 9 ? "error" : "light"
-                          }
-                        >
-                          {selectedClienteData.status === 0 ? "Novo Paciente" :
-                           selectedClienteData.status === 1 ? "Aguardando Avaliação" :
-                           selectedClienteData.status === 2 ? "Em Avaliação" :
-                           selectedClienteData.status === 3 ? "Plano de Tratamento" :
-                           selectedClienteData.status === 4 ? "Em Atendimento" :
-                           selectedClienteData.status === 5 ? "Faltou Atendimento" :
-                           selectedClienteData.status === 6 ? "Tratamento Concluído" :
-                           selectedClienteData.status === 7 ? "Alta" :
-                           selectedClienteData.status === 8 ? "Cancelado" :
-                           selectedClienteData.status === 9 ? "Inativo" : "Desconhecido"}
-                        </Badge>
-                      </div>
-
-                      {/* Informações Básicas */}
-                      <h5 className="mb-3 text-sm font-medium text-gray-800 dark:text-white/90">Informações</h5>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-3">
-                        <div>
-                          <Label>Nome:</Label>
-                          <Label>{selectedClienteData.nome}</Label>
-                        </div>
-                        <div>
-                          <Label>Data de Nascimento:</Label>
-                          <Label>{formatDate(selectedClienteData.dataNascimento)}</Label>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-3">
-                        <div>
-                          <Label>CPF:</Label>
-                          <Label>{formatCPF(selectedClienteData.cpf)}</Label>
-                        </div>
-                        <div>
-                          <Label>RG:</Label>
-                          <Label>{formatRG(selectedClienteData.rg)}</Label>
-                        </div>
-                        <div>
-                          <Label>Sexo:</Label>
-                          <Label>{selectedClienteData.sexo === 0 ? "Masculino" : "Feminino"}</Label>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-3">
-                        <div>
-                          <Label>E-mail:</Label>
-                          <Label>{selectedClienteData.email}</Label>
-                        </div>
-                        <div>
-                          <Label>Telefone:</Label>
-                          <Label>{formatPhone(selectedClienteData.nrTelefone)}</Label>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-3">
-                        <div>
-                          <Label>Altura (m):</Label>
-                          <Label>{selectedClienteData.altura}</Label>
-                        </div>
-                        <div>
-                          <Label>Peso (kg):</Label>
-                          <Label>{selectedClienteData.peso}</Label>
-                        </div>
-                        <div>
-                          <Label>IMC:</Label>
-                          <Label>{selectedClienteData.imc}</Label>
-                        </div>
-                      </div>
-
-                      <div className="mb-3">
-                        <Label>Patologia:</Label>
-                        <Label>{selectedClienteData.patologia}</Label>
-                      </div>
-
-                      {/* Endereço */}
-                      <h5 className="mb-3 text-sm font-medium text-gray-800 dark:text-white/90">Endereço</h5>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-4">
-                        <div>
-                          <Label>Rua:</Label>
-                          <Label>{selectedClienteData.endereco?.rua}</Label>
-                        </div>
-                        <div>
-                          <Label>Número:</Label>
-                          <Label>{selectedClienteData.endereco?.numero}</Label>
-                        </div>
-                        <div>
-                          <Label>Bairro:</Label>
-                          <Label>{selectedClienteData.endereco?.bairro}</Label>
-                        </div>
-                        <div>
-                          <Label>Cidade:</Label>
-                          <Label>{selectedClienteData.endereco?.cidade}</Label>
-                        </div>
-                        <div>
-                          <Label>Estado:</Label>
-                          <Label>{selectedClienteData.endereco?.estado}</Label>
-                        </div>
-                        <div>
-                          <Label>CEP:</Label>
-                          <Label>{formatCEP(selectedClienteData.endereco?.cep)}</Label>
-                        </div>
-                      </div>
-
-                      {/* Accordion Evolução */}
-                      <div className="mb-2">
-                        <button
-                          onClick={() => setShowHistorico(!showHistorico)}
-                          type="button"
-                          className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
-                        >
-                          <span>Evolução</span>
-                          <svg className={`w-4 h-4 transform transition-transform ${showHistorico ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-
-                        {showHistorico && (
-                          <div className="mt-3">
-                            {isLoadingHistorico ? (
-                              <div className="text-center py-4">
-                                <span className="text-gray-600 dark:text-gray-400">Carregando sessões...</span>
+                            {/* Informações Básicas */}
+                            <h5 className="mb-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                              Informações
+                            </h5>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-3">
+                              <div>
+                                <Label>Nome:</Label>
+                                <Label>{selectedClienteData.nome}</Label>
                               </div>
-                            ) : (
-                              <Table>
-                                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                                  <TableRow>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                                      Data
-                                    </TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                                      Hora
-                                    </TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                                      Profissional
-                                    </TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                                      Status
-                                    </TableCell>
-                                    <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                                      Observação
-                                    </TableCell>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                                  {sessoesData && sessoesData.length > 0 ? (
-                                    sessoesData.map((sessao, index) => (
-                                      <TableRow key={index}>
-                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                            {sessao.dataSessao ? new Date(sessao.dataSessao).toLocaleDateString("pt-BR") : "—"}
-                                          </span>
-                                        </TableCell>
-                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                            {sessao.horaSessao || "—"}
-                                          </span>
-                                        </TableCell>
-                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                            {sessao.funcionario?.nome || "—"}
-                                          </span>
-                                        </TableCell>
-                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                          <Badge
-                                            size="sm"
-                                            color={
-                                              sessao.statusSessao === 0 ? "success" :
-                                              sessao.statusSessao === 1 ? "error" :
-                                              sessao.statusSessao === 2 ? "warning" :
-                                              sessao.statusSessao === 3 ? "dark" : "light"
-                                            }
+                              <div>
+                                <Label>Data de Nascimento:</Label>
+                                <Label>
+                                  {formatDate(
+                                    selectedClienteData.dataNascimento,
+                                  )}
+                                </Label>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-3">
+                              <div>
+                                <Label>CPF:</Label>
+                                <Label>
+                                  {formatCPF(selectedClienteData.cpf)}
+                                </Label>
+                              </div>
+                              <div>
+                                <Label>RG:</Label>
+                                <Label>
+                                  {formatRG(selectedClienteData.rg)}
+                                </Label>
+                              </div>
+                              <div>
+                                <Label>Sexo:</Label>
+                                <Label>
+                                  {selectedClienteData.sexo === 0
+                                    ? "Masculino"
+                                    : "Feminino"}
+                                </Label>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-3">
+                              <div>
+                                <Label>E-mail:</Label>
+                                <Label>{selectedClienteData.email}</Label>
+                              </div>
+                              <div>
+                                <Label>Telefone:</Label>
+                                <Label>
+                                  {formatPhone(selectedClienteData.nrTelefone)}
+                                </Label>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-3">
+                              <div>
+                                <Label>Altura (m):</Label>
+                                <Label>{selectedClienteData.altura}</Label>
+                              </div>
+                              <div>
+                                <Label>Peso (kg):</Label>
+                                <Label>{selectedClienteData.peso}</Label>
+                              </div>
+                              <div>
+                                <Label>IMC:</Label>
+                                <Label>{selectedClienteData.imc}</Label>
+                              </div>
+                            </div>
+
+                            <div className="mb-3">
+                              <Label>Patologia:</Label>
+                              <Label>{selectedClienteData.patologia}</Label>
+                            </div>
+
+                            {/* Endereço */}
+                            <h5 className="mb-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                              Endereço
+                            </h5>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-4">
+                              <div>
+                                <Label>Rua:</Label>
+                                <Label>
+                                  {selectedClienteData.endereco?.rua}
+                                </Label>
+                              </div>
+                              <div>
+                                <Label>Número:</Label>
+                                <Label>
+                                  {selectedClienteData.endereco?.numero}
+                                </Label>
+                              </div>
+                              <div>
+                                <Label>Bairro:</Label>
+                                <Label>
+                                  {selectedClienteData.endereco?.bairro}
+                                </Label>
+                              </div>
+                              <div>
+                                <Label>Cidade:</Label>
+                                <Label>
+                                  {selectedClienteData.endereco?.cidade}
+                                </Label>
+                              </div>
+                              <div>
+                                <Label>Estado:</Label>
+                                <Label>
+                                  {selectedClienteData.endereco?.estado}
+                                </Label>
+                              </div>
+                              <div>
+                                <Label>CEP:</Label>
+                                <Label>
+                                  {formatCEP(selectedClienteData.endereco?.cep)}
+                                </Label>
+                              </div>
+                            </div>
+
+                            {/* Accordion Evolução */}
+                            <div className="mb-2">
+                              <button
+                                onClick={() => setShowHistorico(!showHistorico)}
+                                type="button"
+                                className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+                              >
+                                <span>Evolução</span>
+                                <svg
+                                  className={`w-4 h-4 transform transition-transform ${showHistorico ? "rotate-180" : ""}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M19 9l-7 7-7-7"
+                                  />
+                                </svg>
+                              </button>
+
+                              {showHistorico && (
+                                <div className="mt-3">
+                                  {isLoadingHistorico ? (
+                                    <div className="text-center py-4">
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        Carregando sessões...
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <Table>
+                                      <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                                        <TableRow>
+                                          <TableCell
+                                            isHeader
+                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                                           >
-                                            {sessao.statusSessao === 0 ? "Realizada" :
-                                             sessao.statusSessao === 1 ? "Faltou" :
-                                             sessao.statusSessao === 2 ? "Reagendada" :
-                                             sessao.statusSessao === 3 ? "Cancelada" : "Desconhecido"}
-                                          </Badge>
+                                            Data
+                                          </TableCell>
+                                          <TableCell
+                                            isHeader
+                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                          >
+                                            Hora
+                                          </TableCell>
+                                          <TableCell
+                                            isHeader
+                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                          >
+                                            Profissional
+                                          </TableCell>
+                                          <TableCell
+                                            isHeader
+                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                          >
+                                            Status
+                                          </TableCell>
+                                          <TableCell
+                                            isHeader
+                                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                          >
+                                            Observação
+                                          </TableCell>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                                        {sessoesData &&
+                                        sessoesData.length > 0 ? (
+                                          sessoesData.map((sessao, index) => (
+                                            <TableRow key={index}>
+                                              <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                  {sessao.dataSessao
+                                                    ? new Date(
+                                                        sessao.dataSessao,
+                                                      ).toLocaleDateString(
+                                                        "pt-BR",
+                                                      )
+                                                    : "—"}
+                                                </span>
+                                              </TableCell>
+                                              <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                  {sessao.horaSessao || "—"}
+                                                </span>
+                                              </TableCell>
+                                              <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                  {sessao.funcionario?.nome ||
+                                                    "—"}
+                                                </span>
+                                              </TableCell>
+                                              <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                <Badge
+                                                  size="sm"
+                                                  color={
+                                                    sessao.statusSessao === 0
+                                                      ? "success"
+                                                      : sessao.statusSessao ===
+                                                          1
+                                                        ? "error"
+                                                        : sessao.statusSessao ===
+                                                            2
+                                                          ? "warning"
+                                                          : sessao.statusSessao ===
+                                                              3
+                                                            ? "dark"
+                                                            : "light"
+                                                  }
+                                                >
+                                                  {sessao.statusSessao === 0
+                                                    ? "Realizada"
+                                                    : sessao.statusSessao === 1
+                                                      ? "Faltou"
+                                                      : sessao.statusSessao ===
+                                                          2
+                                                        ? "Reagendada"
+                                                        : sessao.statusSessao ===
+                                                            3
+                                                          ? "Cancelada"
+                                                          : "Desconhecido"}
+                                                </Badge>
+                                              </TableCell>
+                                              <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                  {sessao.observacaoSessao ||
+                                                    "—"}
+                                                </span>
+                                              </TableCell>
+                                            </TableRow>
+                                          ))
+                                        ) : (
+                                          <TableRow>
+                                            <TableCell
+                                              colSpan={5}
+                                              className="px-5 py-4 text-center text-gray-500 dark:text-gray-400"
+                                            >
+                                              Nenhuma sessão disponível para
+                                              este paciente.
+                                            </TableCell>
+                                          </TableRow>
+                                        )}
+                                      </TableBody>
+                                    </Table>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Accordion Serviços */}
+                            <div className="mb-2">
+                              <button
+                                onClick={() => setShowServicos(!showServicos)}
+                                type="button"
+                                className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+                              >
+                                <span>Serviços</span>
+                                <svg
+                                  className={`w-4 h-4 transform transition-transform ${showServicos ? "rotate-180" : ""}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M19 9l-7 7-7-7"
+                                  />
+                                </svg>
+                              </button>
+
+                              {showServicos && (
+                                <div className="mt-3">
+                                  <Table>
+                                    <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                                      <TableRow>
+                                        <TableCell
+                                          isHeader
+                                          className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                        >
+                                          Serviço
                                         </TableCell>
-                                        <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                            {sessao.observacaoSessao || "—"}
-                                          </span>
+                                        <TableCell
+                                          isHeader
+                                          className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                        >
+                                          Data Cadastro
+                                        </TableCell>
+                                        <TableCell
+                                          isHeader
+                                          className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                        >
+                                          Sessões
+                                        </TableCell>
+                                        <TableCell
+                                          isHeader
+                                          className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                        >
+                                          Status
                                         </TableCell>
                                       </TableRow>
-                                    ))
-                                  ) : (
-                                    <TableRow>
-                                      <TableCell colSpan={5} className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
-                                        Nenhuma sessão disponível para este paciente.
-                                      </TableCell>
-                                    </TableRow>
-                                  )}
-                                </TableBody>
-                              </Table>
-                            )}
+                                    </TableHeader>
+                                    <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                                      {selectedClienteData?.servicos &&
+                                      selectedClienteData.servicos.length >
+                                        0 ? (
+                                        selectedClienteData.servicos.map(
+                                          (servico, index) => (
+                                            <TableRow key={index}>
+                                              <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                  {servico.servicos
+                                                    ?.map((s) => s.descricao)
+                                                    .join(" - ")}
+                                                </span>
+                                              </TableCell>
+                                              <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                  {servico.dataCadastro
+                                                    ? new Date(
+                                                        servico.dataCadastro,
+                                                      ).toLocaleDateString(
+                                                        "pt-BR",
+                                                      )
+                                                    : "—"}
+                                                </span>
+                                              </TableCell>
+                                              <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                {(() => {
+                                                  const sessoesRealizadas =
+                                                    servico.sessoes?.filter(
+                                                      (s) =>
+                                                        s.statusSessao === 0,
+                                                    ).length ?? 0;
+                                                  const totalSessoes =
+                                                    servico.qtdSessaoTotal ?? 0;
+                                                  return (
+                                                    <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                      {`${sessoesRealizadas}/${totalSessoes}`}
+                                                    </span>
+                                                  );
+                                                })()}
+                                              </TableCell>
+                                              <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                <Badge
+                                                  size="sm"
+                                                  color={
+                                                    servico.status === 0
+                                                      ? "primary"
+                                                      : servico.status === 1
+                                                        ? "info"
+                                                        : servico.status === 2
+                                                          ? "warning"
+                                                          : servico.status === 3
+                                                            ? "dark"
+                                                            : servico.status ===
+                                                                4
+                                                              ? "success"
+                                                              : servico.status ===
+                                                                  5
+                                                                ? "error"
+                                                                : servico.status ===
+                                                                    6
+                                                                  ? "success"
+                                                                  : "light"
+                                                  }
+                                                >
+                                                  {servico.status === 0 &&
+                                                    "Novo Paciente"}
+                                                  {servico.status === 1 &&
+                                                    "Aguardando Avaliação"}
+                                                  {servico.status === 2 &&
+                                                    "Em Avaliação"}
+                                                  {servico.status === 3 &&
+                                                    "Plano de Tratamento"}
+                                                  {servico.status === 4 &&
+                                                    "Em Atendimento"}
+                                                  {servico.status === 5 &&
+                                                    "Faltou Atendimento"}
+                                                  {servico.status === 6 &&
+                                                    "Tratamento Concluído"}
+                                                  {servico.status === 7 &&
+                                                    "Alta"}
+                                                  {servico.status === 8 &&
+                                                    "Cancelado"}
+                                                  {servico.status === 9 &&
+                                                    "Inativo"}
+                                                </Badge>
+                                              </TableCell>
+                                            </TableRow>
+                                          ),
+                                        )
+                                      ) : (
+                                        <TableRow>
+                                          <TableCell
+                                            colSpan={4}
+                                            className="px-5 py-4 text-center text-gray-500 dark:text-gray-400"
+                                          >
+                                            Nenhum serviço registrado para este
+                                            paciente.
+                                          </TableCell>
+                                        </TableRow>
+                                      )}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center py-4">
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Nenhum dado disponível para este paciente.
+                            </span>
                           </div>
                         )}
                       </div>
-
-                      {/* Accordion Serviços */}
-                      <div className="mb-2">
-                        <button
-                          onClick={() => setShowServicos(!showServicos)}
-                          type="button"
-                          className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
-                        >
-                          <span>Serviços</span>
-                          <svg className={`w-4 h-4 transform transition-transform ${showServicos ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-
-                        {showServicos && (
-                          <div className="mt-3">
-                            <Table>
-                              <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                                <TableRow>
-                                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                                    Serviço
-                                  </TableCell>
-                                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                                    Data Cadastro
-                                  </TableCell>
-                                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                                    Sessões
-                                  </TableCell>
-                                  <TableCell isHeader className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                                    Status
-                                  </TableCell>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                                {selectedClienteData?.servicos && selectedClienteData.servicos.length > 0 ? (
-                                  selectedClienteData.servicos.map((servico, index) => (
-                                    <TableRow key={index}>
-                                      <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                          {servico.servicos?.map(s => s.descricao).join(" - ")}
-                                        </span>
-                                      </TableCell>
-                                      <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                          {servico.dataCadastro ? new Date(servico.dataCadastro).toLocaleDateString("pt-BR") : "—"}
-                                        </span>
-                                      </TableCell>
-                                      <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                        {(() => {
-                                          const sessoesRealizadas = servico.sessoes?.filter(s => s.statusSessao === 0).length ?? 0;
-                                          const totalSessoes = servico.qtdSessaoTotal ?? 0;
-                                          return (
-                                            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                              {`${sessoesRealizadas}/${totalSessoes}`}
-                                            </span>
-                                          );
-                                        })()}
-                                      </TableCell>
-                                      <TableCell className="px-5 py-4 sm:px-6 text-start">
-                                        <Badge
-                                          size="sm"
-                                          color={
-                                            servico.status === 0 ? "primary" :
-                                            servico.status === 1 ? "info" :
-                                            servico.status === 2 ? "warning" :
-                                            servico.status === 3 ? "dark" :
-                                            servico.status === 4 ? "success" :
-                                            servico.status === 5 ? "error" :
-                                            servico.status === 6 ? "success" : "light"
-                                          }
-                                        >
-                                          {servico.status === 0 && "Novo Paciente"}
-                                          {servico.status === 1 && "Aguardando Avaliação"}
-                                          {servico.status === 2 && "Em Avaliação"}
-                                          {servico.status === 3 && "Plano de Tratamento"}
-                                          {servico.status === 4 && "Em Atendimento"}
-                                          {servico.status === 5 && "Faltou Atendimento"}
-                                          {servico.status === 6 && "Tratamento Concluído"}
-                                          {servico.status === 7 && "Alta"}
-                                          {servico.status === 8 && "Cancelado"}
-                                          {servico.status === 9 && "Inativo"}
-                                        </Badge>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))
-                                ) : (
-                                  <TableRow>
-                                    <TableCell colSpan={4} className="px-5 py-4 text-center text-gray-500 dark:text-gray-400">
-                                      Nenhum serviço registrado para este paciente.
-                                    </TableCell>
-                                  </TableRow>
-                                )}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        )}
-                      </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-4">
-                          <span className="text-gray-600 dark:text-gray-400">Nenhum dado disponível para este paciente.</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
               </div>
               {/* Fim do container com scroll */}
             </div>
@@ -2768,7 +3124,7 @@ const Calendar: React.FC = () => {
               >
                 Fechar
               </button>
-              
+
               {/* Botão Check-in - só aparece quando está editando um evento e tem cliente selecionado */}
               {selectedEvent && selectedCliente && (
                 <button
@@ -2779,22 +3135,38 @@ const Calendar: React.FC = () => {
                   Check-in
                 </button>
               )}
-              
+
               <button
                 onClick={handleAddOrUpdateEvent}
                 type="button"
                 disabled={isSaving}
                 className={`btn btn-success btn-update-event flex w-full justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white sm:w-auto ${
                   isSaving
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-brand-500 hover:bg-brand-600'
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-brand-500 hover:bg-brand-600"
                 }`}
               >
                 {isSaving ? (
                   <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Salvando...
                   </span>
@@ -2805,8 +3177,8 @@ const Calendar: React.FC = () => {
                         ? "Atualizar Recorrência"
                         : "Atualizar"
                       : isRecurrent
-                      ? "Criar Recorrência"
-                      : "Salvar"}
+                        ? "Criar Recorrência"
+                        : "Salvar"}
                   </>
                 )}
               </button>
@@ -2821,8 +3193,8 @@ const Calendar: React.FC = () => {
           onClose={closeModalCheckIn}
           className="max-w-[700px] m-4"
         >
-          <FormSession 
-            clienteId={selectedCliente} 
+          <FormSession
+            clienteId={selectedCliente}
             closeModal={closeModalCheckIn}
             onSuccess={handleReloadSessoes}
           />
@@ -2834,7 +3206,7 @@ const Calendar: React.FC = () => {
           onClose={closeModalNewCustomer}
           className="max-w-[700px] m-4"
         >
-          <FormCustomer 
+          <FormCustomer
             closeModal={closeModalNewCustomer}
             onSuccess={handleReloadClientes}
           />
@@ -2871,7 +3243,8 @@ const Calendar: React.FC = () => {
                 Excluir Agendamento Recorrente
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
-                Este evento faz parte de uma recorrência. O que você deseja excluir?
+                Este evento faz parte de uma recorrência. O que você deseja
+                excluir?
               </p>
             </div>
 
@@ -2881,13 +3254,27 @@ const Calendar: React.FC = () => {
                 className="w-full flex items-center justify-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <div className="flex items-center justify-center w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <svg
+                    className="w-4 h-4 text-blue-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
                   </svg>
                 </div>
                 <div className="text-left">
-                  <div className="font-medium text-gray-900 dark:text-white">Apenas este evento</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Excluir somente esta sessão específica</div>
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    Apenas este evento
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Excluir somente esta sessão específica
+                  </div>
                 </div>
               </button>
 
@@ -2896,35 +3283,63 @@ const Calendar: React.FC = () => {
                 className="w-full flex items-center justify-center gap-3 p-4 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
                 <div className="flex items-center justify-center w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full">
-                  <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <svg
+                    className="w-4 h-4 text-red-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
                   </svg>
                 </div>
                 <div className="text-left">
-                  <div className="font-medium text-gray-900 dark:text-white">Toda a recorrência</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Excluir todas as sessões desta recorrência</div>
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    Toda a recorrência
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Excluir todas as sessões desta recorrência
+                  </div>
                 </div>
               </button>
 
               {/* Checkbox para exclusão personalizada */}
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg">
-                  <Checkbox 
-                    checked={isCustomDelete} 
+                  <Checkbox
+                    checked={isCustomDelete}
                     onChange={(checked) => {
                       setIsCustomDelete(checked);
                       if (!checked) {
                         setSelectedSessionsToDelete([]);
                       }
-                    }} 
+                    }}
                   />
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900 dark:text-white">Exclusão Personalizada</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Escolher quais sessões específicas excluir</div>
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      Exclusão Personalizada
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Escolher quais sessões específicas excluir
+                    </div>
                   </div>
                   <div className="flex items-center justify-center w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-                    <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    <svg
+                      className="w-4 h-4 text-purple-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -2936,12 +3351,13 @@ const Calendar: React.FC = () => {
                   <div className="bg-gray-50 dark:bg-gray-800 p-3 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center justify-between">
                       <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                        Selecione as sessões para excluir ({selectedSessionsToDelete.length} de {allRecurrenceSessions.length} selecionadas)
+                        Selecione as sessões para excluir (
+                        {selectedSessionsToDelete.length} de{" "}
+                        {allRecurrenceSessions.length} selecionadas)
                       </h5>
-                      
                     </div>
                   </div>
-                  
+
                   <div className="max-h-[300px] overflow-y-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
@@ -2949,49 +3365,81 @@ const Calendar: React.FC = () => {
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             <input
                               type="checkbox"
-                              checked={selectedSessionsToDelete.length === allRecurrenceSessions.length && allRecurrenceSessions.length > 0}
+                              checked={
+                                selectedSessionsToDelete.length ===
+                                  allRecurrenceSessions.length &&
+                                allRecurrenceSessions.length > 0
+                              }
                               onChange={handleToggleAllSessions}
                               className="h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                             />
                           </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Horário</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dia da Semana</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Data
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Horário
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Dia da Semana
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Status
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                         {allRecurrenceSessions.map((session) => {
                           const dataInicio = new Date(session.dataInicio);
-                          const dataFim = session.dataFim ? new Date(session.dataFim) : null;
-                          const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-                          
+                          const dataFim = session.dataFim
+                            ? new Date(session.dataFim)
+                            : null;
+                          const diasSemana = [
+                            "Domingo",
+                            "Segunda",
+                            "Terça",
+                            "Quarta",
+                            "Quinta",
+                            "Sexta",
+                            "Sábado",
+                          ];
+
                           return (
-                            <tr 
+                            <tr
                               key={session.id}
-                              className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${selectedSessionsToDelete.includes(session.id) ? 'bg-purple-50 dark:bg-purple-900/20' : ''}`}
+                              className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${selectedSessionsToDelete.includes(session.id) ? "bg-purple-50 dark:bg-purple-900/20" : ""}`}
                             >
                               <td className="px-4 py-3 whitespace-nowrap">
                                 <input
                                   type="checkbox"
-                                  checked={selectedSessionsToDelete.includes(session.id)}
-                                  onChange={() => handleToggleSession(session.id)}
+                                  checked={selectedSessionsToDelete.includes(
+                                    session.id,
+                                  )}
+                                  onChange={() =>
+                                    handleToggleSession(session.id)
+                                  }
                                   className="h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                                 />
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100">
-                                {dataInicio.toLocaleDateString('pt-BR')}
+                                {dataInicio.toLocaleDateString("pt-BR")}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">
-                                {dataInicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                {dataFim && ` - ${dataFim.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
+                                {dataInicio.toLocaleTimeString("pt-BR", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                                {dataFim &&
+                                  ` - ${dataFim.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">
                                 {diasSemana[dataInicio.getDay()]}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap">
                                 <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                  {ScheduleStatusLabels[session.status as keyof typeof ScheduleStatusLabels] || 'Desconhecido'}
+                                  {ScheduleStatusLabels[
+                                    session.status as keyof typeof ScheduleStatusLabels
+                                  ] || "Desconhecido"}
                                 </span>
                               </td>
                             </tr>
@@ -3000,18 +3448,19 @@ const Calendar: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
-                  
+
                   <div className="bg-gray-50 dark:bg-gray-800 p-3 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={handleDeleteCustomSessions}
                       disabled={selectedSessionsToDelete.length === 0}
                       className={`w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                         selectedSessionsToDelete.length === 0
-                          ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
-                          : 'bg-red-600 hover:bg-red-700 text-white'
+                          ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed"
+                          : "bg-red-600 hover:bg-red-700 text-white"
                       }`}
                     >
-                      Excluir {selectedSessionsToDelete.length} sessão(ões) selecionada(s)
+                      Excluir {selectedSessionsToDelete.length} sessão(ões)
+                      selecionada(s)
                     </button>
                   </div>
                 </div>
