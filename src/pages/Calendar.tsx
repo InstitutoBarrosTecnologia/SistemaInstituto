@@ -3147,8 +3147,8 @@ const Calendar: React.FC = () => {
                   `}
                   title={
                     isLoadingSessionValidation 
-                      ? 'Validando sessões disponíveis...' 
-                      : mensagemBloqueio || 'Realizar check-in desta sessão'
+                      ? 'Validando tratamentos ativos...' 
+                      : mensagemBloqueio || 'Realizar check-in'
                   }
                 >
                   {isLoadingSessionValidation ? 'Validando...' : 'Check-in'}

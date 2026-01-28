@@ -5,6 +5,7 @@ import { getAllOrderServicesAsync } from '../services/service/OrderServiceServic
 export interface SessionValidationResult {
   isLoading: boolean;
   temSessoesDisponiveis: boolean;
+  quantidadeTratamentos: number;
   sessaoInfo: {
     sessoesRealizadas: number;
     sessaoTotal: number;
@@ -52,13 +53,19 @@ export function useSessionValidation(clienteId: string | null): SessionValidatio
       });
   }, [clienteId]);
 
-  // Calcular informações de sessão (mesma lógica do FormSession.tsx)
+  // Calcular informações de sessão
+  // REGRAS:
+  // - 0 tratamentos ativos: Bloquear botão
+  // - 1 tratamento ativo SEM sessões: Bloquear botão
+  // - 1 tratamento ativo COM sessões: Permitir botão
+  // - 2+ tratamentos ativos: SEMPRE permitir (validação acontece no FormSession)
   const validationResult = useMemo((): SessionValidationResult => {
     // Estado inicial/loading
     if (!clienteId || isLoading) {
       return {
         isLoading: true,
         temSessoesDisponiveis: false,
+        quantidadeTratamentos: 0,
         sessaoInfo: {
           sessoesRealizadas: 0,
           sessaoTotal: 0,
@@ -73,34 +80,56 @@ export function useSessionValidation(clienteId: string | null): SessionValidatio
       return {
         isLoading: false,
         temSessoesDisponiveis: false,
+        quantidadeTratamentos: 0,
         sessaoInfo: {
           sessoesRealizadas: 0,
           sessaoTotal: 0,
           limiteAtingido: true,
           percentual: 0
         },
-        mensagemBloqueio: 'Este paciente não possui nenhuma ordem de serviço ativa.'
+        mensagemBloqueio: 'Este paciente não possui nenhuma ordem de serviço.'
       };
     }
 
-    // Buscar ordem de serviço ativa (status 0 = Em andamento ou status 1 = Pendente)
-    const ordemAtiva = ordensServico.find(ordem => ordem.status === 0 || ordem.status === 1);
+    // Buscar TODAS as ordens de serviço ativas (status 0 = Em andamento ou status 1 = Pendente)
+    const ordensAtivas = ordensServico.filter(ordem => ordem.status === 0 || ordem.status === 1);
 
-    if (!ordemAtiva) {
+    // Caso 1: Não tem tratamento ativo
+    if (!ordensAtivas || ordensAtivas.length === 0) {
       return {
         isLoading: false,
         temSessoesDisponiveis: false,
+        quantidadeTratamentos: 0,
         sessaoInfo: {
           sessoesRealizadas: 0,
           sessaoTotal: 0,
           limiteAtingido: true,
           percentual: 0
         },
-        mensagemBloqueio: 'Este paciente não possui ordem de serviço ativa no momento.'
+        mensagemBloqueio: 'Este paciente não possui tratamento ativo no momento.'
       };
     }
 
-    // Calcular sessões (mesma lógica do FormSession.tsx linhas 134-147)
+    // Caso 2: Tem MÚLTIPLOS tratamentos ativos (2 ou mais)
+    // SEMPRE permite check-in, validação será feita no FormSession
+    if (ordensAtivas.length > 1) {
+      return {
+        isLoading: false,
+        temSessoesDisponiveis: true,
+        quantidadeTratamentos: ordensAtivas.length,
+        sessaoInfo: {
+          sessoesRealizadas: 0,
+          sessaoTotal: 0,
+          limiteAtingido: false,
+          percentual: 0
+        },
+        mensagemBloqueio: undefined
+      };
+    }
+
+    // Caso 3: Tem APENAS 1 tratamento ativo
+    // Precisa validar se tem sessões disponíveis
+    const ordemAtiva = ordensAtivas[0];
     const sessaoTotal = ordemAtiva.qtdSessaoTotal ?? 0;
     const sessoesRealizadas = (ordemAtiva.sessoes ?? [])
       .filter(s => s.statusSessao === 0) // 0 = Realizada (ESessionStatus.Realizada)
@@ -116,16 +145,25 @@ export function useSessionValidation(clienteId: string | null): SessionValidatio
       percentual
     };
 
-    // Mensagem de bloqueio se limite atingido
-    const mensagemBloqueio = limiteAtingido
-      ? `Limite atingido! Paciente completou todas as ${sessaoTotal} sessões disponíveis.`
-      : undefined;
+    // Se tem apenas 1 tratamento e o limite foi atingido, bloqueia
+    if (limiteAtingido) {
+      return {
+        isLoading: false,
+        temSessoesDisponiveis: false,
+        quantidadeTratamentos: 1,
+        sessaoInfo,
+        mensagemBloqueio: `Limite atingido! Paciente completou todas as ${sessaoTotal} sessões disponíveis.`,
+        ordemServico: ordemAtiva
+      };
+    }
 
+    // Tem 1 tratamento com sessões disponíveis
     return {
       isLoading: false,
-      temSessoesDisponiveis: !limiteAtingido,
+      temSessoesDisponiveis: true,
+      quantidadeTratamentos: 1,
       sessaoInfo,
-      mensagemBloqueio,
+      mensagemBloqueio: undefined,
       ordemServico: ordemAtiva
     };
   }, [clienteId, ordensServico, isLoading]);

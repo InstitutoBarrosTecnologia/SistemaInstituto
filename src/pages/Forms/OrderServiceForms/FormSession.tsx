@@ -258,13 +258,30 @@ export default function FormSession({ clienteId, closeModal, onSuccess }: FormSe
                                 <div>
                                     <Label>Ordem de Serviço<span className="text-red-300">*</span></Label>
                                     <Select
-                                        options={ordensServico.map((ordem) => ({
-                                            value: ordem.id ?? "",
-                                            label:
-                                                ordem.servicos && ordem.servicos.length > 0 && ordem.servicos[0]?.descricao
-                                                    ? ordem.servicos[0].descricao
-                                                    : `Ordem ${ordem.id?.substring(0, 8)}`,
-                                        }))}
+                                        options={ordensServico.map((ordem) => {
+                                            // Calcular sessões disponíveis para cada ordem
+                                            const sessaoTotal = ordem.qtdSessaoTotal ?? 0;
+                                            const sessoesRealizadas = (ordem.sessoes ?? [])
+                                                .filter(s => s.statusSessao === 0) // 0 = Realizada
+                                                .length;
+                                            const sessoesRestantes = sessaoTotal - sessoesRealizadas;
+                                            const limiteAtingido = sessoesRealizadas >= sessaoTotal;
+                                            
+                                            // Pegar descrição do primeiro serviço ou ID
+                                            const descricao = ordem.servicos && ordem.servicos.length > 0 && ordem.servicos[0]?.descricao
+                                                ? ordem.servicos[0].descricao
+                                                : `Ordem ${ordem.id?.substring(0, 8)}`;
+                                            
+                                            // Montar label com indicador visual
+                                            const indicador = limiteAtingido 
+                                                ? `⚠️ Sem sessões (${sessoesRealizadas}/${sessaoTotal})`
+                                                : `✅ ${sessoesRestantes} disponível(is) (${sessoesRealizadas}/${sessaoTotal})`;
+                                            
+                                            return {
+                                                value: ordem.id ?? "",
+                                                label: `${descricao} - ${indicador}`
+                                            };
+                                        })}
                                         value={formData.orderServiceId}
                                         placeholder="Selecione uma ordem de serviço"
                                         onChange={(value) =>
