@@ -79,6 +79,10 @@ export default function FormOrderService({
   const [servicesOptions, setServicesOptions] = useState<Option[]>([]);
   const [selectedServices, setSelectedServices] = useState<Option[]>([]);
   const [selectedConta, setSelectedConta] = useState<string>("corrente");
+  const [isManualPrecoOrdem, setIsManualPrecoOrdem] = useState<boolean>(false);
+  const [isManualTotalComGanho, setIsManualTotalComGanho] = useState<boolean>(false);
+  const [precoOrdemInput, setPrecoOrdemInput] = useState<string>("");
+  const [totalComGanhoInput, setTotalComGanhoInput] = useState<string>("");
 
   const queryClient = useQueryClient();
 
@@ -477,19 +481,21 @@ export default function FormOrderService({
     totalComDesconto * (1 + (formData.percentualGanho ?? 0) / 100);
 
   useEffect(() => {
-    const precoFinalComGanho =
-      totalPrice *
-      (1 - (formData.descontoPercentual ?? 0) / 100) *
-      (1 + (formData.percentualGanho ?? 0) / 100);
+    // Só recalcula automaticamente se não estiver em modo manual
+    if (!isManualPrecoOrdem) {
+      const precoFinalComGanho =
+        totalPrice *
+        (1 - (formData.descontoPercentual ?? 0) / 100) *
+        (1 + (formData.percentualGanho ?? 0) / 100);
 
-    // Atualizar formData com os novos valores calculados
-    setFormData((prev) => ({
-      ...prev,
-      precoOrdem: precoFinalComGanho,
-      precoDescontado:
-        totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100),
-    }));
-  }, [totalPrice, formData.descontoPercentual, formData.percentualGanho]);
+      setFormData((prev) => ({
+        ...prev,
+        precoOrdem: precoFinalComGanho,
+        precoDescontado:
+          totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100),
+      }));
+    }
+  }, [totalPrice, formData.descontoPercentual, formData.percentualGanho, isManualPrecoOrdem]);
 
   useEffect(() => {
     const totalComDesconto =
@@ -664,6 +670,63 @@ export default function FormOrderService({
       descontoPercentual: percentualEquivalente,
       valorComDesconto: totalPrice - descontoFinal,
     }));
+  };
+
+  const formatCurrencyInput = (value: string): string => {
+    // Remove tudo exceto dígitos
+    const numbers = value.replace(/\D/g, '');
+    
+    if (!numbers) return '';
+    
+    // Converte para número (centavos)
+    const amount = parseInt(numbers) / 100;
+    
+    // Formata para moeda brasileira
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(amount);
+  };
+
+  const parseCurrencyInput = (value: string): number => {
+    // Remove tudo exceto dígitos
+    const numbers = value.replace(/\D/g, '');
+    if (!numbers) return 0;
+    // Retorna o valor em reais
+    return parseInt(numbers) / 100;
+  };
+
+  const handleChangePrecoOrdem = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatCurrencyInput(value);
+    const numericValue = parseCurrencyInput(value);
+    
+    setPrecoOrdemInput(formatted);
+    setIsManualPrecoOrdem(true);
+    
+    setFormData((prev) => ({
+      ...prev,
+      precoOrdem: numericValue,
+    }));
+  };
+
+  const handleChangeTotalComGanho = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatCurrencyInput(value);
+    
+    setTotalComGanhoInput(formatted);
+    setIsManualTotalComGanho(true);
+  };
+
+  const resetPrecoOrdemAutomatico = () => {
+    setIsManualPrecoOrdem(false);
+    setPrecoOrdemInput("");
+    // O useEffect irá recalcular automaticamente
+  };
+
+  const resetTotalComGanhoAutomatico = () => {
+    setIsManualTotalComGanho(false);
+    setTotalComGanhoInput("");
   };
 
   const optionsPayment = Object.entries(EFormaPagamento)
@@ -939,28 +1002,68 @@ export default function FormOrderService({
               </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-3 mb-5">
                 <div>
-                  <Label>Total da Ordem</Label>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label>Total da Ordem</Label>
+                    {isManualPrecoOrdem && (
+                      <button
+                        type="button"
+                        onClick={resetPrecoOrdemAutomatico}
+                        className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        title="Resetar para cálculo automático"
+                      >
+                        Resetar
+                      </button>
+                    )}
+                  </div>
                   <Input
                     type="text"
                     placeholder="Total R$ 0,00"
-                    value={new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(formData.precoOrdem || 0)}
-                    disabled
+                    value={isManualPrecoOrdem 
+                      ? precoOrdemInput 
+                      : new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(formData.precoOrdem || 0)
+                    }
+                    onChange={handleChangePrecoOrdem}
                   />
+                  {isManualPrecoOrdem && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      Valor manual definido
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <Label>Ordem com Ganho R$</Label>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label>Ordem com Ganho R$</Label>
+                    {isManualTotalComGanho && (
+                      <button
+                        type="button"
+                        onClick={resetTotalComGanhoAutomatico}
+                        className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        title="Resetar para cálculo automático"
+                      >
+                        Resetar
+                      </button>
+                    )}
+                  </div>
                   <Input
                     type="text"
                     placeholder="Valor Final com Ganho"
-                    disabled
-                    value={new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(totalComGanho)}
+                    value={isManualTotalComGanho 
+                      ? totalComGanhoInput
+                      : new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(totalComGanho)
+                    }
+                    onChange={handleChangeTotalComGanho}
                   />
+                  {isManualTotalComGanho && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      Valor manual definido
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label>Desconto R$</Label>
