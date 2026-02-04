@@ -67,7 +67,7 @@ export default function FormOrderService({
     funcionarioId: "",
     dataPagamento: new Date().toISOString().split("T")[0],
     qtdSessaoTotal: 0,
-    qtdSessaoRealizada: 0,
+    qtdSessaoRealizada: 1,
     servicos: [],
     sessoes: [],
   });
@@ -83,6 +83,8 @@ export default function FormOrderService({
   const [isManualTotalComGanho, setIsManualTotalComGanho] = useState<boolean>(false);
   const [precoOrdemInput, setPrecoOrdemInput] = useState<string>("");
   const [totalComGanhoInput, setTotalComGanhoInput] = useState<string>("");
+  const [descontoPercentualInput, setDescontoPercentualInput] = useState<string>("");
+  const [descontoReaisInput, setDescontoReaisInput] = useState<string>("");
 
   const queryClient = useQueryClient();
 
@@ -432,6 +434,9 @@ export default function FormOrderService({
         status: data.status,
         precoOrdem: data.precoOrdem,
         precoDesconto: data.precoDesconto,
+        descontoPercentual: data.descontoPercentual,
+        percentualGanho: data.percentualGanho,
+        precoDescontado: data.precoDescontado,
         formaPagamento: data.formaPagamento,
         clienteId: data.clienteId,
         funcionarioId: data.funcionarioId,
@@ -443,6 +448,14 @@ export default function FormOrderService({
         servicos: data.servicos,
         sessoes: data.sessoes,
       });
+
+      // Preencher os inputs de desconto com valores da API
+      if (data.descontoPercentual) {
+        setDescontoPercentualInput(data.descontoPercentual.toString());
+      }
+      if (data.precoDesconto) {
+        setDescontoReaisInput(data.precoDesconto.toString());
+      }
 
       // Popula os serviços selecionados quando estiver editando
       if (data.servicos && data.servicos.length > 0) {
@@ -572,13 +585,17 @@ export default function FormOrderService({
       }
     }
 
+    // Garantir que os valores de desconto sejam enviados
     const payload: OrderServiceRequestDto = {
       ...formData,
+      precoDesconto: formData.precoDesconto || 0,
+      descontoPercentual: formData.descontoPercentual || 0,
       funcionarioId: formData.funcionarioId?.trim()
         ? formData.funcionarioId
         : undefined,
       clienteId: formData.clienteId?.trim() ? formData.clienteId : undefined,
     };
+    
     mutation.mutate(payload);
   };
 
@@ -613,7 +630,14 @@ export default function FormOrderService({
       }
     }
 
-    mutationEdit.mutate(formData);
+    // Garantir que os valores de desconto sejam enviados na edição também
+    const payload: OrderServiceRequestDto = {
+      ...formData,
+      precoDesconto: formData.precoDesconto || 0,
+      descontoPercentual: formData.descontoPercentual || 0,
+    };
+    
+    mutationEdit.mutate(payload);
   };
 
   const handleSelecCustomer = (value: string) => {
@@ -640,35 +664,52 @@ export default function FormOrderService({
   // };
 
   const handleChanceDescont = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    const inputValue = e.target.value;
+    setDescontoPercentualInput(inputValue);
+    
+    const value = inputValue.replace(',', '.');
     const percentual = parseFloat(value) || 0;
 
-    const valorComDesconto = totalPrice * (1 - percentual / 100);
-    const valorDescontoEmReais = totalPrice - valorComDesconto;
+    // Usar formData.precoOrdem como base do desconto
+    const baseDesconto = formData.precoOrdem || totalPrice;
+    const valorDescontoEmReais = (baseDesconto * percentual) / 100;
+    const valorComDesconto = baseDesconto - valorDescontoEmReais;
+
+    // Atualizar o campo de desconto em reais com o valor calculado (formatado com vírgula)
+    setDescontoReaisInput(valorDescontoEmReais.toString().replace('.', ','));
 
     setFormData((prev) => ({
       ...prev,
       descontoPercentual: percentual,
       valorComDesconto: valorComDesconto,
       precoDesconto: valorDescontoEmReais,
+      precoDescontado: valorComDesconto,
     }));
   };
 
   const handleChangeDescontoReais = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+    const inputValue = e.target.value;
+    setDescontoReaisInput(inputValue);
+    
+    const value = inputValue.replace(',', '.');
     const valorDesconto = parseFloat(value) || 0;
 
+    // Usar formData.precoOrdem como base do desconto
+    const baseDesconto = formData.precoOrdem || totalPrice;
+    
     // Não permitir desconto maior que o total
-    const descontoFinal = Math.min(valorDesconto, totalPrice);
+    const descontoFinal = Math.min(valorDesconto, baseDesconto);
     
     // Calcular o percentual equivalente
-    const percentualEquivalente = totalPrice > 0 ? (descontoFinal / totalPrice) * 100 : 0;
+    const percentualEquivalente = baseDesconto > 0 ? (descontoFinal / baseDesconto) * 100 : 0;
+    const valorComDesconto = baseDesconto - descontoFinal;
 
     setFormData((prev) => ({
       ...prev,
       precoDesconto: descontoFinal,
       descontoPercentual: percentualEquivalente,
-      valorComDesconto: totalPrice - descontoFinal,
+      valorComDesconto: valorComDesconto,
+      precoDescontado: valorComDesconto,
     }));
   };
 
@@ -977,25 +1018,13 @@ export default function FormOrderService({
                 </>
               )}
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
-                {/* <div>
-                                    <Label>Percentual de ganho %<span className="text-red-300">*</span></Label>
-                                    <Input
-                                        type="number"
-                                        placeholder="Percentual de ganho %"
-                                        onChange={handleChangeGanho}
-                                        value={formData.percentualGanho?.toString()}
-                                        min="1"
-                                        disabled={edit}
-                                        required={true}
-                                    />
-                                </div> */}
                 <div>
                   <Label>Desconto %</Label>
                   <Input
                     type="text"
-                    placeholder="Percentual de Desconto %"
+                    placeholder="0"
                     onChange={handleChanceDescont}
-                    value={formData.descontoPercentual?.toString()}
+                    value={descontoPercentualInput}
                     disabled={edit}
                   />
                 </div>
@@ -1069,10 +1098,10 @@ export default function FormOrderService({
                   <Label>Desconto R$</Label>
                   <Input
                     type="text"
-                    placeholder="Valor do desconto"
+                    placeholder="0"
                     disabled={edit}
                     onChange={handleChangeDescontoReais}
-                    value={formData.precoDesconto?.toFixed(2) || '0.00'}
+                    value={descontoReaisInput}
                     className="text-black"
                   />
                 </div>
