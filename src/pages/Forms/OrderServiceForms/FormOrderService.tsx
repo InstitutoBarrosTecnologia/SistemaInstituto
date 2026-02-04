@@ -490,22 +490,24 @@ export default function FormOrderService({
   }, [selectedServices]);
   const totalComDesconto =
     totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
-  const totalComGanho =
-    totalComDesconto * (1 + (formData.percentualGanho ?? 0) / 100);
+  
+  // totalComGanho deve usar precoOrdem (que já tem o ganho) menos o desconto
+  // Não deve reaplicar o percentualGanho pois ele já está no precoOrdem
+  const totalComGanho = (formData.precoOrdem || 0) - (formData.precoDesconto || 0);
 
   useEffect(() => {
     // Só recalcula automaticamente se não estiver em modo manual
     if (!isManualPrecoOrdem) {
-      const precoFinalComGanho =
-        totalPrice *
-        (1 - (formData.descontoPercentual ?? 0) / 100) *
-        (1 + (formData.percentualGanho ?? 0) / 100);
+      // precoOrdem = totalPrice dos serviços + ganho (SEM desconto ainda)
+      const precoOrdemComGanho = totalPrice * (1 + (formData.percentualGanho ?? 0) / 100);
+      
+      // precoDescontado = totalPrice - desconto
+      const valorDescontado = totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
 
       setFormData((prev) => ({
         ...prev,
-        precoOrdem: precoFinalComGanho,
-        precoDescontado:
-          totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100),
+        precoOrdem: precoOrdemComGanho,
+        precoDescontado: valorDescontado,
       }));
     }
   }, [totalPrice, formData.descontoPercentual, formData.percentualGanho, isManualPrecoOrdem]);
@@ -513,15 +515,17 @@ export default function FormOrderService({
   useEffect(() => {
     const totalComDesconto =
       totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
-    const totalComGanho =
-      totalComDesconto * (1 + (formData.percentualGanho ?? 0) / 100);
+    
+    // valorComGanho deve usar precoOrdem (que já tem ganho) menos o desconto
+    // Não deve reaplicar o ganho pois já está no precoOrdem
+    const totalComGanho = (formData.precoOrdem || 0) - (formData.precoDesconto || 0);
 
     setFormData((prev) => ({
       ...prev,
       valorComDesconto: totalComDesconto,
       valorComGanho: totalComGanho,
     }));
-  }, [formData.descontoPercentual, formData.percentualGanho, totalPrice]);
+  }, [formData.descontoPercentual, formData.percentualGanho, totalPrice, formData.precoOrdem, formData.precoDesconto]);
 
   useEffect(() => {
     const servicosMapeados = selectedServices.map((s) => ({
@@ -670,10 +674,9 @@ export default function FormOrderService({
     const value = inputValue.replace(',', '.');
     const percentual = parseFloat(value) || 0;
 
-    // Usar formData.precoOrdem como base do desconto
-    const baseDesconto = formData.precoOrdem || totalPrice;
-    const valorDescontoEmReais = (baseDesconto * percentual) / 100;
-    const valorComDesconto = baseDesconto - valorDescontoEmReais;
+    // Base do desconto deve ser o totalPrice (soma dos serviços), não o precoOrdem que tem ganho
+    const valorDescontoEmReais = (totalPrice * percentual) / 100;
+    const valorComDesconto = totalPrice - valorDescontoEmReais;
 
     // Atualizar o campo de desconto em reais com o valor calculado (formatado com vírgula)
     setDescontoReaisInput(valorDescontoEmReais.toString().replace('.', ','));
@@ -694,13 +697,13 @@ export default function FormOrderService({
     const value = inputValue.replace(',', '.');
     const valorDesconto = parseFloat(value) || 0;
 
-    // Usar formData.precoOrdem como base do desconto
-    const baseDesconto = formData.precoOrdem || totalPrice;
+    // Base do desconto deve ser o totalPrice (soma dos serviços), não o precoOrdem
+    const baseDesconto = totalPrice;
     
     // Não permitir desconto maior que o total
     const descontoFinal = Math.min(valorDesconto, baseDesconto);
     
-    // Calcular o percentual equivalente
+    // Calcular o percentual equivalente sobre totalPrice
     const percentualEquivalente = baseDesconto > 0 ? (descontoFinal / baseDesconto) * 100 : 0;
     const valorComDesconto = baseDesconto - descontoFinal;
 
