@@ -4,13 +4,26 @@ import TextArea from "../../../components/form/input/TextArea";
 import Label from "../../../components/form/Label";
 import Select from "../../../components/form/Select";
 import Checkbox from "../../../components/form/input/Checkbox";
-import { CustomerRequestDto, HistoryCustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
+import {
+  CustomerRequestDto,
+  HistoryCustomerRequestDto,
+} from "../../../services/model/Dto/Request/CustomerRequestDto";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
-import { postCustomerAsync, putCustomerAsync } from "../../../services/service/CustomerService";
+import {
+  postCustomerAsync,
+  putCustomerAsync,
+} from "../../../services/service/CustomerService";
 import toast, { Toaster } from "react-hot-toast";
 import InputMask from "react-input-mask";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "../../../components/ui/table";
+import { buscarEnderecoPorCep } from "../../../services/service/ViaCepService";
 
 interface FormCustomerProps {
   data?: CustomerRequestDto;
@@ -19,13 +32,19 @@ interface FormCustomerProps {
   onSuccess?: () => void;
 }
 
-export default function FormCustomer({ data, edit, closeModal, onSuccess }: FormCustomerProps) {
+export default function FormCustomer({
+  data,
+  edit,
+  closeModal,
+  onSuccess,
+}: FormCustomerProps) {
   const [historicoTemp, setHistoricoTemp] = useState("");
+  const [buscandoCep, setBuscandoCep] = useState(false);
 
   // Função para converter data ISO para formato brasileiro DD/MM/YYYY
   const formatDateToBrazilian = (isoDate: string): string => {
     if (!isoDate) return "";
-    
+
     try {
       // Se já está no formato brasileiro, retornar
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(isoDate)) {
@@ -33,8 +52,8 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
       }
 
       // Se está no formato ISO (YYYY-MM-DD ou YYYY-MM-DDTHH:mm:ss)
-      const dateOnly = isoDate.split('T')[0];
-      const [year, month, day] = dateOnly.split('-');
+      const dateOnly = isoDate.split("T")[0];
+      const [year, month, day] = dateOnly.split("-");
       return `${day}/${month}/${year}`;
     } catch (error) {
       return "";
@@ -45,7 +64,9 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
     id: edit && data?.id ? data.id : undefined,
     nome: data?.nome ?? "",
     rg: data?.rg ?? "",
-    dataNascimento: data?.dataNascimento ? formatDateToBrazilian(data.dataNascimento) : "",
+    dataNascimento: data?.dataNascimento
+      ? formatDateToBrazilian(data.dataNascimento)
+      : "",
     imc: data?.imc,
     altura: data?.altura,
     peso: data?.peso,
@@ -75,9 +96,14 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
     mutationFn: edit ? putCustomerAsync : postCustomerAsync,
     onSuccess: (response) => {
       if (response.status === 200) {
-        toast.success(edit ? "Paciente atualizado com sucesso!" : "Paciente cadastrado com sucesso!", {
-          duration: 3000,
-        });
+        toast.success(
+          edit
+            ? "Paciente atualizado com sucesso!"
+            : "Paciente cadastrado com sucesso!",
+          {
+            duration: 3000,
+          },
+        );
 
         queryClient.invalidateQueries<CustomerResponseDto[]>({
           queryKey: ["allCustomer"],
@@ -103,11 +129,14 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
       } else if (typeof response === "string") {
         toast.error(response, { duration: 4000 });
       } else {
-        toast.error("Erro ao salvar o paciente. Verifique os dados e tente novamente.", {
-          duration: 4000,
-        });
+        toast.error(
+          "Erro ao salvar o paciente. Verifique os dados e tente novamente.",
+          {
+            duration: 4000,
+          },
+        );
       }
-    }
+    },
   });
 
   useEffect(() => {
@@ -137,7 +166,9 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
         id: data.id,
         nome: data.nome ?? "",
         rg: data.rg ?? "",
-        dataNascimento: data.dataNascimento ? formatDateToBrazilian(data.dataNascimento) : "",
+        dataNascimento: data.dataNascimento
+          ? formatDateToBrazilian(data.dataNascimento)
+          : "",
         imc: data.imc,
         altura: data.altura,
         peso: data.peso,
@@ -168,7 +199,10 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
 
     // Converter data de DD/MM/YYYY para YYYY-MM-DD se necessário
     let dataNascimentoISO = formData.dataNascimento;
-    if (formData.dataNascimento && /^\d{2}\/\d{2}\/\d{4}$/.test(formData.dataNascimento)) {
+    if (
+      formData.dataNascimento &&
+      /^\d{2}\/\d{2}\/\d{4}$/.test(formData.dataNascimento)
+    ) {
       const [day, month, year] = formData.dataNascimento.split("/");
       dataNascimentoISO = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
     }
@@ -186,7 +220,9 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
       // Se for estrangeiro, não enviar CPF (ou enviar vazio)
       cpf: formData.estrangeiro ? "" : formData.cpf,
       // Se não for estrangeiro, não enviar documento de identificação
-      documentoIdentificacao: formData.estrangeiro ? formData.documentoIdentificacao : undefined,
+      documentoIdentificacao: formData.estrangeiro
+        ? formData.documentoIdentificacao
+        : undefined,
     };
 
     mutation.mutate(formDataAtualizado);
@@ -194,12 +230,53 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       const form = e.currentTarget.form;
       if (form) {
         form.requestSubmit();
       }
+    }
+  };
+
+  const handleBuscarCep = async (cep: string) => {
+  
+    const cepLimpo = cep.replace(/\D/g, "");
+
+    if (cepLimpo.length !== 8) {
+      return;
+    }
+
+    setBuscandoCep(true);
+
+    try {
+      const endereco = await buscarEnderecoPorCep(cepLimpo);
+
+      if (endereco) {
+        setFormData((prev) => ({
+          ...prev,
+          endereco: {
+            ...prev.endereco!,
+            rua: endereco.rua,
+            bairro: endereco.bairro,
+            cidade: endereco.cidade,
+            estado: endereco.estado,
+            cep: endereco.cep,
+          },
+        }));
+
+        toast.success("CEP encontrado! Endereço preenchido automaticamente.", {
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message, { duration: 4000 });
+      } else {
+        toast.error("Erro ao buscar CEP. Tente novamente.", { duration: 4000 });
+      }
+    } finally {
+      setBuscandoCep(false);
     }
   };
 
@@ -213,12 +290,12 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
     { value: "6", label: "Tratamento Concluído" },
     { value: "7", label: "Alta" },
     { value: "8", label: "Cancelado" },
-    { value: "9", label: "Inativo" }
+    { value: "9", label: "Inativo" },
   ];
 
   const optionsSexo = [
     { value: "0", label: "Masculino" },
-    { value: "1", label: "Feminino" }
+    { value: "1", label: "Feminino" },
   ];
 
   const patologiasOptions = [
@@ -237,14 +314,15 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
     { value: "Hérnia de Disco Lombar", label: "Hérnia de Disco Lombar" },
     { value: "Lombalgia", label: "Lombalgia" },
     { value: "Tendinite Patelar", label: "Tendinite Patelar" },
-    { value: "Tendinopatia do Supraespinhal", label: "Tendinopatia do Supraespinhal" }
+    {
+      value: "Tendinopatia do Supraespinhal",
+      label: "Tendinopatia do Supraespinhal",
+    },
   ];
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
-
-
 
   return (
     <>
@@ -254,25 +332,46 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
             {edit ? "Editar Paciente" : "Cadastrar um Paciente"}
           </h4>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-            {edit ? "Atualize os dados do paciente." : "Adicione as informações para registrar um novo paciente."}
+            {edit
+              ? "Atualize os dados do paciente."
+              : "Adicione as informações para registrar um novo paciente."}
           </p>
         </div>
         <form className="flex flex-col" onSubmit={handleSave}>
           <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
             <div>
-              <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">Informações</h5>
+              <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
+                Informações
+              </h5>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                 <div>
-                  <Label>Nome <span className="text-red-300">*</span></Label>
-                  <Input type="text" required={true} placeholder="Nome completo" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
+                  <Label>
+                    Nome <span className="text-red-300">*</span>
+                  </Label>
+                  <Input
+                    type="text"
+                    required={true}
+                    placeholder="Nome completo"
+                    value={formData.nome}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nome: e.target.value })
+                    }
+                  />
                 </div>
                 <div>
-                  <Label>Sexo<span className="text-red-300">*</span></Label>
+                  <Label>
+                    Sexo<span className="text-red-300">*</span>
+                  </Label>
                   <Select
                     options={optionsSexo}
                     value={formData.sexo.toString()}
                     placeholder="Selecione um sexo"
-                    onChange={(value) => setFormData(prev => ({ ...prev, sexo: parseInt(value) }))}
+                    onChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        sexo: parseInt(value),
+                      }))
+                    }
                     className="dark:bg-dark-900"
                     required={true}
                   />
@@ -283,20 +382,24 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                       label="Estrangeiro"
                       checked={formData.estrangeiro}
                       onChange={(checked) => {
-                        setFormData(prev => ({ 
-                          ...prev, 
+                        setFormData((prev) => ({
+                          ...prev,
                           estrangeiro: checked,
                           // Limpar os campos quando alterar o tipo
                           cpf: checked ? "" : prev.cpf,
-                          documentoIdentificacao: !checked ? "" : prev.documentoIdentificacao
+                          documentoIdentificacao: !checked
+                            ? ""
+                            : prev.documentoIdentificacao,
                         }));
                       }}
                     />
                   </div>
-                  
+
                   {!formData.estrangeiro ? (
                     <>
-                      <Label>CPF<span className="text-red-300">*</span></Label>
+                      <Label>
+                        CPF<span className="text-red-300">*</span>
+                      </Label>
                       <InputMask
                         mask="999.999.999-99"
                         maskChar=""
@@ -310,12 +413,20 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                     </>
                   ) : (
                     <>
-                      <Label>Documento de Identificação<span className="text-red-300">*</span></Label>
+                      <Label>
+                        Documento de Identificação
+                        <span className="text-red-300">*</span>
+                      </Label>
                       <Input
                         type="text"
                         name="documentoIdentificacao"
                         value={formData.documentoIdentificacao || ""}
-                        onChange={(e) => setFormData(prev => ({ ...prev, documentoIdentificacao: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            documentoIdentificacao: e.target.value,
+                          }))
+                        }
                         placeholder="Passaporte, RNE ou outro documento"
                         required={formData.estrangeiro}
                       />
@@ -336,12 +447,19 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                   />
                 </div>
                 <div>
-                  <Label>Data de Nascimento<span className="text-red-300">*</span></Label>
+                  <Label>
+                    Data de Nascimento<span className="text-red-300">*</span>
+                  </Label>
                   <InputMask
                     mask="99/99/9999"
                     maskChar=""
                     value={formData.dataNascimento ?? ""}
-                    onChange={(e) => setFormData({ ...formData, dataNascimento: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        dataNascimento: e.target.value,
+                      })
+                    }
                     onKeyPress={handleKeyPress}
                     placeholder="dd/mm/aaaa"
                     className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
@@ -350,7 +468,14 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                 </div>
                 <div>
                   <Label>E-mail</Label>
-                  <Input type="email" placeholder="exemplo@email.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                  <Input
+                    type="email"
+                    placeholder="exemplo@email.com"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                  />
                 </div>
                 <div>
                   <Label>Telefone</Label>
@@ -374,7 +499,9 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                     name="altura"
                     value={formData.altura ?? ""}
                     onChange={(e) => {
-                      const altura = e.target.value ? parseFloat(e.target.value) : undefined;
+                      const altura = e.target.value
+                        ? parseFloat(e.target.value)
+                        : undefined;
                       setFormData((prev) => ({ ...prev, altura }));
                     }}
                     onKeyPress={handleKeyPress}
@@ -390,7 +517,9 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                     name="peso"
                     value={formData.peso ?? ""}
                     onChange={(e) => {
-                      const peso = e.target.value ? parseFloat(e.target.value) : undefined;
+                      const peso = e.target.value
+                        ? parseFloat(e.target.value)
+                        : undefined;
                       setFormData((prev) => ({ ...prev, peso }));
                     }}
                     onKeyPress={handleKeyPress}
@@ -405,21 +534,82 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                     step={0.1}
                     value={formData.imc ?? ""}
                     disabled
-                  /></div>
+                  />
+                </div>
                 <div>
                   <Label>Patologia</Label>
                   <Select
                     options={patologiasOptions}
                     value={formData.patologia ?? ""}
                     placeholder="Selecione uma patologia"
-                    onChange={(value) => setFormData(prev => ({ ...prev, patologia: value || undefined }))}
+                    onChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        patologia: value || undefined,
+                      }))
+                    }
                     className="dark:bg-dark-900"
                   />
                 </div>
               </div>
               <div className="mt-4">
-                <h5 className="mb-3 text-lg font-medium text-gray-800 dark:text-white/90">Endereço</h5>
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                <h5 className="mb-3 text-lg font-medium text-gray-800 dark:text-white/90">
+                  Endereço
+                </h5>
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-3">
+                  <div>
+                    <Label>CEP</Label>
+                    <div className="relative">
+                      <InputMask
+                        mask="99999-999"
+                        maskChar=""
+                        name="cep"
+                        value={formData.endereco?.cep ?? ""}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            endereco: {
+                              ...prev.endereco!,
+                              cep: e.target.value,
+                            },
+                          }))
+                        }
+                        onBlur={(e) => handleBuscarCep(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="00000-000"
+                        disabled={buscandoCep}
+                        className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                      />
+                      {buscandoCep && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <svg
+                            className="animate-spin h-5 w-5 text-brand-500"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Digite o CEP e pressione Tab ou clique fora para buscar
+                      automaticamente
+                    </p>
+                  </div>
                   <div>
                     <Label>Rua</Label>
                     <Input
@@ -442,7 +632,10 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          endereco: { ...prev.endereco!, numero: e.target.value },
+                          endereco: {
+                            ...prev.endereco!,
+                            numero: e.target.value,
+                          },
                         }))
                       }
                     />
@@ -456,7 +649,10 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          endereco: { ...prev.endereco!, bairro: e.target.value },
+                          endereco: {
+                            ...prev.endereco!,
+                            bairro: e.target.value,
+                          },
                         }))
                       }
                     />
@@ -470,7 +666,10 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          endereco: { ...prev.endereco!, cidade: e.target.value },
+                          endereco: {
+                            ...prev.endereco!,
+                            cidade: e.target.value,
+                          },
                         }))
                       }
                     />
@@ -484,39 +683,30 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          endereco: { ...prev.endereco!, estado: e.target.value },
+                          endereco: {
+                            ...prev.endereco!,
+                            estado: e.target.value,
+                          },
                         }))
                       }
-                    />
-                  </div>
-
-                  <div>
-                    <Label>CEP</Label>
-                    <InputMask
-                      mask="99999-999"
-                      maskChar=""
-                      name="cep"
-                      value={formData.endereco?.cep ?? ""}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          endereco: { ...prev.endereco!, cep: e.target.value },
-                        }))
-                      }
-                      onKeyPress={handleKeyPress}
-                      placeholder="00000-000"
-                      className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
                     />
                   </div>
                 </div>
               </div>
               <div>
-                <Label>Status<span className="text-red-300">*</span></Label>
+                <Label>
+                  Status<span className="text-red-300">*</span>
+                </Label>
                 <Select
                   options={options}
                   value={formData.status.toString()}
                   placeholder="Selecione um status"
-                  onChange={(value) => setFormData(prev => ({ ...prev, status: parseInt(value) }))}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      status: parseInt(value),
+                    }))
+                  }
                   className="dark:bg-dark-900"
                   required={true}
                 />
@@ -524,7 +714,11 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
                 <div>
                   <Label>Histórico</Label>
-                  <TextArea placeholder="Escreva o histórico que desejar" value={historicoTemp} onChange={(value) => setHistoricoTemp(value)} />
+                  <TextArea
+                    placeholder="Escreva o histórico que desejar"
+                    value={historicoTemp}
+                    onChange={(value) => setHistoricoTemp(value)}
+                  />
                 </div>
               </div>
             </div>
@@ -535,8 +729,18 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                 type="button"
               >
                 <span>Histórico</span>
-                <svg className={`w-4 h-4 transform transition-transform ${showHistorico ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                <svg
+                  className={`w-4 h-4 transform transition-transform ${showHistorico ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
 
@@ -569,7 +773,8 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                           </TableRow>
                         </TableHeader>
                         <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                          {formData?.historico && formData.historico.length > 0 ? (
+                          {formData?.historico &&
+                          formData.historico.length > 0 ? (
                             formData.historico.map((historico, index) => (
                               <TableRow key={index}>
                                 <TableCell className="px-5 py-4 sm:px-6 text-start">
@@ -584,7 +789,9 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                                 </TableCell>
                                 <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                   <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                    {new Date(historico.dataAtualizacao!).toLocaleString("pt-BR", {
+                                    {new Date(
+                                      historico.dataAtualizacao!,
+                                    ).toLocaleString("pt-BR", {
                                       day: "2-digit",
                                       month: "2-digit",
                                       year: "numeric",
@@ -609,7 +816,6 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                 </div>
               )}
             </div>
-
           </div>
 
           <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
@@ -627,9 +833,25 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
             >
               {mutation.isPending ? (
                 <>
-                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Salvando...
                 </>
@@ -639,7 +861,6 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
             </button>
           </div>
         </form>
-
       </div>
       <Toaster position="bottom-right" />
     </>

@@ -13,6 +13,7 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import { ChromePicker } from "react-color";
 import { getRoleOptionsForEmployeeForm } from "../../../services/util/roleOptions";
 import { getUserRoleFromToken, userHasRole, USER_ROLES } from "../../../services/util/rolePermissions";
+import { buscarEnderecoPorCep } from "../../../services/service/ViaCepService";
 
 interface FormEmployeeProps {
   data?: EmployeeResponseDto;
@@ -66,6 +67,18 @@ export default function FormEmployee({
 
   const [userConfig, setUserConfig] = useState<boolean>(false);
   const [isAdministrador, setIsAdministrador] = useState<boolean>(false);
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  
+  // Estados para endereço estruturado (será combinado no campo 'endereco')
+  const [enderecoDetalhado, setEnderecoDetalhado] = useState({
+    cep: "",
+    rua: "",
+    numero: "",
+    bairro: "",
+    cidade: "",
+    estado: "",
+  });
+  
   const [formData, setFormData] = useState<EmployeeRequestDto>({
     id: edit && data?.id ? data.id : undefined,
     nome: data?.nome ?? "",
@@ -237,6 +250,40 @@ export default function FormEmployee({
     fetchFiliais();
   }, []);
 
+  // Atualizar campo 'endereco' quando os campos detalhados mudarem
+  useEffect(() => {
+    const enderecoCompleto = combinarEndereco();
+    if (enderecoCompleto) {
+      setFormData((prev) => ({
+        ...prev,
+        endereco: enderecoCompleto,
+      }));
+    }
+  }, [enderecoDetalhado]);
+
+  // Popular campos de endereço ao editar funcionário existente
+  useEffect(() => {
+    if (data?.endereco && data.endereco.trim() !== "") {
+      // Tentar extrair CEP do endereço existente (formato: "... CEP: 12345-678")
+      const cepMatch = data.endereco.match(/CEP:\s*(\d{5}-?\d{3})/i);
+      
+      // Tentar extrair número (formato: "... nº 123 ...")
+      const numeroMatch = data.endereco.match(/n[º°]\s*(\d+)/i);
+      
+      // Dividir endereço em partes (separado por vírgula)
+      const partes = data.endereco.split(',').map(p => p.trim());
+      
+      setEnderecoDetalhado({
+        cep: cepMatch ? cepMatch[1] : "",
+        rua: partes[0]?.replace(/n[º°]\s*\d+/i, '').trim() || "",
+        numero: numeroMatch ? numeroMatch[1] : "",
+        bairro: partes[1]?.replace(/n[º°]\s*\d+/i, '').trim() || "",
+        cidade: partes[2] || "",
+        estado: partes[3]?.replace(/CEP:.*$/i, '').trim() || "",
+      });
+    }
+  }, [data?.endereco]);
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -260,6 +307,64 @@ export default function FormEmployee({
       if (form) {
         form.requestSubmit();
       }
+    }
+  };
+
+  /**
+   * Combina os campos de endereço em uma string formatada
+   */
+  const combinarEndereco = (): string => {
+    const partes: string[] = [];
+    
+    if (enderecoDetalhado.rua) partes.push(enderecoDetalhado.rua);
+    if (enderecoDetalhado.numero) partes.push(`nº ${enderecoDetalhado.numero}`);
+    if (enderecoDetalhado.bairro) partes.push(enderecoDetalhado.bairro);
+    if (enderecoDetalhado.cidade) partes.push(enderecoDetalhado.cidade);
+    if (enderecoDetalhado.estado) partes.push(enderecoDetalhado.estado);
+    if (enderecoDetalhado.cep) partes.push(`CEP: ${enderecoDetalhado.cep}`);
+    
+    return partes.join(", ");
+  };
+
+  /**
+   * Busca endereço completo através do CEP usando a API ViaCEP
+   */
+  const handleBuscarCep = async (cep: string) => {
+    // Remover formatação do CEP
+    const cepLimpo = cep.replace(/\D/g, '');
+
+    // Validar se tem 8 dígitos
+    if (cepLimpo.length !== 8) {
+      return;
+    }
+
+    setBuscandoCep(true);
+
+    try {
+      const endereco = await buscarEnderecoPorCep(cepLimpo);
+
+      if (endereco) {
+        setEnderecoDetalhado({
+          cep: endereco.cep,
+          rua: endereco.rua,
+          numero: "",
+          bairro: endereco.bairro,
+          cidade: endereco.cidade,
+          estado: endereco.estado,
+        });
+
+        toast.success("CEP encontrado! Endereço preenchido automaticamente.", {
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message, { duration: 4000 });
+      } else {
+        toast.error("Erro ao buscar CEP. Tente novamente.", { duration: 4000 });
+      }
+    } finally {
+      setBuscandoCep(false);
     }
   };
 
@@ -435,14 +540,121 @@ export default function FormEmployee({
                   required={true}
                 />
               </div>
-              <div>
-                <Label>Endereço</Label>
-                <Input
-                  name="endereco"
-                  value={formData.endereco}
-                  onChange={handleChange}
-                />
+            </div>
+
+            {/* Seção de Endereço */}
+            <div className="mt-4">
+              <h5 className="mb-3 text-lg font-medium">Endereço</h5>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                <div>
+                  <Label>CEP</Label>
+                  <div className="relative">
+                    <InputMask
+                      mask="99999-999"
+                      maskChar=""
+                      name="cep"
+                      value={enderecoDetalhado.cep}
+                      onChange={(e) =>
+                        setEnderecoDetalhado((prev) => ({
+                          ...prev,
+                          cep: e.target.value,
+                        }))
+                      }
+                      onBlur={(e) => handleBuscarCep(e.target.value)}
+                      disabled={buscandoCep}
+                      placeholder="00000-000"
+                      className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                    />
+                    {buscandoCep && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent"></div>
+                      </div>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Digite o CEP e pressione Tab para buscar automaticamente
+                  </p>
+                </div>
+
+                <div>
+                  <Label>Rua</Label>
+                  <Input
+                    name="rua"
+                    value={enderecoDetalhado.rua}
+                    onChange={(e) =>
+                      setEnderecoDetalhado((prev) => ({
+                        ...prev,
+                        rua: e.target.value,
+                      }))
+                    }
+                    placeholder="Nome da rua"
+                  />
+                </div>
+
+                <div>
+                  <Label>Número</Label>
+                  <Input
+                    name="numero"
+                    value={enderecoDetalhado.numero}
+                    onChange={(e) =>
+                      setEnderecoDetalhado((prev) => ({
+                        ...prev,
+                        numero: e.target.value,
+                      }))
+                    }
+                    placeholder="Nº"
+                  />
+                </div>
+
+                <div>
+                  <Label>Bairro</Label>
+                  <Input
+                    name="bairro"
+                    value={enderecoDetalhado.bairro}
+                    onChange={(e) =>
+                      setEnderecoDetalhado((prev) => ({
+                        ...prev,
+                        bairro: e.target.value,
+                      }))
+                    }
+                    placeholder="Bairro"
+                  />
+                </div>
+
+                <div>
+                  <Label>Cidade</Label>
+                  <Input
+                    name="cidade"
+                    value={enderecoDetalhado.cidade}
+                    onChange={(e) =>
+                      setEnderecoDetalhado((prev) => ({
+                        ...prev,
+                        cidade: e.target.value,
+                      }))
+                    }
+                    placeholder="Cidade"
+                  />
+                </div>
+
+                <div>
+                  <Label>Estado</Label>
+                  <Input
+                    name="estado"
+                    value={enderecoDetalhado.estado}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase().slice(0, 2);
+                      setEnderecoDetalhado((prev) => ({
+                        ...prev,
+                        estado: value,
+                      }));
+                    }}
+                    placeholder="UF"
+                  />
+                </div>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mt-4">
               <div>
                 <Label>Cargo</Label>
                 <Input
