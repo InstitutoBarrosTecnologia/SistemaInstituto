@@ -160,6 +160,8 @@ const Calendar: React.FC = () => {
         return "🔴"; // círculo vermelho
       case EScheduleStatus.Reuniao:
         return "👥"; // pessoas/reunião
+      case EScheduleStatus.Banheira:
+        return "🛁"; // banheira
       default:
         return "❓"; // padrão
     }

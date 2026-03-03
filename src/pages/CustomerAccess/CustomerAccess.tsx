@@ -3,11 +3,13 @@
  * Pode ser removido no futuro sem afetar funcionalidades existentes
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { Modal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
+import Label from "../../components/form/Label";
+import TextArea from "../../components/form/input/TextArea";
 import {
   getAllCustomersWithAccessStatusAsync,
   generateSingleAccessAsync,
@@ -21,6 +23,11 @@ import { UserCircleIcon, CheckCircleIcon, CloseLineIcon, TrashBinIcon, CheckLine
 
 export default function CustomerAccessPage() {
   const { isOpen, openModal, closeModal } = useModal();
+  const {
+    isOpen: isDisableModalOpen,
+    openModal: openDisableModal,
+    closeModal: closeDisableModal,
+  } = useModal();
   const [customers, setCustomers] = useState<CustomerWithAccessStatusDto[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<CustomerWithAccessStatusDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -28,6 +35,8 @@ export default function CustomerAccessPage() {
   const [results, setResults] = useState<CustomerAccessResponseDto | null>(null);
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'with' | 'without'>('all');
+  const [disableTarget, setDisableTarget] = useState<{ id: string; name: string } | null>(null);
+  const [disableReason, setDisableReason] = useState("");
 
   // Carregar todos os clientes com status de acesso
   useEffect(() => {
@@ -108,19 +117,35 @@ export default function CustomerAccessPage() {
     }
   };
 
-  const handleDisableAccess = async (customerId: string, customerName: string) => {
-    const confirmed = window.confirm(
-      `Tem certeza que deseja DESABILITAR o acesso de ${customerName}?\n\n` +
-      `O cliente não poderá mais fazer login no sistema.`
-    );
-    
-    if (!confirmed) return;
-    
+  const handleDisableAccess = (customerId: string, customerName: string) => {
+    setDisableTarget({ id: customerId, name: customerName });
+    setDisableReason("");
+    openDisableModal();
+  };
+
+  const handleCloseDisableModal = () => {
+    setDisableTarget(null);
+    setDisableReason("");
+    closeDisableModal();
+  };
+
+  const handleConfirmDisableAccess = async (event?: FormEvent) => {
+    if (event) event.preventDefault();
+
+    if (!disableTarget) return;
+
+    const reason = disableReason.trim();
+    if (!reason) {
+      toast.error("Informe a justificativa para o bloqueio.");
+      return;
+    }
+
     setProcessing(true);
     try {
-      await disableCustomerAccessAsync(customerId, "Acesso desabilitado pelo administrador");
-      toast.success(`Acesso de ${customerName} foi desabilitado com sucesso!`);
+      await disableCustomerAccessAsync(disableTarget.id, reason);
+      toast.success(`Acesso de ${disableTarget.name} foi desabilitado com sucesso!`);
       await loadAllCustomers();
+      handleCloseDisableModal();
     } catch (error) {
       toast.error("Erro ao desabilitar acesso");
       console.error(error);
@@ -484,6 +509,51 @@ export default function CustomerAccessPage() {
             </>
           )}
         </div>
+        </div>
+      </Modal>
+
+      {/* Modal de Confirmação de Bloqueio */}
+      <Modal isOpen={isDisableModalOpen} onClose={handleCloseDisableModal} className="max-w-[700px] m-4">
+        <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <div className="px-2 pr-14">
+            <h4 className="mb-2 text-2xl font-semibold text-center text-gray-800 dark:text-white/90">
+              Desabilitar Acesso
+            </h4>
+            <p className="text-sm text-center text-gray-500 dark:text-gray-400">
+              {disableTarget
+                ? `Tem certeza que deseja desabilitar o acesso de ${disableTarget.name}?`
+                : "Tem certeza que deseja desabilitar este acesso?"}
+            </p>
+          </div>
+          <form className="flex flex-col" onSubmit={handleConfirmDisableAccess}>
+            <div className="custom-scrollbar overflow-y-auto px-2 pb-3 mt-6">
+              <div>
+                <Label>Justificativa do bloqueio</Label>
+                <TextArea
+                  placeholder="Descreva o motivo do bloqueio"
+                  rows={4}
+                  value={disableReason}
+                  onChange={setDisableReason}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                type="button"
+                onClick={handleCloseDisableModal}
+                className="bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button
+                className="bg-red-600 text-white shadow-theme-xs hover:bg-red-700 disabled:bg-red-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
+                type="submit"
+                disabled={processing}
+              >
+                Confirmar bloqueio
+              </button>
+            </div>
+          </form>
         </div>
       </Modal>
     </>
