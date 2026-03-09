@@ -99,11 +99,11 @@ export default function App() {
             } 
           />
 
-          {/* TEMPORÁRIO - Sistema de acesso automático para clientes - Apenas para Administradores */}
+          {/* TEMPORÁRIO - Sistema de acesso automático para clientes - Apenas para Administradores e Administrativo */}
           <Route 
             path="/customer-access" 
             element={
-              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.LOGS}>
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.CUSTOMER_ACCESS}>
                 <CustomerAccessPage />
               </RoleProtectedRoute>
             } 

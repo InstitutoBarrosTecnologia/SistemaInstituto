@@ -148,6 +148,12 @@ export const MENU_PERMISSIONS = {
   // Logs - Rastreabilidade (apenas Administradores)
   LOGS: [
     USER_ROLES.ADMINISTRADOR
+  ],
+
+  // Acesso Cliente - Sistema de acesso automático para clientes (apenas Administrador e Administrativo)
+  CUSTOMER_ACCESS: [
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.ADMINISTRATIVO
   ]
 } as const;
 
