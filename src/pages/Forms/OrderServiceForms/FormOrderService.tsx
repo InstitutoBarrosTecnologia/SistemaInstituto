@@ -4,6 +4,7 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import Select from "../../../components/form/Select";
+import SelectWithSearch from "../../../components/form/SelectWithSearch";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { Option } from "../../../components/form/MultiSelect";
 import { CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
@@ -66,7 +67,7 @@ export default function FormOrderService({
     funcionarioId: "",
     dataPagamento: new Date().toISOString().split("T")[0],
     qtdSessaoTotal: 0,
-    qtdSessaoRealizada: 0,
+    qtdSessaoRealizada: 1,
     servicos: [],
     sessoes: [],
   });
@@ -78,6 +79,12 @@ export default function FormOrderService({
   const [servicesOptions, setServicesOptions] = useState<Option[]>([]);
   const [selectedServices, setSelectedServices] = useState<Option[]>([]);
   const [selectedConta, setSelectedConta] = useState<string>("corrente");
+  const [isManualPrecoOrdem, setIsManualPrecoOrdem] = useState<boolean>(false);
+  const [isManualTotalComGanho, setIsManualTotalComGanho] = useState<boolean>(false);
+  const [precoOrdemInput, setPrecoOrdemInput] = useState<string>("");
+  const [totalComGanhoInput, setTotalComGanhoInput] = useState<string>("");
+  const [descontoPercentualInput, setDescontoPercentualInput] = useState<string>("");
+  const [descontoReaisInput, setDescontoReaisInput] = useState<string>("");
 
   const queryClient = useQueryClient();
 
@@ -223,11 +230,6 @@ export default function FormOrderService({
     orderServiceData: OrderServiceResponseDto
   ) => {
     try {
-      console.log(
-        "💰 Criando transação financeira para tratamento:",
-        orderServiceData
-      );
-
       // Calcular valor total dos serviços
       const valorTotal =
         orderServiceData.servicos?.reduce((total, servico) => {
@@ -278,8 +280,7 @@ export default function FormOrderService({
         numeroParcelas: orderServiceData.formaPagamento === EFormaPagamento.CartaoCreditoParcelado ? numeroParcelas : 0,
       };
 
-      const result = await FinancialTransactionService.create(transactionData);
-      console.log("✅ Transação financeira criada com sucesso:", result);
+      await FinancialTransactionService.create(transactionData);
       toast.success("Transação financeira criada automaticamente!");
     } catch (error) {
       console.error("❌ Erro ao criar transação financeira:", error);
@@ -301,13 +302,7 @@ export default function FormOrderService({
 
         // Criar transação financeira automaticamente
         if (response.data) {
-          console.log(
-            "💰 Chamando createFinancialTransaction com:",
-            response.data
-          );
           await createFinancialTransaction(response.data);
-        } else {
-          console.warn("⚠️ response.data está vazio:", response);
         }
 
         setTimeout(() => {
@@ -439,6 +434,9 @@ export default function FormOrderService({
         status: data.status,
         precoOrdem: data.precoOrdem,
         precoDesconto: data.precoDesconto,
+        descontoPercentual: data.descontoPercentual,
+        percentualGanho: data.percentualGanho,
+        precoDescontado: data.precoDescontado,
         formaPagamento: data.formaPagamento,
         clienteId: data.clienteId,
         funcionarioId: data.funcionarioId,
@@ -450,6 +448,14 @@ export default function FormOrderService({
         servicos: data.servicos,
         sessoes: data.sessoes,
       });
+
+      // Preencher os inputs de desconto com valores da API
+      if (data.descontoPercentual) {
+        setDescontoPercentualInput(data.descontoPercentual.toString());
+      }
+      if (data.precoDesconto) {
+        setDescontoReaisInput(data.precoDesconto.toString());
+      }
 
       // Popula os serviços selecionados quando estiver editando
       if (data.servicos && data.servicos.length > 0) {
@@ -482,39 +488,40 @@ export default function FormOrderService({
     const total = selectedTotal + extraTotal;
     return total;
   }, [selectedServices]);
-  const totalComDesconto =
-    totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
-  const valorDesconto = totalPrice - totalComDesconto;
-  const totalComGanho =
-    totalComDesconto * (1 + (formData.percentualGanho ?? 0) / 100);
+  
+  // totalComGanho = precoOrdem (serviços + ganho) - desconto aplicado
+  const totalComGanho = (formData.precoOrdem || 0) - (formData.precoDesconto || 0);
 
   useEffect(() => {
-    const precoFinalComGanho =
-      totalPrice *
-      (1 - (formData.descontoPercentual ?? 0) / 100) *
-      (1 + (formData.percentualGanho ?? 0) / 100);
+    // Só recalcula automaticamente se não estiver em modo manual
+    if (!isManualPrecoOrdem) {
+      // precoOrdem = totalPrice dos serviços + ganho (SEM desconto ainda)
+      const precoOrdemComGanho = totalPrice * (1 + (formData.percentualGanho ?? 0) / 100);
+      
+      // precoDescontado = totalPrice - desconto
+      const valorDescontado = totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
 
-    // Atualizar formData com os novos valores calculados
-    setFormData((prev) => ({
-      ...prev,
-      precoOrdem: precoFinalComGanho,
-      precoDescontado:
-        totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100),
-    }));
-  }, [totalPrice, formData.descontoPercentual, formData.percentualGanho]);
+      setFormData((prev) => ({
+        ...prev,
+        precoOrdem: precoOrdemComGanho,
+        precoDescontado: valorDescontado,
+      }));
+    }
+  }, [totalPrice, formData.descontoPercentual, formData.percentualGanho, isManualPrecoOrdem]);
 
   useEffect(() => {
-    const totalComDesconto =
-      totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
-    const totalComGanho =
-      totalComDesconto * (1 + (formData.percentualGanho ?? 0) / 100);
+    // valorComDesconto = totalPrice - desconto (sem ganho)
+    const valorComDesconto = totalPrice * (1 - (formData.descontoPercentual ?? 0) / 100);
+    
+    // valorComGanho = precoOrdem (serviços + ganho) - desconto
+    const valorComGanho = (formData.precoOrdem || 0) - (formData.precoDesconto || 0);
 
     setFormData((prev) => ({
       ...prev,
-      valorComDesconto: totalComDesconto,
-      valorComGanho: totalComGanho,
+      valorComDesconto: valorComDesconto,
+      valorComGanho: valorComGanho,
     }));
-  }, [formData.descontoPercentual, formData.percentualGanho, totalPrice]);
+  }, [formData.descontoPercentual, formData.percentualGanho, totalPrice, formData.precoOrdem, formData.precoDesconto]);
 
   useEffect(() => {
     const servicosMapeados = selectedServices.map((s) => ({
@@ -578,13 +585,17 @@ export default function FormOrderService({
       }
     }
 
+    // Garantir que os valores de desconto sejam enviados
     const payload: OrderServiceRequestDto = {
       ...formData,
+      precoDesconto: formData.precoDesconto || 0,
+      descontoPercentual: formData.descontoPercentual || 0,
       funcionarioId: formData.funcionarioId?.trim()
         ? formData.funcionarioId
         : undefined,
       clienteId: formData.clienteId?.trim() ? formData.clienteId : undefined,
     };
+    
     mutation.mutate(payload);
   };
 
@@ -619,7 +630,14 @@ export default function FormOrderService({
       }
     }
 
-    mutationEdit.mutate(formData);
+    // Garantir que os valores de desconto sejam enviados na edição também
+    const payload: OrderServiceRequestDto = {
+      ...formData,
+      precoDesconto: formData.precoDesconto || 0,
+      descontoPercentual: formData.descontoPercentual || 0,
+    };
+    
+    mutationEdit.mutate(payload);
   };
 
   const handleSelecCustomer = (value: string) => {
@@ -646,16 +664,109 @@ export default function FormOrderService({
   // };
 
   const handleChanceDescont = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    const inputValue = e.target.value;
+    setDescontoPercentualInput(inputValue);
+    
+    const value = inputValue.replace(',', '.');
     const percentual = parseFloat(value) || 0;
 
-    const valorComDesconto = totalPrice * (1 - percentual / 100);
+    // Base do desconto deve ser o totalPrice (soma dos serviços), não o precoOrdem que tem ganho
+    const valorDescontoEmReais = (totalPrice * percentual) / 100;
+    const valorComDesconto = totalPrice - valorDescontoEmReais;
+
+    // Atualizar o campo de desconto em reais com o valor calculado (formatado com vírgula)
+    setDescontoReaisInput(valorDescontoEmReais.toString().replace('.', ','));
 
     setFormData((prev) => ({
       ...prev,
       descontoPercentual: percentual,
       valorComDesconto: valorComDesconto,
+      precoDesconto: valorDescontoEmReais,
+      precoDescontado: valorComDesconto,
     }));
+  };
+
+  const handleChangeDescontoReais = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    setDescontoReaisInput(inputValue);
+    
+    const value = inputValue.replace(',', '.');
+    const valorDesconto = parseFloat(value) || 0;
+
+    // Base do desconto deve ser o totalPrice (soma dos serviços), não o precoOrdem
+    const baseDesconto = totalPrice;
+    
+    // Não permitir desconto maior que o total
+    const descontoFinal = Math.min(valorDesconto, baseDesconto);
+    
+    // Calcular o percentual equivalente sobre totalPrice
+    const percentualEquivalente = baseDesconto > 0 ? (descontoFinal / baseDesconto) * 100 : 0;
+    const valorComDesconto = baseDesconto - descontoFinal;
+
+    setFormData((prev) => ({
+      ...prev,
+      precoDesconto: descontoFinal,
+      descontoPercentual: percentualEquivalente,
+      valorComDesconto: valorComDesconto,
+      precoDescontado: valorComDesconto,
+    }));
+  };
+
+  const formatCurrencyInput = (value: string): string => {
+    // Remove tudo exceto dígitos
+    const numbers = value.replace(/\D/g, '');
+    
+    if (!numbers) return '';
+    
+    // Converte para número (centavos)
+    const amount = parseInt(numbers) / 100;
+    
+    // Formata para moeda brasileira
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(amount);
+  };
+
+  const parseCurrencyInput = (value: string): number => {
+    // Remove tudo exceto dígitos
+    const numbers = value.replace(/\D/g, '');
+    if (!numbers) return 0;
+    // Retorna o valor em reais
+    return parseInt(numbers) / 100;
+  };
+
+  const handleChangePrecoOrdem = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatCurrencyInput(value);
+    const numericValue = parseCurrencyInput(value);
+    
+    setPrecoOrdemInput(formatted);
+    setIsManualPrecoOrdem(true);
+    
+    setFormData((prev) => ({
+      ...prev,
+      precoOrdem: numericValue,
+    }));
+  };
+
+  const handleChangeTotalComGanho = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatCurrencyInput(value);
+    
+    setTotalComGanhoInput(formatted);
+    setIsManualTotalComGanho(true);
+  };
+
+  const resetPrecoOrdemAutomatico = () => {
+    setIsManualPrecoOrdem(false);
+    setPrecoOrdemInput("");
+    // O useEffect irá recalcular automaticamente
+  };
+
+  const resetTotalComGanhoAutomatico = () => {
+    setIsManualTotalComGanho(false);
+    setTotalComGanhoInput("");
   };
 
   const optionsPayment = Object.entries(EFormaPagamento)
@@ -719,17 +830,18 @@ export default function FormOrderService({
 
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-5">
                 <div>
-                  <Label>
+                  <Label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                     Cliente<span className="text-red-300">*</span>
                   </Label>
-                  <Select
+                  <SelectWithSearch
                     options={customersOptions}
-                    placeholder="Clientes"
+                    placeholder="Buscar cliente..."
                     onChange={handleSelecCustomer}
                     className="dark:bg-dark-900"
                     value={formData.clienteId}
                     disabled={edit}
-                    required={true}
+                    isClearable={false}
+                    noOptionsMessage="Nenhum cliente encontrado"
                   />
                 </div>
               </div>
@@ -905,64 +1017,90 @@ export default function FormOrderService({
                 </>
               )}
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2 mb-5">
-                {/* <div>
-                                    <Label>Percentual de ganho %<span className="text-red-300">*</span></Label>
-                                    <Input
-                                        type="number"
-                                        placeholder="Percentual de ganho %"
-                                        onChange={handleChangeGanho}
-                                        value={formData.percentualGanho?.toString()}
-                                        min="1"
-                                        disabled={edit}
-                                        required={true}
-                                    />
-                                </div> */}
                 <div>
                   <Label>Desconto %</Label>
                   <Input
                     type="text"
-                    placeholder="Percentual de Desconto %"
+                    placeholder="0"
                     onChange={handleChanceDescont}
-                    value={formData.descontoPercentual?.toString()}
+                    value={descontoPercentualInput}
                     disabled={edit}
                   />
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-3 mb-5">
                 <div>
-                  <Label>Total da Ordem</Label>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label>Total da Ordem</Label>
+                    {isManualPrecoOrdem && (
+                      <button
+                        type="button"
+                        onClick={resetPrecoOrdemAutomatico}
+                        className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        title="Resetar para cálculo automático"
+                      >
+                        Resetar
+                      </button>
+                    )}
+                  </div>
                   <Input
                     type="text"
                     placeholder="Total R$ 0,00"
-                    value={new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(formData.precoOrdem || 0)}
-                    disabled
+                    value={isManualPrecoOrdem 
+                      ? precoOrdemInput 
+                      : new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(formData.precoOrdem || 0)
+                    }
+                    onChange={handleChangePrecoOrdem}
                   />
+                  {isManualPrecoOrdem && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      Valor manual definido
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <Label>Ordem com Ganho R$</Label>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label>Ordem com Ganho R$</Label>
+                    {isManualTotalComGanho && (
+                      <button
+                        type="button"
+                        onClick={resetTotalComGanhoAutomatico}
+                        className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        title="Resetar para cálculo automático"
+                      >
+                        Resetar
+                      </button>
+                    )}
+                  </div>
                   <Input
                     type="text"
                     placeholder="Valor Final com Ganho"
-                    disabled
-                    value={new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(totalComGanho)}
+                    value={isManualTotalComGanho 
+                      ? totalComGanhoInput
+                      : new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(totalComGanho)
+                    }
+                    onChange={handleChangeTotalComGanho}
                   />
+                  {isManualTotalComGanho && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      Valor manual definido
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label>Desconto R$</Label>
                   <Input
                     type="text"
-                    placeholder="Valor do Desconto"
-                    disabled
-                    value={new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(valorDesconto)}
+                    placeholder="0"
+                    disabled={edit}
+                    onChange={handleChangeDescontoReais}
+                    value={descontoReaisInput}
                     className="text-black"
                   />
                 </div>

@@ -13,7 +13,7 @@ import Button from "../../ui/button/Button";
 import { useModal } from "../../../hooks/useModal";
 import { useModal as useModelDelete } from "../../../hooks/useModal";
 import { useModal as useModalInfo } from "../../../hooks/useModal";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import Alert, { AlertProps } from "../../ui/alert/Alert";
 import { getAllOrderServicesAsync, desabilitarOrderServiceAsync } from "../../../services/service/OrderServiceService";
@@ -21,8 +21,11 @@ import FormOrderService from "../../../pages/Forms/OrderServiceForms/FormOrderSe
 import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/OrderServiceResponseDto";
 import FormMetaDataOrderService from "../../../pages/Forms/OrderServiceForms/FormMetaDataOrderService";
 
+interface OrdemServiceGridProps {
+    searchTerm?: string;
+}
 
-export default function OrdemServiceGrid() {
+export default function OrdemServiceGrid({ searchTerm = "" }: OrdemServiceGridProps) {
 
     const [formDataResponse, setFormDataResponse] = useState<OrderServiceResponseDto>({
         id: "",
@@ -136,20 +139,49 @@ export default function OrdemServiceGrid() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10; // ou qualquer número que você quiser por página
 
+    // Filtro inteligente com múltiplos campos
+    const filteredOrdens = useMemo(() => {
+        if (!Array.isArray(ordens) || ordens.length === 0) {
+            return [];
+        }
+
+        if (!searchTerm || searchTerm.trim() === '') {
+            return ordens;
+        }
+
+        const normalizedSearch = searchTerm.toLowerCase().trim();
+
+        return ordens.filter((ordem) => {
+            // Campos para busca
+            const referencia = ordem.referencia?.toLowerCase() || '';
+            const clienteNome = ordem.cliente?.nome?.toLowerCase() || '';
+            const funcionarioNome = ordem.funcionario?.nome?.toLowerCase() || '';
+            const statusText = ordem.status?.toString() || '';
+            
+            return (
+                referencia.includes(normalizedSearch) ||
+                clienteNome.includes(normalizedSearch) ||
+                funcionarioNome.includes(normalizedSearch) ||
+                statusText.includes(normalizedSearch)
+            );
+        });
+    }, [ordens, searchTerm]);
+
+    const paginatedOrdens = useMemo(() => {
+        return filteredOrdens.slice(
+            (currentPage - 1) * itemsPerPage,
+            currentPage * itemsPerPage
+        );
+    }, [filteredOrdens, currentPage, itemsPerPage]);
+
+    const totalPages = useMemo(() => {
+        return Math.ceil(filteredOrdens.length / itemsPerPage);
+    }, [filteredOrdens.length, itemsPerPage]);
+
     // LOADING/ERROR ----------------------
     if (isLoading) return <p className="text-black dark:text-white">Carregando...</p>;
-    const filteredOrdens =
-        Array.isArray(ordens) && ordens.length > 0
-            ? ordens // você pode adicionar um filtro por status ou cliente, se quiser
-            : [];
-
-    const paginatedOrdens = filteredOrdens.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    const totalPages = Math.ceil(filteredOrdens.length / itemsPerPage);
     if (isError) return <p className="text-dark dark:text-white">Erro ao carregar dados.</p>;
+
     // FUNÇÕES AUXILIARES -----------------
     const handleOpenModal = (ordem: OrderServiceResponseDto) => {
         setFormDataResponse(ordem);

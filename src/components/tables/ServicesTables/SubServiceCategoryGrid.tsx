@@ -12,13 +12,16 @@ import { Modal } from "../../ui/modal";
 import Button from "../../ui/button/Button";
 import { useModal } from "../../../hooks/useModal";
 import { useModal as useModelDelete } from "../../../hooks/useModal";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import FormSubCategoryService from "../../../pages/Forms/ServicesForms/FormSubCategoryService";
 import { SubCategoryServiceResponseDto } from "../../../services/model/Dto/Response/SubCategoryServiceResponseDto";
 import { getAllSubCategoriasAsync, desativarSubCategoriaAsync, getSubCategoriaByIdAsync } from "../../../services/service/SubCategoryService";
 
+interface SubServiceCategoryGridProps {
+    searchTerm?: string;
+}
 
-export default function SubServiceCategoryGrid() {
+export default function SubServiceCategoryGrid({ searchTerm = "" }: SubServiceCategoryGridProps) {
 
     const [formDataResponse, setFormDataResponse] = useState<SubCategoryServiceResponseDto>({
         id: "",
@@ -53,22 +56,42 @@ export default function SubServiceCategoryGrid() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10; // ou qualquer número que você quiser por página
 
-    // LOADING/ERROR ----------------------
-    if (isLoading) return <p className="text-white">Carregando...</p>;
-    const filteredLeads =
-        Array.isArray(subCategorys) && subCategorys.length > 0
-            ? subCategorys.filter((subCategory) =>
-                subCategory.titulo.toLowerCase().includes("")
-            )
-            : [];
+    // Filtro inteligente com múltiplos campos
+    const filteredLeads = useMemo(() => {
+        if (!Array.isArray(subCategorys) || subCategorys.length === 0) {
+            return [];
+        }
 
-    const paginatedLeads = filteredLeads.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
+        if (!searchTerm || searchTerm.trim() === '') {
+            return subCategorys;
+        }
 
-    const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
-    if (isError) return <p className="text-white">Erro ao carregar dados.</p>;
+        const normalizedSearch = searchTerm.toLowerCase().trim();
+
+        return subCategorys.filter((subCategory) => {
+            // Campos para busca
+            const titulo = subCategory.titulo?.toLowerCase() || '';
+            const desc = subCategory.desc?.toLowerCase() || '';
+            const valorServico = subCategory.valorServico?.toString() || '';
+            
+            return (
+                titulo.includes(normalizedSearch) ||
+                desc.includes(normalizedSearch) ||
+                valorServico.includes(normalizedSearch)
+            );
+        });
+    }, [subCategorys, searchTerm]);
+
+    const paginatedLeads = useMemo(() => {
+        return filteredLeads.slice(
+            (currentPage - 1) * itemsPerPage,
+            currentPage * itemsPerPage
+        );
+    }, [filteredLeads, currentPage, itemsPerPage]);
+
+    const totalPages = useMemo(() => {
+        return Math.ceil(filteredLeads.length / itemsPerPage);
+    }, [filteredLeads.length, itemsPerPage]);
 
     // FUNÇÕES AUXILIARES -----------------
     const handleOpenModal = (id: string) => {
@@ -92,12 +115,15 @@ export default function SubServiceCategoryGrid() {
             const subCategory = await getSubCategoriaByIdAsync(id);
             if (typeof subCategory !== "string")
                 setFormDataResponse(subCategory);
-            else console.log(subCategory);
         } catch (error) {
             console.error("Erro ao buscar a categoria:", error);
         }
     };
 
+
+    // LOADING/ERROR ----------------------
+    if (isLoading) return <p className="text-white">Carregando...</p>;
+    if (isError) return <p className="text-white">Erro ao carregar dados.</p>;
 
     return (
         <>

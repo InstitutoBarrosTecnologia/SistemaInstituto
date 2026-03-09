@@ -1,4 +1,5 @@
 import {
+    Pagination,
     Table,
     TableBody,
     TableCell,
@@ -7,7 +8,7 @@ import {
 } from "../../ui/table";
 import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { EmployeeResponseDto } from "../../../services/model/Dto/Response/EmployeeResponseDto";
@@ -16,11 +17,17 @@ import { formatCPF, formatPhone } from "../../helper/formatUtils";
 import Button from "../../ui/button/Button";
 import FormEmployee from "../../../pages/Forms/Employee/FormEmployee";
 
-export default function EmployeeGrid() {
+interface EmployeeGridProps {
+    searchTerm?: string;
+}
+
+export default function EmployeeGrid({ searchTerm = "" }: EmployeeGridProps) {
     const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResponseDto | undefined>(undefined);
     const { isOpen, openModal, closeModal } = useModal();
     const { isOpen: isOpenDelete, openModal: openModalDelete, closeModal: closeModalDelete } = useModal();
     const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const queryClient = useQueryClient();
 
@@ -40,6 +47,53 @@ export default function EmployeeGrid() {
             toast.error("Erro ao desativar funcionário.");
         },
     });
+
+    // Filtro inteligente com múltiplos campos - ANTES dos returns condicionais
+    const filteredEmployees = useMemo(() => {
+        if (!Array.isArray(employees) || employees.length === 0) {
+            return [];
+        }
+
+        if (!searchTerm || searchTerm.trim() === '') {
+            return employees;
+        }
+
+        const normalizedSearch = searchTerm.toLowerCase().trim();
+
+        return employees.filter((employee) => {
+            // Campos para busca
+            const nome = employee.nome?.toLowerCase() || '';
+            const telefone = employee.telefone?.toLowerCase() || '';
+            const cpf = employee.cpf?.toLowerCase() || '';
+            const email = employee.email?.toLowerCase() || '';
+            const cargo = employee.cargo?.toLowerCase() || '';
+            const endereco = employee.endereco?.toLowerCase() || '';
+            
+            return (
+                nome.includes(normalizedSearch) ||
+                telefone.includes(normalizedSearch) ||
+                cpf.includes(normalizedSearch) ||
+                email.includes(normalizedSearch) ||
+                cargo.includes(normalizedSearch) ||
+                endereco.includes(normalizedSearch)
+            );
+        });
+    }, [employees, searchTerm]);
+
+    // Paginação
+    const paginatedEmployees = useMemo(() => {
+        if (!Array.isArray(filteredEmployees) || filteredEmployees.length === 0) {
+            return [];
+        }
+        return filteredEmployees.slice(
+            (currentPage - 1) * itemsPerPage,
+            currentPage * itemsPerPage
+        );
+    }, [filteredEmployees, currentPage, itemsPerPage]);
+
+    const totalPages = useMemo(() => {
+        return Math.ceil((filteredEmployees?.length || 0) / itemsPerPage);
+    }, [filteredEmployees, itemsPerPage]);
 
     const handleOpenModal = (employee: EmployeeResponseDto) => {
         employee.dataNascimento = employee.dataNascimento
@@ -86,7 +140,7 @@ export default function EmployeeGrid() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {employees instanceof Array ? employees.map((employee) => (
+                            {paginatedEmployees instanceof Array ? paginatedEmployees.map((employee) => (
                                 <TableRow key={employee.id}>
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 cursor-pointer hover:text-blue-600">
                                         {employee.nome}</TableCell>
@@ -145,6 +199,12 @@ export default function EmployeeGrid() {
                             )) : <></>}
                         </TableBody>
                     </Table>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                    />
                 </div>
             </div>
 

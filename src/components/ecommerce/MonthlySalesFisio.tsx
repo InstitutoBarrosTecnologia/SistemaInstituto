@@ -22,15 +22,12 @@ export default function MonthlySalesFisio() {
   const handleDropdownAction = (action: string) => {
     switch (action) {
       case "export":
-        console.log("Exportando dados do faturamento fisio...");
         alert("Exportando dados do faturamento fisio");
         break;
       case "details":
-        console.log("Visualizando detalhes do faturamento fisio...");
         alert("Visualizando detalhes do faturamento fisio");
         break;
       case "refresh":
-        console.log("Atualizando dados do faturamento fisio...");
         alert("Atualizando dados do faturamento fisio");
         break;
       default:

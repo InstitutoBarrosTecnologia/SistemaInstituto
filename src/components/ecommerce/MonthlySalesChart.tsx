@@ -26,15 +26,12 @@ export default function MonthlySalesChart() {
   const handleDropdownAction = (action: string) => {
     switch (action) {
       case "export":
-        console.log("Exportando dados do faturamento mensal...");
         alert("Exportando dados do faturamento mensal");
         break;
       case "details":
-        console.log("Visualizando detalhes do faturamento mensal...");
         alert("Visualizando detalhes do faturamento mensal");
         break;
       case "refresh":
-        console.log("Atualizando dados do faturamento mensal...");
         alert("Atualizando dados do faturamento mensal");
         break;
       default:

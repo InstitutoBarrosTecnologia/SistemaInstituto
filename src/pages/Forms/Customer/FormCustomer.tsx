@@ -16,9 +16,10 @@ interface FormCustomerProps {
   data?: CustomerRequestDto;
   edit?: boolean;
   closeModal?: () => void;
+  onSuccess?: () => void;
 }
 
-export default function FormCustomer({ data, edit, closeModal }: FormCustomerProps) {
+export default function FormCustomer({ data, edit, closeModal, onSuccess }: FormCustomerProps) {
   const [historicoTemp, setHistoricoTemp] = useState("");
 
   // Função para converter data ISO para formato brasileiro DD/MM/YYYY
@@ -81,6 +82,11 @@ export default function FormCustomer({ data, edit, closeModal }: FormCustomerPro
         queryClient.invalidateQueries<CustomerResponseDto[]>({
           queryKey: ["allCustomer"],
         });
+
+        // Chamar callback onSuccess se fornecido
+        if (onSuccess) {
+          onSuccess();
+        }
 
         setTimeout(() => {
           if (closeModal) closeModal();

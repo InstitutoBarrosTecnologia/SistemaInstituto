@@ -12,6 +12,10 @@ interface FormOrderServiceProps {
 
 export default function FormMetaDataOrderService({ data, edit }: FormOrderServiceProps) {
 
+    console.log("=== INICIO FormMetaDataOrderService ===");
+    console.log("data recebido:", data);
+    console.log("edit:", edit);
+
     const [formData, setFormData] = useState<OrderServiceRequestDto>({
         referencia: "",
         status: 0,
@@ -38,6 +42,9 @@ export default function FormMetaDataOrderService({ data, edit }: FormOrderServic
                 status: data.status,
                 precoOrdem: data.precoOrdem,
                 precoDesconto: data.precoDesconto,
+                precoDescontado: data.precoDescontado,
+                descontoPercentual: data.descontoPercentual,
+                percentualGanho: data.percentualGanho,
                 formaPagamento: data.formaPagamento,
                 clienteId: data.clienteId,
                 funcionarioId: data.funcionarioId,
@@ -66,6 +73,29 @@ export default function FormMetaDataOrderService({ data, edit }: FormOrderServic
         if (!totalServicos || totalServicos === 0 || !formData.precoOrdem) return 0;
         return ((formData.precoOrdem - totalServicos) / totalServicos) * 100;
     }, [formData.precoOrdem, totalServicos]);
+
+    const precoDescontoCalculado = useMemo(() => {
+        if (!data) return 0;
+        
+        console.log("DEBUG FormMetaData - data:", data);
+        console.log("DEBUG FormMetaData - precoDesconto:", data.precoDesconto);
+        console.log("DEBUG FormMetaData - precoOrdem:", data.precoOrdem);
+        console.log("DEBUG FormMetaData - precoDescontado:", data.precoDescontado);
+        
+        // Se precoDesconto já vem do backend, usar esse valor
+        if (data.precoDesconto && data.precoDesconto > 0) {
+            console.log("Usando precoDesconto:", data.precoDesconto);
+            return data.precoDesconto;
+        }
+        // Caso contrário, calcular a partir de precoOrdem e precoDescontado
+        if (data.precoOrdem && data.precoDescontado) {
+            const desconto = Math.round((data.precoOrdem - data.precoDescontado) * 100) / 100;
+            console.log("Calculado desconto:", desconto);
+            return desconto;
+        }
+        console.log("Retornando 0");
+        return 0;
+    }, [data]);
 
     return (
         <>
@@ -170,7 +200,7 @@ export default function FormMetaDataOrderService({ data, edit }: FormOrderServic
                             </div>
                             <div>
                                 <Label>Desconto R$:</Label>
-                                <Label>{formatCurrencyPtBr(formData.precoDesconto ?? 0)}</Label>
+                                <Label>{formatCurrencyPtBr(precoDescontoCalculado)}</Label>
                             </div>
                         </div>
                         <br></br>

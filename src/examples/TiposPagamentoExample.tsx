@@ -26,16 +26,9 @@ export default function TiposPagamentoExample() {
   };
 
   const handleChartAction = (action: string) => {
-    console.log(`Ação "${action}" executada no gráfico Tipos de Pagamento`);
-    
     switch (action) {
       case "export":
         // Simular exportação dos dados
-        const dataToExport = tiposPagamentoData.map(item => ({
-          TipoPagamento: item.tipoPagamento,
-          Total: item.total
-        }));
-        console.log('Dados para exportação:', dataToExport);
         alert('Dados exportados! Verifique o console.');
         break;
       case "details":

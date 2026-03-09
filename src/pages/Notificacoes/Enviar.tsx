@@ -13,7 +13,6 @@ export default function Enviar() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implementar envio de notificação
-    console.log("Dados da notificação:", formData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
