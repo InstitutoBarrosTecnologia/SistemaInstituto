@@ -1,14 +1,16 @@
-import { FC } from "react";
+import { FC, useEffect, useState } from "react";
 import Input from "../../../components/form/input/InputField";
 import Label from "../../../components/form/Label";
 import Button from "../../../components/ui/button/Button";
+import { EmployeeService } from "../../../services/service/EmployeeService";
+import { EmployeeResponseDto } from "../../../services/model/Dto/Response/EmployeeResponseDto";
 
 interface NotificationHistoryFiltersProps {
-  searchText: string;
+  criadoPorId: string;
   startDate: string;
   endDate: string;
   status: string;
-  onSearchTextChange: (value: string) => void;
+  onCriadoPorIdChange: (value: string) => void;
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
   onStatusChange: (value: string) => void;
@@ -18,11 +20,11 @@ interface NotificationHistoryFiltersProps {
 }
 
 const NotificationHistoryFilters: FC<NotificationHistoryFiltersProps> = ({
-  searchText,
+  criadoPorId,
   startDate,
   endDate,
   status,
-  onSearchTextChange,
+  onCriadoPorIdChange,
   onStartDateChange,
   onEndDateChange,
   onStatusChange,
@@ -30,6 +32,25 @@ const NotificationHistoryFilters: FC<NotificationHistoryFiltersProps> = ({
   onClearFilters,
   loading = false,
 }) => {
+  const [employees, setEmployees] = useState<EmployeeResponseDto[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+        setLoadingEmployees(true);
+        const data = await EmployeeService.getAll();
+        setEmployees(data);
+      } catch (error) {
+        console.error("Erro ao carregar funcionários:", error);
+      } finally {
+        setLoadingEmployees(false);
+      }
+    };
+
+    loadEmployees();
+  }, []);
+
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
       <div className="mb-4">
@@ -43,14 +64,20 @@ const NotificationHistoryFilters: FC<NotificationHistoryFiltersProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <Label>Buscar por texto</Label>
-          <Input
-            type="text"
-            placeholder="Título ou mensagem..."
-            value={searchText}
-            onChange={(e) => onSearchTextChange(e.target.value)}
-            disabled={loading}
-          />
+          <Label>Criado por</Label>
+          <select
+            value={criadoPorId}
+            onChange={(e) => onCriadoPorIdChange(e.target.value)}
+            disabled={loading || loadingEmployees}
+            className="h-11 w-full rounded-lg border bg-transparent text-gray-800 border-gray-300 px-4 py-2.5 text-sm shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 dark:bg-gray-900 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+          >
+            <option value="">Todos os usuários</option>
+            {employees.map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.nome}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

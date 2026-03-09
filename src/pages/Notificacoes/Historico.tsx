@@ -18,7 +18,7 @@ import NotificationDetailModal from "./components/NotificationDetailModal";
 import { getUserRoleFromToken, USER_ROLES, userHasRole } from "../../services/util/rolePermissions";
 
 export default function Historico() {
-  const [searchText, setSearchText] = useState("");
+  const [criadoPorId, setCriadoPorId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [status, setStatus] = useState("");
@@ -27,14 +27,14 @@ export default function Historico() {
 
   // Filtros aplicados (separados dos filtros de input)
   const [appliedFilters, setAppliedFilters] = useState<{
-    searchText: string;
+    criadoPorId: string;
     startDate: string;
     endDate: string;
     status?: boolean;
     page: number;
     pageSize: number;
   }>({
-    searchText: "",
+    criadoPorId: "",
     startDate: "",
     endDate: "",
     page: 1,
@@ -58,7 +58,7 @@ export default function Historico() {
     const parsedStatus = status === "" ? undefined : status === "true";
     
     setAppliedFilters({
-      searchText: searchText.trim(),
+      criadoPorId: criadoPorId.trim(),
       startDate: startDate,
       endDate: endDate,
       status: parsedStatus as any,
@@ -69,12 +69,12 @@ export default function Historico() {
   };
 
   const handleClearFilters = () => {
-    setSearchText("");
+    setCriadoPorId("");
     setStartDate("");
     setEndDate("");
     setStatus("");
     setAppliedFilters({
-      searchText: "",
+      criadoPorId: "",
       startDate: "",
       endDate: "",
       page: 1,
@@ -155,11 +155,11 @@ export default function Historico() {
 
         {/* Filters */}
         <NotificationHistoryFilters
-          searchText={searchText}
+          criadoPorId={criadoPorId}
           startDate={startDate}
           endDate={endDate}
           status={status}
-          onSearchTextChange={setSearchText}
+          onCriadoPorIdChange={setCriadoPorId}
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
           onStatusChange={setStatus}

@@ -117,7 +117,7 @@ export class NotificationService {
   static async getNotificationHistory(params: NotificationHistoryRequestDto = {}): Promise<NotificationListResponseDto> {
     try {
       const { 
-        searchText, 
+        criadoPorId, 
         startDate, 
         endDate, 
         status, 
@@ -131,8 +131,8 @@ export class NotificationService {
         pageSize: pageSize.toString(),
       });
 
-      if (searchText) {
-        queryParams.append('searchText', searchText);
+      if (criadoPorId) {
+        queryParams.append('criadoPorId', criadoPorId);
       }
 
       if (startDate) {

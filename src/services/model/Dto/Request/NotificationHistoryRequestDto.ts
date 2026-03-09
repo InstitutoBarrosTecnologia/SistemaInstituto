@@ -1,7 +1,7 @@
 import { BaseRequestDto } from "./BaseRequestDto";
 
 export interface NotificationHistoryRequestDto extends BaseRequestDto {
-  searchText?: string;
+  criadoPorId?: string;
   startDate?: string;
   endDate?: string;
   status?: boolean;

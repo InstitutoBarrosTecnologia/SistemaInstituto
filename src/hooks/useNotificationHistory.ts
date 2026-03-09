@@ -50,7 +50,7 @@ export const useNotificationHistory = (params: NotificationHistoryRequestDto = {
 
   useEffect(() => {
     loadHistory();
-  }, [params.page, params.pageSize, params.searchText, params.startDate, params.endDate, params.status, params.destinatarios]);
+  }, [params.page, params.pageSize, params.criadoPorId, params.startDate, params.endDate, params.status, params.destinatarios]);
 
   return {
     notifications,
