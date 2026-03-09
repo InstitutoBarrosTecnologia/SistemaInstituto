@@ -135,16 +135,18 @@ export class NotificationService {
         queryParams.append('criadoPorId', criadoPorId);
       }
 
+      // Backend espera DataInicio e DataFim (não startDate/endDate)
       if (startDate) {
-        queryParams.append('startDate', startDate);
+        queryParams.append('dataInicio', startDate);
       }
 
       if (endDate) {
-        queryParams.append('endDate', endDate);
+        queryParams.append('dataFim', endDate);
       }
 
+      // Backend espera Ativo (não status)
       if (status !== undefined) {
-        queryParams.append('status', status.toString());
+        queryParams.append('ativo', status.toString());
       }
 
       if (destinatarios) {
