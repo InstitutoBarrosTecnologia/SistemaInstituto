@@ -1,5 +1,6 @@
 import { instanceApi } from "./AxioService";
 import { NotificationRequestDto } from "../model/Dto/Request/NotificationRequestDto";
+import { NotificationHistoryRequestDto } from "../model/Dto/Request/NotificationHistoryRequestDto";
 import { NotificationStatusRequestDto } from "../model/Dto/Request/NotificationStatusRequestDto";
 import { NotificationResponseDto } from "../model/Dto/Response/NotificationResponseDto";
 import { NotificationListResponseDto } from "../model/Dto/Response/NotificationListResponseDto";
@@ -110,5 +111,71 @@ export class NotificationService {
       `${this.baseUrl}/${id}/send`
     );
     return response.data;
+  }
+
+  // Buscar histórico de notificações com filtros
+  static async getNotificationHistory(params: NotificationHistoryRequestDto = {}): Promise<NotificationListResponseDto> {
+    try {
+      const { 
+        searchText, 
+        startDate, 
+        endDate, 
+        status, 
+        destinatarios, 
+        page = 1, 
+        pageSize = 10 
+      } = params;
+
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      });
+
+      if (searchText) {
+        queryParams.append('searchText', searchText);
+      }
+
+      if (startDate) {
+        queryParams.append('startDate', startDate);
+      }
+
+      if (endDate) {
+        queryParams.append('endDate', endDate);
+      }
+
+      if (status !== undefined) {
+        queryParams.append('status', status.toString());
+      }
+
+      if (destinatarios) {
+        queryParams.append('destinatarios', destinatarios);
+      }
+
+      const response = await instanceApi.get<NotificationListResponseDto>(
+        `${this.baseUrl}/history?${queryParams.toString()}`
+      );
+      
+      // Verificação de segurança para garantir resposta válida
+      if (response && response.data) {
+        return response.data;
+      }
+      
+      // Retorna estrutura padrão se a resposta for inválida
+      return {
+        data: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 10,
+      };
+    } catch (error) {
+      console.error('Erro no getNotificationHistory:', error);
+      // Em caso de erro, retorna estrutura padrão
+      return {
+        data: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 10,
+      };
+    }
   }
 }

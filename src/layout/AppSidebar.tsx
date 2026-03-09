@@ -130,6 +130,12 @@ const allNavItems: NavItem[] = [
         path: "/notificacoes/enviar", 
         pro: false,
         permissions: MENU_PERMISSIONS.NOTIFICACOES_ENVIAR,
+      },
+      { 
+        name: "Histórico", 
+        path: "/notificacoes/historico", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.NOTIFICACOES_HISTORICO,
       }
     ],
   },

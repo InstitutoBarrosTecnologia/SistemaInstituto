@@ -30,6 +30,7 @@ import EmployeeTables from "./pages/Tables/EmployeeTable/EmployeeTables";
 import BranchOfficeTables from "./pages/Tables/BranchOfficeTable/BranchOfficeTables";
 import { Despesas } from "./pages/Financeiro";
 import Notifications from "./pages/Notificacoes/Notifications";
+import Historico from "./pages/Notificacoes/Historico";
 import Log from "./pages/Log/Log";
 import CustomerAccessPage from "./pages/CustomerAccess/CustomerAccess"; // TEMPORÁRIO - Sistema de acesso clientes
 
@@ -85,6 +86,16 @@ export default function App() {
             element={
               <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.NOTIFICACOES_ENVIAR}>
                 <Notifications />
+              </RoleProtectedRoute>
+            } 
+          />
+
+          {/* Histórico de Notificações - Todos os perfis podem acessar */}
+          <Route 
+            path="/notificacoes/historico" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.NOTIFICACOES_HISTORICO}>
+                <Historico />
               </RoleProtectedRoute>
             } 
           />

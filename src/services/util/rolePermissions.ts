@@ -135,14 +135,31 @@ export const MENU_PERMISSIONS = {
     USER_ROLES.FINANCEIRO
   ],
 
-  // Módulo Notificações - apenas Administradores
+  // Módulo Notificações - todos os perfis podem acessar pelo menos o histórico
   NOTIFICACOES: [
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.ADMINISTRATIVO,
+    USER_ROLES.COMERCIAL,
+    USER_ROLES.FISIOTERAPEUTA,
+    USER_ROLES.FUNCIONARIO,
+    USER_ROLES.COORDENADOR_FISIOTERAPEUTA,
+    USER_ROLES.FINANCEIRO
+  ],
+
+  // Notificações - Enviar (apenas Administradores)
+  NOTIFICACOES_ENVIAR: [
     USER_ROLES.ADMINISTRADOR
   ],
 
-  // Notificações - Enviar
-  NOTIFICACOES_ENVIAR: [
-    USER_ROLES.ADMINISTRADOR
+  // Notificações - Histórico (todos os perfis exceto Cliente)
+  NOTIFICACOES_HISTORICO: [
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.ADMINISTRATIVO,
+    USER_ROLES.COMERCIAL,
+    USER_ROLES.FISIOTERAPEUTA,
+    USER_ROLES.FUNCIONARIO,
+    USER_ROLES.COORDENADOR_FISIOTERAPEUTA,
+    USER_ROLES.FINANCEIRO
   ],
 
   // Logs - Rastreabilidade (apenas Administradores)
