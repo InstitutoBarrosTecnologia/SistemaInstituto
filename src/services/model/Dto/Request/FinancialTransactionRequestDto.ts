@@ -13,6 +13,7 @@ export interface FinancialTransactionRequestDto extends BaseRequestDto {
     arquivo?: string;
     observacoes?: string;
     numeroParcelas?: number;
+    numberOfInstallments?: number; // Additional property for number of installments
     dataVencimento: string;
     ordemServicoId?: string;
     usrDescricaoCadastro?: string;

@@ -22,6 +22,7 @@
     "@tailwindcss/forms": "^0.5.10",
     "@tanstack/react-query": "^4.39.2",
     "@types/jwt-decode": "^3.1.0",
+    "@types/node": "^25.4.0",
     "@types/react-input-mask": "^3.0.6",
     "apexcharts": "^4.1.0",
     "axios": "^1.8.4",
@@ -49,7 +50,8 @@
     "simplebar-react": "^3.3.0",
     "swiper": "^11.2.3",
     "tailwind-merge": "^3.0.1",
-    "uninstall": "^0.0.0"
+    "uninstall": "^0.0.0",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

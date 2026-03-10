@@ -114,7 +114,7 @@ export default function FormOrderService({
     const today = new Date();
     
     // Começar da semana atual
-    let currentWeekStart = new Date(today);
+    const currentWeekStart = new Date(today);
     currentWeekStart.setDate(today.getDate() - today.getDay()); // Início da semana (domingo)
     
     let dayIndex = 0;

@@ -273,7 +273,7 @@ const Calendar: React.FC = () => {
 
     let dayIndex = 0;
     let sessionsCreated = 0;
-    let searchDate = new Date(today); // Começar a partir de hoje
+    const searchDate = new Date(today); // Começar a partir de hoje
 
     while (sessionsCreated < count) {
       const targetDayNumber = selectedDayNumbers[dayIndex];
@@ -866,7 +866,7 @@ const Calendar: React.FC = () => {
             : undefined;
 
         // Processar as datas corretamente
-        let eventStart: string | Date = schedule.dataInicio;
+        const eventStart: string | Date = schedule.dataInicio;
         let eventEnd: string | Date | undefined = schedule.dataFim;
 
         // Para eventos allDay, o FullCalendar espera que a data final seja exclusiva

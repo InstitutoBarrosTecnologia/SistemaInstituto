@@ -16,4 +16,5 @@ export interface ScheduleRequestDto {
     status: number;
     corFuncionario?: string;
     isAvaliacao?: boolean;
+    local?: boolean; // Additional property for local schedule
   }

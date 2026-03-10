@@ -1,14 +1,7 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-  Pagination,
-} from "../../ui/table";
+import { useState } from "react";
+import { DataGridBase, DataGridColumn, DataGridAction } from "../../DataGrid/DataGridBase";
 import { Modal } from "../../ui/modal";
-import { useModal } from "../../../hooks/useModal";
-import { useState, useEffect } from "react";
+import { useModal } from "../../../stores/modalStore";
 import Badge from "../../ui/badge/Badge";
 import Button from "../../ui/button/Button";
 import { useLogs } from "../../../hooks/useLogs";
@@ -18,21 +11,28 @@ interface LogsGridProps {
   filters?: LogFilters;
 }
 
+interface Log {
+  id?: string;
+  dataInsercao: string;
+  titulo: string;
+  descricao?: string;
+  usrAcao: string;
+  nivel: number;
+  jornadaCritica: boolean;
+  ip: string;
+  dispositivo?: string;
+  localizacao?: string;
+}
+
 export default function LogsGrid({ filters }: LogsGridProps) {
-  const [selectedLog, setSelectedLog] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 10;
+  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
+  const _pageSize = 10;
 
   const {
     isOpen: isOpenDetails,
-    openModal: openModalDetails,
-    closeModal: closeModalDetails,
-  } = useModal();
-
-  // Resetar página quando os filtros mudarem
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters]);
+    open: openDetails,
+    close: closeDetails,
+  } = useModal('viewLog');
 
   // Buscar TODOS os logs da API (sem paginação backend)
   const filtersForApi: LogFilters = {
@@ -51,21 +51,29 @@ export default function LogsGrid({ filters }: LogsGridProps) {
     }
 
     // Filtro por Nível
-    if (filters?.nivel !== null && filters?.nivel !== undefined && log.nivel !== filters.nivel) {
+    if (
+      filters?.nivel !== null &&
+      filters?.nivel !== undefined &&
+      log.nivel !== filters.nivel
+    ) {
       return false;
     }
 
     // Filtro por Jornada Crítica
-    if (filters?.jornadaCritica !== null && filters?.jornadaCritica !== undefined && log.jornadaCritica !== filters.jornadaCritica) {
+    if (
+      filters?.jornadaCritica !== null &&
+      filters?.jornadaCritica !== undefined &&
+      log.jornadaCritica !== filters.jornadaCritica
+    ) {
       return false;
     }
 
     // Filtro por Data Início
     if (filters?.dataInicio) {
       // Extrair apenas a data (yyyy-mm-dd) sem hora
-      const logDateStr = log.dataInsercao?.split('T')[0];
+      const logDateStr = log.dataInsercao?.split("T")[0];
       const filterDateStr = filters.dataInicio;
-      
+
       if (logDateStr < filterDateStr) {
         return false;
       }
@@ -74,51 +82,24 @@ export default function LogsGrid({ filters }: LogsGridProps) {
     // Filtro por Data Fim
     if (filters?.dataFim) {
       // Extrair apenas a data (yyyy-mm-dd) sem hora
-      const logDateStr = log.dataInsercao?.split('T')[0];
+      const logDateStr = log.dataInsercao?.split("T")[0];
       const filterDateStr = filters.dataFim;
-      
+
       if (logDateStr > filterDateStr) {
         return false;
       }
     }
 
     // Filtro por Usuário (Guid)
-    if (filters?.usrAcao && !log.usrAcao?.toLowerCase().includes(filters.usrAcao.toLowerCase())) {
+    if (
+      filters?.usrAcao &&
+      !log.usrAcao?.toLowerCase().includes(filters.usrAcao.toLowerCase())
+    ) {
       return false;
     }
 
     return true;
   });
-
-  // Paginação manual dos dados filtrados
-  const totalFilteredItems = filteredLogs.length;
-  const totalFilteredPages = Math.ceil(totalFilteredItems / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
-
-  // Usar logs filtrados e paginados
-  const logs = paginatedLogs;
-
-  // Ajustar paginação para dados filtrados
-  const effectivePagination = {
-    currentPage: currentPage,
-    totalPages: totalFilteredPages,
-    totalItems: totalFilteredItems,
-    pageSize: pageSize,
-  };
-
-  const handleOpenModalDetails = (log: any) => {
-    setSelectedLog(log);
-    openModalDetails();
-  };
-
-  // Handler para mudança de página
-  const handlePageChange = (newPage: number) => {
-    if (!isNaN(newPage) && newPage > 0) {
-      setCurrentPage(newPage);
-    }
-  };
 
   // Função para obter badge de nível (criticidade)
   const getNivelBadge = (nivel: number) => {
@@ -147,6 +128,65 @@ export default function LogsGrid({ filters }: LogsGridProps) {
     });
   };
 
+  const columns: DataGridColumn<Log>[] = [
+    {
+      key: "dataInsercao",
+      label: "Data/Hora",
+      render: (_value, row) => formatDateTime(row.dataInsercao),
+    },
+    {
+      key: "titulo",
+      label: "Título",
+      render: (_value, row) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{row.titulo || "-"}</span>
+          {row.descricao && (
+            <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+              {row.descricao}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "usrAcao",
+      label: "Usuário (ID)",
+      render: (_value, row) => (
+        <code className="text-xs">{row.usrAcao ? row.usrAcao.substring(0, 8) + "..." : "-"}</code>
+      ),
+    },
+    {
+      key: "nivel",
+      label: "Nível",
+      render: (_value, row) => getNivelBadge(row.nivel),
+    },
+    {
+      key: "jornadaCritica",
+      label: "Jornada Crítica",
+      render: (_value, row) => (
+        <Badge color={row.jornadaCritica ? "error" : "light"}>
+          {row.jornadaCritica ? "Sim" : "Não"}
+        </Badge>
+      ),
+    },
+    {
+      key: "ip",
+      label: "IP",
+      render: (_value, row) => <code className="text-xs">{row.ip || "-"}</code>,
+    },
+  ];
+
+  const actions: DataGridAction<Log>[] = [
+    {
+      id: "details",
+      label: "Detalhes",
+      onClick: (item) => {
+        setSelectedLog(item);
+        openDetails(item);
+      },
+    },
+  ];
+
   if (isLoading)
     return (
       <div className="flex items-center justify-center py-12">
@@ -164,11 +204,24 @@ export default function LogsGrid({ filters }: LogsGridProps) {
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="mb-4 text-red-500">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 mx-auto"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
-          <p className="text-gray-900 dark:text-white font-semibold">Erro ao carregar logs</p>
+          <p className="text-gray-900 dark:text-white font-semibold">
+            Erro ao carregar logs
+          </p>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Não foi possível buscar os dados. Tente novamente.
           </p>
@@ -176,157 +229,22 @@ export default function LogsGrid({ filters }: LogsGridProps) {
       </div>
     );
 
-  if (!logs || logs.length === 0)
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="mb-4 text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <p className="text-gray-900 dark:text-white font-semibold">Nenhum log encontrado</p>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Não há registros para exibir com os filtros aplicados.
-          </p>
-        </div>
-      </div>
-    );
-
   return (
     <>
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <div className="max-w-full overflow-x-auto">
-          <Table className="table-auto">
-            <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-              <TableRow>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-                >
-                  Data/Hora
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-                >
-                  Título
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-                >
-                  Usuário (ID)
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-                >
-                  Nível
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-                >
-                  Jornada Crítica
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-                >
-                  IP
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
-                >
-                  Ações
-                </TableCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {logs.map((log: any) => (
-                <TableRow
-                  key={log.id}
-                  className="border-b border-gray-100 hover:bg-gray-50 dark:border-white/[0.05] dark:hover:bg-white/[0.02]"
-                >
-                  <TableCell className="px-5 py-3 text-start text-theme-xs font-normal text-gray-800 dark:text-white/90">
-                    {formatDateTime(log.dataInsercao)}
-                  </TableCell>
-                  <TableCell className="px-5 py-3 text-start text-theme-xs font-normal text-gray-800 dark:text-white/90">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{log.titulo || "-"}</span>
-                      {log.descricao && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                          {log.descricao}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-5 py-3 text-start text-theme-xs font-normal text-gray-600 dark:text-gray-400">
-                    <code className="text-xs">{log.usrAcao ? log.usrAcao.substring(0, 8) + "..." : "-"}</code>
-                  </TableCell>
-                  <TableCell className="px-5 py-3 text-start text-theme-xs font-normal text-gray-800 dark:text-white/90">
-                    {getNivelBadge(log.nivel)}
-                  </TableCell>
-                  <TableCell className="px-5 py-3 text-start text-theme-xs font-normal text-gray-800 dark:text-white/90">
-                    <Badge color={log.jornadaCritica ? "error" : "light"}>
-                      {log.jornadaCritica ? "Sim" : "Não"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-5 py-3 text-start text-theme-xs font-normal text-gray-600 dark:text-gray-400">
-                    <code className="text-xs">{log.ip || "-"}</code>
-                  </TableCell>
-                  <TableCell className="px-5 py-3 text-start text-theme-xs font-normal text-gray-800 dark:text-white/90">
-                    <Button
-                      onClick={() => handleOpenModalDetails(log)}
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                      Detalhes
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Rodapé da Tabela com Paginação */}
-        <div className="border-t border-gray-100 dark:border-white/[0.05]">
-          <Pagination
-            currentPage={effectivePagination.currentPage}
-            totalPages={effectivePagination.totalPages}
-            itemsPerPage={effectivePagination.pageSize}
-            totalItems={effectivePagination.totalItems}
-            onPageChange={handlePageChange}
-          />
-        </div>
-      </div>
+      <DataGridBase<any>
+        config={{
+          columns,
+          data: filteredLogs || [],
+          actions,
+          itemsPerPage: _pageSize,
+          loading: isLoading,
+          error: isError ? "Erro ao carregar logs" : undefined,
+          emptyMessage: "Nenhum log encontrado",
+        }}
+      />
 
       {/* Modal de Detalhes do Log */}
-      <Modal isOpen={isOpenDetails} onClose={closeModalDetails} className="max-w-3xl">
+      <Modal isOpen={isOpenDetails} onClose={closeDetails} className="max-w-3xl">
         <div className="rounded-3xl bg-white p-6 dark:bg-gray-900 lg:p-8">
           <div className="mb-6 flex items-start justify-between">
             <div className="flex-1">
@@ -338,7 +256,7 @@ export default function LogsGrid({ filters }: LogsGridProps) {
               </p>
             </div>
             <button
-              onClick={closeModalDetails}
+              onClick={closeDetails}
               className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
             >
               <svg
@@ -446,7 +364,7 @@ export default function LogsGrid({ filters }: LogsGridProps) {
           )}
 
           <div className="mt-6 flex justify-end">
-            <Button onClick={closeModalDetails} variant="outline">
+            <Button onClick={closeDetails} variant="outline">
               Fechar
             </Button>
           </div>
