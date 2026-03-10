@@ -1,10 +1,13 @@
-import { useState } from "react";
-import { DataGridBase, DataGridColumn, DataGridAction } from "../../DataGrid/DataGridBase";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "../../ui/table";
 import { Modal } from "../../ui/modal";
-import { useModal } from "../../../stores/modalStore";
-import Badge from "../../ui/badge/Badge";
-import Button from "../../ui/button/Button";
-import Select from "../../form/Select";
+import { useModal } from "../../../hooks/useModal";
+import { useState } from "react";
 import ModalParcelasContent from "../../../pages/Financeiro/components/ModalParcelas";
 
 import {
@@ -14,6 +17,9 @@ import {
 } from "../../../services/financialTransactions";
 import { EStatusParcela } from "../../../services/model/Enum/EStatusParcela";
 import { useFinancialTransactions } from "../../../hooks/useFinancialTransactions";
+import Badge from "../../ui/badge/Badge";
+import Button from "../../ui/button/Button";
+import Select from "../../form/Select";
 import { TransactionFilters } from "../../../services/financialTransactions";
 import { toast } from "react-hot-toast";
 
@@ -21,39 +27,32 @@ interface DespesasGridProps {
   filters?: TransactionFilters;
 }
 
-interface FinancialTransaction {
-  id: string;
-  tipo: any;
-  nomeDespesa: string;
-  descricao?: string;
-  valores: number;
-  funcionario?: { nome: string };
-  cliente?: { nome: string };
-  formaPagamento?: string;
-  conta?: string;
-  status: EDespesaStatus;
-  dataCadastro?: string;
-  parcelas: any[];
-}
-
-export default function DespesasGrid({ filters: _filters }: DespesasGridProps) {
+export default function DespesasGrid({ filters }: DespesasGridProps) {
+  const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
   const [selectedDespesa, setSelectedDespesa] = useState<any>(undefined);
-  const [selectedTransactionId, setSelectedTransactionId] = useState<string>("");
+  const [selectedTransactionId, setSelectedTransactionId] =
+    useState<string>("");
   const [statusToUpdate, setStatusToUpdate] = useState<EDespesaStatus>(
     EDespesaStatus.Pendente
   );
 
   const {
+    isOpen: isOpenDelete,
+    openModal: openModalDelete,
+    closeModal: closeModalDelete,
+  } = useModal();
+  const {
     isOpen: isOpenStatus,
-    open: openStatus,
-    close: closeStatus,
-  } = useModal('editExpense');
+    openModal: openModalStatus,
+    closeModal: closeModalStatus,
+  } = useModal();
   const {
     isOpen: isOpenParcelas,
-    open: openParcelas,
-    close: closeParcelas,
-  } = useModal('viewExpense');
+    openModal: openModalParcelas,
+    closeModal: closeModalParcelas,
+  } = useModal();
 
+  // Usar o hook da nova API
   const {
     transactions,
     isLoading,
@@ -61,51 +60,61 @@ export default function DespesasGrid({ filters: _filters }: DespesasGridProps) {
     updateTransactionStatus,
     deleteTransaction,
     isUpdatingStatus,
-  } = useFinancialTransactions(_filters);
+    isDeleting,
+  } = useFinancialTransactions(filters);
 
-  const handleOpenModalStatus = (despesa: FinancialTransaction) => {
+  const handleOpenModalDelete = (id: string) => {
+    setIdDeleteRegister(id);
+    openModalDelete();
+  };
+
+  const handleOpenModalStatus = (despesa: any) => {
     setSelectedDespesa(despesa);
     setStatusToUpdate(despesa.status);
-    openStatus(despesa);
+    openModalStatus();
   };
 
   const handleOpenModalParcelas = (id: string) => {
     setSelectedTransactionId(id);
-    openParcelas(id);
+    openModalParcelas();
+  };
+
+  const handleDeleteRegister = () => {
+    if (idDeleteRegister) {
+      deleteTransaction(idDeleteRegister);
+      closeModalDelete();
+    }
   };
 
   const handlePostUpdateStatus = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (selectedDespesa?.id) {
       // Validação especial para status "Concluída" + forma de pagamento "credito"
-      if (
-        statusToUpdate === EDespesaStatus.Concluida &&
-        selectedDespesa.formaPagamento === "credito" &&
-        selectedDespesa.parcelas &&
-        selectedDespesa.parcelas.length > 0
-      ) {
+      if (statusToUpdate === EDespesaStatus.Concluida && 
+          selectedDespesa.formaPagamento === "credito" && 
+          selectedDespesa.parcelas && 
+          selectedDespesa.parcelas.length > 0) {
+        
         // Verificar se todas as parcelas estão pagas
         const todasParcelasPagas = selectedDespesa.parcelas.every(
           (parcela: any) => parcela.status === EStatusParcela.Paga
         );
-
+        
         if (!todasParcelasPagas) {
-          toast.error(
-            "Não é possível concluir uma transação de crédito com parcelas pendentes. Todas as parcelas devem estar pagas.",
-            {
-              duration: 5000,
-            }
-          );
-          return;
+          toast.error("Não é possível concluir uma transação de crédito com parcelas pendentes. Todas as parcelas devem estar pagas.", {
+            duration: 5000,
+          });
+          return; // Impedir a atualização
         }
       }
-
+      
+      // Se passou na validação ou não precisa validar, prosseguir com a atualização
       updateTransactionStatus({
         id: selectedDespesa.id,
         data: { status: statusToUpdate },
       });
-      closeStatus();
+      closeModalStatus();
       setSelectedDespesa(undefined);
     }
   };
@@ -115,149 +124,6 @@ export default function DespesasGrid({ filters: _filters }: DespesasGridProps) {
     { value: EDespesaStatus.Aprovada.toString(), label: "Aprovada" },
     { value: EDespesaStatus.Cancelada.toString(), label: "Cancelada" },
     { value: EDespesaStatus.Concluida.toString(), label: "Concluída" },
-  ];
-
-  const columns: DataGridColumn<FinancialTransaction>[] = [
-    {
-      key: "tipo",
-      label: "Tipo",
-      render: (_value, row) => (
-        <Badge
-          size="sm"
-          color={
-            FinancialTransactionUtils.convertTipoTransacaoToString(row.tipo) ===
-            "recebimento"
-              ? "success"
-              : "error"
-          }
-        >
-          {FinancialTransactionUtils.convertTipoTransacaoToString(row.tipo) ===
-          "recebimento"
-            ? "Recebimento"
-            : "Saída"}
-        </Badge>
-      ),
-    },
-    {
-      key: "nomeDespesa",
-      label: "Transação",
-      render: (_value, row) => (
-        <div>
-          <div className="font-medium">{row.nomeDespesa}</div>
-          <div className="text-xs text-gray-400 dark:text-white">
-            {row.descricao || "N/A"}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "valores",
-      label: "Valor (R$)",
-      render: (_value, row) => (
-        <span
-          className={`font-semibold ${
-            FinancialTransactionUtils.convertTipoTransacaoToString(row.tipo) ===
-            "recebimento"
-              ? "text-green-600 dark:text-green-400 mt-1"
-              : "text-red-600 dark:text-red-400 mt-1"
-          }`}
-        >
-          {FinancialTransactionUtils.formatCurrency(row.valores)}
-        </span>
-      ),
-    },
-    {
-      key: "funcionario",
-      label: "Fisioterapeuta/Cliente",
-      render: (_value, row) => (
-        <div>
-          {row.funcionario && (
-            <div className="text-blue-600 dark:text-blue-400">
-              {row.funcionario.nome}
-            </div>
-          )}
-          {row.cliente && (
-            <div className="text-gray-600 dark:text-white">
-              {row.cliente.nome}
-            </div>
-          )}
-          {!row.funcionario && !row.cliente && (
-            <span className="text-gray-400 dark:text-white">N/A</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "formaPagamento",
-      label: "Forma Pagamento",
-      render: (_value, row) => (
-        <div>
-          <div>{row.formaPagamento || "N/A"}</div>
-          <div className="text-xs text-gray-400 dark:text-white">
-            {row.conta}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (_value, row) => (
-        <Badge
-          size="sm"
-          color={
-            row.status === EDespesaStatus.Aprovada
-              ? "success"
-              : row.status === EDespesaStatus.Concluida
-              ? "success"
-              : row.status === EDespesaStatus.Cancelada
-              ? "error"
-              : row.status === EDespesaStatus.Pendente
-              ? "warning"
-              : "error"
-          }
-        >
-          {getDespesaStatusLabel(row.status)}
-        </Badge>
-      ),
-    },
-    {
-      key: "dataCadastro",
-      label: "Data",
-      render: (_value, row) =>
-        row.dataCadastro
-          ? FinancialTransactionUtils.formatDateForDisplay(row.dataCadastro)
-          : "N/A",
-    },
-  ];
-
-  const actions: DataGridAction<FinancialTransaction>[] = [
-    {
-      id: "status",
-      label: "Status",
-      onClick: handleOpenModalStatus,
-      condition: (item) =>
-        item.status !== EDespesaStatus.Concluida &&
-        item.status !== EDespesaStatus.Cancelada,
-    },
-    {
-      id: "delete",
-      label: "Excluir",
-      variant: "danger",
-      onClick: (item) => deleteTransaction(item.id),
-      condition: (item) =>
-        item.status !== EDespesaStatus.Concluida &&
-        item.status !== EDespesaStatus.Cancelada,
-    },
-    {
-      id: "parcelas",
-      label: "Parcelas",
-      onClick: (item) => handleOpenModalParcelas(item.id),
-      condition: (item) =>
-        item.parcelas.length > 0 &&
-        item.status !== EDespesaStatus.Concluida &&
-        item.status !== EDespesaStatus.Cancelada,
-    },
   ];
 
   if (isLoading)
@@ -271,22 +137,239 @@ export default function DespesasGrid({ filters: _filters }: DespesasGridProps) {
 
   return (
     <>
-      <DataGridBase<FinancialTransaction>
-        config={{
-          columns,
-          data: (transactions as any[]) || [],
-          actions,
-          itemsPerPage: 10,
-          loading: isLoading,
-          error: isError ? "Erro ao carregar transações" : undefined,
-          emptyMessage: "Nenhuma transação encontrada",
-        }}
-      />
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="max-w-full overflow-x-auto">
+          <Table className="table-auto">
+            <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+              <TableRow>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Tipo
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Transação
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Valor (R$)
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Fisioterapeuta/Cliente
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Forma Pagamento
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Status
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Data
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Ações
+                </TableCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+              {transactions && transactions.length > 0 ? (
+                transactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell className="px-4 py-3 text-start">
+                      <Badge
+                        size="sm"
+                        color={
+                          FinancialTransactionUtils.convertTipoTransacaoToString(
+                            transaction.tipo
+                          ) === "recebimento"
+                            ? "success"
+                            : "error"
+                        }
+                      >
+                        {FinancialTransactionUtils.convertTipoTransacaoToString(
+                          transaction.tipo
+                        ) === "recebimento"
+                          ? "Recebimento"
+                          : "Saída"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      <div>
+                        <div className="font-medium">
+                          {transaction.nomeDespesa}
+                        </div>
+                        <div className="text-xs text-gray-400 dark:text-white">
+                          {transaction.descricao || "N/A"}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      <span
+                        className={`font-semibold ${
+                          FinancialTransactionUtils.convertTipoTransacaoToString(
+                            transaction.tipo
+                          ) === "recebimento"
+                            ? "text-green-600 dark:text-green-400 mt-1"
+                            : "text-red-600 dark:text-red-400 mt-1"
+                        }`}
+                      >
+                        {FinancialTransactionUtils.formatCurrency(
+                          transaction.valores
+                        )}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      <div>
+                        {transaction.funcionario && (
+                          <div className="text-blue-600 dark:text-blue-400">
+                            {transaction.funcionario.nome}
+                          </div>
+                        )}
+                        {transaction.cliente && (
+                          <div className="text-gray-600 dark:text-white">
+                            {transaction.cliente.nome}
+                          </div>
+                        )}
+                        {!transaction.funcionario && !transaction.cliente && (
+                          <span className="text-gray-400 dark:text-white">
+                            N/A
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      <div>
+                        <div>{transaction.formaPagamento || "N/A"}</div>
+                        <div className="text-xs text-gray-400 dark:text-white">
+                          {transaction.conta}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-start">
+                      <Badge
+                        size="sm"
+                        color={
+                          transaction.status === EDespesaStatus.Aprovada
+                            ? "success"
+                            : transaction.status === EDespesaStatus.Concluida
+                            ? "success"
+                            : transaction.status === EDespesaStatus.Cancelada
+                            ? "error"
+                            : transaction.status === EDespesaStatus.Pendente
+                            ? "warning"
+                            : "error"
+                        }
+                      >
+                        {getDespesaStatusLabel(transaction.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      {transaction.dataCadastro
+                        ? FinancialTransactionUtils.formatDateForDisplay(
+                            transaction.dataCadastro
+                          )
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-start">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenModalStatus(transaction)}
+                          disabled={
+                            isUpdatingStatus ||
+                            transaction.status === EDespesaStatus.Concluida ||
+                            transaction.status === EDespesaStatus.Cancelada
+                          }
+                        >
+                          Status
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenModalDelete(transaction.id!)}
+                          disabled={
+                            isDeleting ||
+                            transaction.status === EDespesaStatus.Concluida ||
+                            transaction.status === EDespesaStatus.Cancelada
+                          }
+                        >
+                          Excluir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            handleOpenModalParcelas(transaction.id!)
+                          }
+                          disabled={transaction.parcelas.length === 0 ||
+                            transaction.status === EDespesaStatus.Concluida ||
+                            transaction.status === EDespesaStatus.Cancelada}
+                        >
+                          Parcelas
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    -
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    -
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    -
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    -
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    -
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    -
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    -
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                    -
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
 
       {/* Modal de Atualização de Status */}
       <Modal
         isOpen={isOpenStatus}
-        onClose={closeStatus}
+        onClose={closeModalStatus}
         className="max-w-[700px] m-4"
       >
         <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
@@ -308,7 +391,7 @@ export default function DespesasGrid({ filters: _filters }: DespesasGridProps) {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={closeStatus}
+                  onClick={closeModalStatus}
                   className="flex-1"
                 >
                   Cancelar
@@ -319,10 +402,45 @@ export default function DespesasGrid({ filters: _filters }: DespesasGridProps) {
         </div>
       </Modal>
 
+      {/* Modal de Confirmação de Exclusão */}
+      <Modal
+        isOpen={isOpenDelete}
+        onClose={closeModalDelete}
+        className="max-w-[700px] m-4"
+      >
+        <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <div className="space-y-4">
+            <h3 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+              Confirmar Exclusão
+            </h3>
+            <p className="mb-2 font-semibold text-gray-800 dark:text-white/90">
+              Tem certeza que deseja excluir esta transação? Esta ação não pode
+              ser desfeita.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleDeleteRegister}
+                disabled={isDeleting}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                {isDeleting ? "Excluindo..." : "Excluir"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={closeModalDelete}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
       {/* Modal de Parcelas */}
       <Modal
         isOpen={isOpenParcelas}
-        onClose={closeParcelas}
+        onClose={closeModalParcelas}
         className="max-w-[900px] m-4"
       >
         <div className="no-scrollbar relative w-full max-w-[900px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">

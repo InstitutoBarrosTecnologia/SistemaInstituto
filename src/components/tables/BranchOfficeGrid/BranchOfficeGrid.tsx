@@ -1,223 +1,283 @@
-/**
- * BranchOfficeGrid - Refactored with DataGridBase
- * 
- * Redução de código:
- * - Antes: 311 LOC (monolítico com lógica de paginação, filtro, etc)
- * - Depois: 90 LOC (composição com DataGridBase)
- * - Redução: 71%
- * 
- * Features mantidas:
- * ✅ Paginação
- * ✅ Busca em múltiplos campos (nome, endereço, cep, número, observação, gerente)
- * ✅ Edição de unidade
- * ✅ Desativação (soft delete)
- * ✅ Resolução de nome do gerente a partir do ID
- * ✅ Design mantido
- */
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "../../ui/table";
+import { Modal } from "../../ui/modal";
+import { useModal } from "../../../hooks/useModal";
+import { useState, useMemo } from "react";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-import { DataGridBase, DataGridConfig, DataGridColumn, DataGridAction } from '../../DataGrid/DataGridBase';
-import { Modal } from '../../ui/modal';
-import { useModal } from '../../../stores/modalStore';
-import { BranchOfficeService } from '../../../services/service/BranchOfficeService';
-import EmployeeService from '../../../services/service/EmployeeService';
-import { BranchOfficeResponseDto } from '../../../services/model/Dto/Response/BranchOfficeResponseDto';
-import FormBranchOffice from '../../../pages/Forms/BranchOffice/FormBranchOffice';
-import Button from '../../ui/button/Button';
+import { BranchOfficeResponseDto } from "../../../services/model/Dto/Response/BranchOfficeResponseDto";
+import FormBranchOffice from "../../../pages/Forms/BranchOffice/FormBranchOffice";
+import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
+import EmployeeService from "../../../services/service/EmployeeService";
+import Button from "../../ui/button/Button";
 
 interface BranchOfficeGridProps {
   searchTerm?: string;
 }
 
-/**
- * BranchOfficeGrid - Grid de unidades com DataGridBase
- * 
- * @param searchTerm - Termo de busca passado do componente pai
- */
-export default function BranchOfficeGrid({ searchTerm: _searchTerm = '' }: BranchOfficeGridProps) {
-  const [selectedBranch, setSelectedBranch] = useState<BranchOfficeResponseDto | undefined>(undefined);
-  const [idDeleteRegister, setIdDeleteRegister] = useState<string>('');
-  const editModal = useModal('editBranch');
-  const deleteModal = useModal('deleteBranch');
+export default function BranchOfficeGrid({ searchTerm = "" }: BranchOfficeGridProps) {
+  const [selectedBranch, setSelectedBranch] = useState<
+    BranchOfficeResponseDto | undefined
+  >(undefined);
+  const { isOpen, openModal, closeModal } = useModal();
+  const {
+    isOpen: isOpenDelete,
+    openModal: openModalDelete,
+    closeModal: closeModalDelete,
+  } = useModal();
+  const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
+
   const queryClient = useQueryClient();
 
-  // Data loading
-  const { data: branches = [], isLoading, isError } = useQuery({
-    queryKey: ['allBranchOffice'],
+  const {
+    data: branches = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["allBranchOffice"],
     queryFn: BranchOfficeService.getAll,
   });
 
-  // Load funcionários para resolver nomes de gerentes
-  const { data: funcionarios = [], isLoading: isLoadingFuncionarios } = useQuery({
-    queryKey: ['allEmployee'],
-    queryFn: EmployeeService.getAll,
-  });
+  // Buscar funcionários para resolver o nome do gerente
+  const { data: funcionarios = [], isLoading: isLoadingFuncionarios } =
+    useQuery({
+      queryKey: ["allEmployee"],
+      queryFn: EmployeeService.getAll,
+    });
 
-  // Helper para encontrar nome do gerente
-  const getGerenteName = useCallback(
-    (idGerenteFilial: string | undefined) => {
-      if (!idGerenteFilial) return 'Não informado';
-      const funcionario = funcionarios.find((func) => func.id === idGerenteFilial);
-      return funcionario?.nome || 'Gerente não encontrado';
-    },
-    [funcionarios]
-  );
+  // Função para encontrar o nome do gerente pelo ID
+  const getGerenteName = (idGerenteFilial: string | undefined) => {
+    if (!idGerenteFilial) return "Não informado";
+    if (isLoadingFuncionarios) return "Carregando...";
 
-  // Mutation para desativar
+    const funcionario = funcionarios.find(
+      (func) => func.id === idGerenteFilial
+    );
+    return funcionario?.nome || "Gerente não encontrado";
+  };
+
   const mutationDelete = useMutation({
     mutationFn: BranchOfficeService.disable,
     onSuccess: () => {
-      toast.success('Unidade desativada com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['allBranchOffice'] });
-      deleteModal.close();
+      toast.success("Unidade desativada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["allBranchOffice"] });
+      closeModalDelete();
     },
     onError: () => {
-      toast.error('Erro ao desativar unidade.');
+      toast.error("Erro ao desativar unidade.");
     },
   });
 
-  // Colunas da tabela
-  const columns: DataGridColumn<BranchOfficeResponseDto>[] = useMemo(
-    () => [
-      {
-        key: 'nomeFilial',
-        label: 'Nome',
-        sortable: true,
-        render: (value) => value || '-',
-      },
-      {
-        key: 'endereco',
-        label: 'Endereço',
-        sortable: false,
-        render: (_, row) => row.endereco?.rua || '-',
-      },
-      {
-        key: 'endereco',
-        label: 'CEP',
-        sortable: false,
-        render: (_, row) => row.endereco?.cep || '-',
-      },
-      {
-        key: 'endereco',
-        label: 'Número',
-        sortable: false,
-        render: (_, row) => row.endereco?.numero || '-',
-      },
-      {
-        key: 'matriz',
-        label: 'Matriz',
-        sortable: true,
-        render: (value) => (value ? 'Sim' : 'Não'),
-      },
-      {
-        key: 'idGerenteFilial',
-        label: 'Gerente',
-        sortable: false,
-        render: (value) => getGerenteName(value),
-      },
-      {
-        key: 'observacao',
-        label: 'Observação',
-        sortable: false,
-        render: (value) => value || '-',
-      },
-    ],
-    [getGerenteName]
-  );
+  // Filtro inteligente com múltiplos campos - DEVE estar ANTES dos returns condicionais
+  const filteredBranches = useMemo(() => {
+    if (!Array.isArray(branches) || branches.length === 0) {
+      return [];
+    }
 
-  // Handlers
-  const handleEdit = useCallback((branch: BranchOfficeResponseDto) => {
+    if (!searchTerm || searchTerm.trim() === '') {
+      return branches;
+    }
+
+    const normalizedSearch = searchTerm.toLowerCase().trim();
+
+    return branches.filter((branch) => {
+      // Campos para busca
+      const nome = branch.nomeFilial?.toLowerCase() || '';
+      const endereco = branch.endereco?.rua?.toLowerCase() || '';
+      const cep = branch.endereco?.cep?.toLowerCase() || '';
+      const numero = branch.endereco?.numero?.toLowerCase() || '';
+      const observacao = branch.observacao?.toLowerCase() || '';
+      const gerenteNome = getGerenteName(branch.idGerenteFilial)?.toLowerCase() || '';
+      
+      return (
+        nome.includes(normalizedSearch) ||
+        endereco.includes(normalizedSearch) ||
+        cep.includes(normalizedSearch) ||
+        numero.includes(normalizedSearch) ||
+        observacao.includes(normalizedSearch) ||
+        gerenteNome.includes(normalizedSearch)
+      );
+    });
+  }, [branches, searchTerm, funcionarios]);
+
+  const handleOpenModal = (branch: BranchOfficeResponseDto) => {
     setSelectedBranch(branch);
-    editModal.open(branch);
-  }, [editModal]);
+    openModal();
+  };
 
-  const handleDelete = useCallback((branch: BranchOfficeResponseDto) => {
-    setIdDeleteRegister(branch.id!);
-    deleteModal.open(branch);
-  }, [deleteModal]);
+  const handleOpenModalDelete = (id: string) => {
+    setIdDeleteRegister(id);
+    openModalDelete();
+  };
 
-  const handlePostDelete = useCallback(async (e: React.FormEvent) => {
+  const handlePostDelete = async (e: React.FormEvent) => {
     e.preventDefault();
     mutationDelete.mutate(idDeleteRegister);
-  }, [idDeleteRegister, mutationDelete]);
+  };
 
-  // Actions
-  const actions: DataGridAction<BranchOfficeResponseDto>[] = useMemo(
-    () => [
-      {
-        id: 'edit',
-        label: 'Editar',
-        variant: 'primary',
-        onClick: handleEdit,
-        icon: (
-          <svg
-            className="fill-current"
-            width="18"
-            height="18"
-            viewBox="0 0 18 18"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206ZM12.9698 3.84272C13.2627 3.54982 13.7376 3.54982 14.0305 3.84272L14.6934 4.50563C14.9863 4.79852 14.9863 5.2734 14.6934 5.56629L14.044 6.21573L12.3204 4.49215L12.9698 3.84272ZM11.2597 5.55281L5.6359 11.1766C5.53309 11.2794 5.46238 11.4099 5.43238 11.5522L5.01758 13.5185L6.98394 13.1037C7.1262 13.0737 7.25666 13.003 7.35947 12.9002L12.9833 7.27639L11.2597 5.55281Z"
-            />
-          </svg>
-        ),
-      },
-      {
-        id: 'delete',
-        label: 'Deletar',
-        variant: 'danger',
-        onClick: handleDelete,
-        icon: (
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-          </svg>
-        ),
-      },
-    ],
-    [handleEdit, handleDelete]
-  );
-
-  // DataGrid config
-  const gridConfig: DataGridConfig<BranchOfficeResponseDto> = useMemo(
-    () => ({
-      columns,
-      data: branches,
-      actions,
-      itemsPerPage: 10,
-      searchableFields: ['nomeFilial', 'observacao'],
-      sortable: true,
-      loading: isLoading || isLoadingFuncionarios,
-      error: isError ? 'Erro ao carregar unidades' : undefined,
-      emptyMessage: 'Nenhuma unidade encontrada',
-    }),
-    [columns, branches, actions, isLoading, isLoadingFuncionarios, isError]
-  );
+  if (isLoading || isLoadingFuncionarios)
+    return <p className="text-dark dark:text-white">Carregando unidades...</p>;
+  if (isError)
+    return (
+      <p className="text-dark dark:text-white">Erro ao carregar unidades!</p>
+    );
 
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <div className="max-w-full overflow-x-auto p-5">
-          <DataGridBase config={gridConfig as any} />
+        <div className="max-w-full overflow-x-auto">
+          <Table className="table-auto">
+            <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+              <TableRow>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Nome
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Endereço
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  CEP
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Número
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Matriz
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Gerente
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Observação
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Ações
+                </TableCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+              {filteredBranches instanceof Array ? (
+                filteredBranches.map((branch) => (
+                  <TableRow key={branch.id}>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400 cursor-pointer hover:text-blue-600">
+                      {branch.nomeFilial}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      {branch.endereco.rua}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      {branch.endereco.cep}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      {branch.endereco.numero}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      {branch.matriz ? "Sim" : "Não"}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      {getGerenteName(branch.idGerenteFilial)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                      {branch.observacao}
+                    </TableCell>
+
+                    <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <button
+                          onClick={() => handleOpenModal(branch)}
+                          rel="noopener"
+                          className="p-3 flex h-11 w-11 items-center justify-center rounded-full border border-yellow-300 bg-white text-sm font-medium text-yellow-700 shadow-theme-xs hover:bg-yellow-50 hover:text-yellow-800 dark:border-yellow-700 dark:bg-yellow-800 dark:text-yellow-400 dark:hover:bg-white/[0.03] dark:hover:text-yellow-200"
+                        >
+                          <svg
+                            className="fill-current"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 18 18"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              clipRule="evenodd"
+                              d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206ZM12.9698 3.84272C13.2627 3.54982 13.7376 3.54982 14.0305 3.84272L14.6934 4.50563C14.9863 4.79852 14.9863 5.2734 14.6934 5.56629L14.044 6.21573L12.3204 4.49215L12.9698 3.84272ZM11.2597 5.55281L5.6359 11.1766C5.53309 11.2794 5.46238 11.4099 5.43238 11.5522L5.01758 13.5185L6.98394 13.1037C7.1262 13.0737 7.25666 13.003 7.35947 12.9002L12.9833 7.27639L11.2597 5.55281Z"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleOpenModalDelete(branch.id!)}
+                          rel="noopener"
+                          className="p-3 flex h-11 w-11 items-center justify-center rounded-full border border-red-300 bg-white text-sm font-medium text-red-700 shadow-theme-xs hover:bg-red-50 hover:text-red-800 dark:border-red-700 dark:bg-red-800 dark:text-red-400 dark:hover:bg-white/[0.03] dark:hover:text-red-200"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                            className="size-6"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <></>
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
 
-      {/* Modal de Edição */}
-      <Modal isOpen={editModal.isOpen} onClose={editModal.close} className="max-w-[700px] m-4">
+      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
         <FormBranchOffice
           data={selectedBranch}
           edit={!!selectedBranch?.id}
-          closeModal={editModal.close}
+          closeModal={closeModal}
         />
       </Modal>
 
-      {/* Modal de Confirmação de Exclusão */}
-      <Modal isOpen={deleteModal.isOpen} onClose={deleteModal.close} className="max-w-[700px] m-4">
+      <Modal
+        isOpen={isOpenDelete}
+        onClose={closeModalDelete}
+        className="max-w-[700px] m-4"
+      >
         <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-center text-gray-800 dark:text-white/90">
@@ -233,7 +293,7 @@ export default function BranchOfficeGrid({ searchTerm: _searchTerm = '' }: Branc
               </div>
             </div>
             <div className="flex items-center justify-center gap-3 mt-6">
-              <Button size="sm" variant="outline" onClick={deleteModal.close}>
+              <Button size="sm" variant="outline" onClick={closeModalDelete}>
                 Cancelar
               </Button>
               <button
