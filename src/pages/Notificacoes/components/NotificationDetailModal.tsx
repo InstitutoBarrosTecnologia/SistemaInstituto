@@ -160,6 +160,38 @@ const NotificationDetailModal: FC<NotificationDetailModalProps> = ({
               )}
             </div>
 
+            {/* Informações da Ordem de Serviço */}
+            {notification.orderServiceId && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3">
+                  Ordem de Serviço Relacionada
+                </h3>
+                <div className="space-y-3">
+                  {/* ID da Ordem */}
+                  <div>
+                    <label className="block text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">
+                      ID da Ordem
+                    </label>
+                    <p className="text-sm text-blue-900 dark:text-blue-100 font-mono">
+                      {notification.orderServiceId}
+                    </p>
+                  </div>
+
+                  {/* Nome do Serviço */}
+                  {notification.orderServiceNomeServico && (
+                    <div>
+                      <label className="block text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">
+                        Nome do Serviço
+                      </label>
+                      <p className="text-sm text-blue-900 dark:text-blue-100">
+                        {notification.orderServiceNomeServico}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Destinatários */}
             <div>
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">

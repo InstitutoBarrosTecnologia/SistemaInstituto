@@ -12,4 +12,7 @@ export interface NotificationResponseDto extends BaseResponseDto {
   dataEnvio?: string;
   usrCadastro?: string;
   usrDescricaoCadastro?: string;
+  orderServiceId?: string;
+  orderServiceReferencia?: string;
+  orderServiceNomeServico?: string;
 }
