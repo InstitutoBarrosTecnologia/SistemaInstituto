@@ -55,8 +55,8 @@ export default function SubServiceCategoryGrid({ searchTerm: _searchTerm = '' }:
 
   // Data loading
   const { data: subCategorys = [], isLoading, isError } = useQuery({
-    queryKey: ['getAllSubCategoryService'] as const,
-    queryFn: getAllSubCategoriasAsync as () => Promise<any[]>,
+    queryKey: ['getAllSubCategoryService', _searchTerm] as const,
+    queryFn: () => getAllSubCategoriasAsync(_searchTerm, _searchTerm),
   }) as any;
 
   // Mutation para desativar

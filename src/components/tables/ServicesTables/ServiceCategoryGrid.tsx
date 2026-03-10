@@ -53,8 +53,8 @@ export default function ServiceCategoryGrid({ searchTerm: _searchTerm = '' }: Se
 
   // Data loading
   const { data: categorys = [], isLoading, isError } = useQuery({
-    queryKey: ['getAllCategory'] as const,
-    queryFn: getAllCategoriasAsync as () => Promise<any[]>,
+    queryKey: ['getAllCategory', _searchTerm] as const,
+    queryFn: () => getAllCategoriasAsync(_searchTerm, _searchTerm),
   }) as any;
 
   // Mutation para desativar
