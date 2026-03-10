@@ -33,6 +33,7 @@ import Notifications from "./pages/Notificacoes/Notifications";
 import Historico from "./pages/Notificacoes/Historico";
 import Log from "./pages/Log/Log";
 import CustomerAccessPage from "./pages/CustomerAccess/CustomerAccess"; // TEMPORÁRIO - Sistema de acesso clientes
+import GerenciarCheckIns from "./pages/CheckIns/GerenciarCheckIns";
 
 
 export default function App() {
@@ -119,7 +120,18 @@ export default function App() {
               </RoleProtectedRoute>
             } 
           />
+
+          {/* Gerenciar Check-ins - Apenas para Administradores */}
+          <Route 
+            path="/gestao/gerenciar-checkins" 
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.GERENCIAR_CHECKINS}>
+                <GerenciarCheckIns />
+              </RoleProtectedRoute>
+            } 
+          />
           
+
 
 
           {/* Tables */}

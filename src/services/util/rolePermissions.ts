@@ -171,6 +171,11 @@ export const MENU_PERMISSIONS = {
   CUSTOMER_ACCESS: [
     USER_ROLES.ADMINISTRADOR,
     USER_ROLES.ADMINISTRATIVO
+  ],
+
+  // Gerenciar Check-ins - apenas Administradores
+  GERENCIAR_CHECKINS: [
+    USER_ROLES.ADMINISTRADOR
   ]
 } as const;
 

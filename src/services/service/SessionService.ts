@@ -48,3 +48,11 @@ export const getDailySessionsSummaryAsync = async (
   );
   return response.data;
 };
+
+// DELETE: Deletar sessão (check-in) - APENAS ADMINISTRADOR
+export const deleteSessionAsync = async (
+  id: string
+): Promise<{ status: number }> => {
+  const response = await instanceApi.delete(`/SessionService/${id}`);
+  return { status: response.status };
+};

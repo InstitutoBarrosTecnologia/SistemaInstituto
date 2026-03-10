@@ -94,6 +94,12 @@ const allNavItems: NavItem[] = [
         permissions: MENU_PERMISSIONS.TRATAMENTO_SESSAO,
       },
       { 
+        name: "Gerenciar Check-ins", 
+        path: "/gestao/gerenciar-checkins", 
+        pro: false,
+        permissions: MENU_PERMISSIONS.GERENCIAR_CHECKINS,
+      },
+      { 
         name: "Acessos Clientes", 
         path: "/customer-access", 
         pro: false,
