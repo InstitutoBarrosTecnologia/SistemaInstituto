@@ -158,6 +158,18 @@ export default function FormOrderService({
     return dates;
   };
 
+  // Função helper para construir string ISO sem conversão UTC
+  const toLocalISOString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  };
+
   // Função para criar agendamentos recorrentes
   const createRecurrentSchedules = async (orderServiceId: string) => {
     if (
@@ -188,8 +200,8 @@ export default function FormOrderService({
         descricao: `Sessão de fisioterapia - Tratamento: ${
           formData.cliente?.nome || "N/A"
         }`,
-        dataInicio: startDateTime.toISOString(),
-        dataFim: endDateTime.toISOString(),
+        dataInicio: toLocalISOString(startDateTime),
+        dataFim: toLocalISOString(endDateTime),
         diaTodo: false,
         clienteId: formData.clienteId,
         funcionarioId: selectedFuncionario,
