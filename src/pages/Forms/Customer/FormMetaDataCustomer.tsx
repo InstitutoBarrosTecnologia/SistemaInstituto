@@ -477,7 +477,8 @@ export default function FormMetaDataCustomer({
                               servico.sessoes?.filter(
                                 (s) => s.statusSessao === 0,
                               ).length ?? 0;
-                            const totalSessoes = servico.qtdSessaoTotal ?? 0;
+                            // Calcular total dinamicamente baseado em todas as sessões
+                            const totalSessoes = servico.sessoes?.length ?? 0;
                             const precoOriginal = servico.precoOrdem ?? 0;
                             const desconto = servico.precoDesconto ?? 0;
                             const valorFinal = precoOriginal - desconto;

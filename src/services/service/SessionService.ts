@@ -23,7 +23,7 @@ export const getAllSessionsAsync = async (
 ): Promise<OrderServiceSessionResponseDto[]> => {
   const query = clienteId ? `?clienteId=${clienteId}` : "";
   const response = await instanceApi.get<OrderServiceSessionResponseDto[]>(
-    `/SessionService/GetByAllSessionService/${query}`
+    `/SessionService/GetByAllSessionService${query}`
   );
   return response.data;
 };

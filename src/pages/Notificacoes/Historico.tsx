@@ -154,20 +154,22 @@ export default function Historico() {
           )}
         </div>
 
-        {/* Filters */}
-        <NotificationHistoryFilters
-          criadoPorId={criadoPorId}
-          startDate={startDate}
-          endDate={endDate}
-          status={status}
-          onCriadoPorIdChange={setCriadoPorId}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-          onStatusChange={setStatus}
-          onApplyFilters={handleApplyFilters}
-          onClearFilters={handleClearFilters}
-          loading={loading}
-        />
+        {/* Filters - Only visible for Admin and Administrativo */}
+        {hasFullAccess && (
+          <NotificationHistoryFilters
+            criadoPorId={criadoPorId}
+            startDate={startDate}
+            endDate={endDate}
+            status={status}
+            onCriadoPorIdChange={setCriadoPorId}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            onStatusChange={setStatus}
+            onApplyFilters={handleApplyFilters}
+            onClearFilters={handleClearFilters}
+            loading={loading}
+          />
+        )}
 
         {/* Results Table */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">

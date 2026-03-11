@@ -3029,8 +3029,9 @@ const Calendar: React.FC = () => {
                                                       (s) =>
                                                         s.statusSessao === 0,
                                                     ).length ?? 0;
+                                                  // Calcular total dinamicamente baseado em todas as sessões
                                                   const totalSessoes =
-                                                    servico.qtdSessaoTotal ?? 0;
+                                                    servico.sessoes?.length ?? 0;
                                                   return (
                                                     <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
                                                       {`${sessoesRealizadas}/${totalSessoes}`}
