@@ -80,7 +80,7 @@ export default function SessionsGrid() {
       sessionDate >= startDate && sessionDate <= endDate;
     const matchesPaciente =
       !paciente ||
-      session.funcionario?.nome?.toLowerCase().includes(paciente.toLowerCase());
+      session.cliente?.nome?.toLowerCase().includes(paciente.toLowerCase());
     const matchesFisio =
       !fisioterapeuta ||
       session.funcionario?.nome?.toLowerCase().includes(fisioterapeuta.toLowerCase());
@@ -115,8 +115,8 @@ export default function SessionsGrid() {
   };
 
   const handleDelete = () => {
-    if (selectedSession && (selectedSession as any).id) {
-      deleteSession((selectedSession as any).id);
+    if (selectedSession?.id) {
+      deleteSession(selectedSession.id);
       closeModal();
       setSelectedSession(null);
     }
@@ -307,7 +307,7 @@ export default function SessionsGrid() {
                       <TableRow key={session.id}>
                         <TableCell className="px-4 py-3 text-start">
                           <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                            {session.funcionario?.nome || "N/A"}
+                            {session.cliente?.nome || "N/A"}
                           </span>
                         </TableCell>
                         <TableCell className="px-4 py-3 text-start">
@@ -375,75 +375,78 @@ export default function SessionsGrid() {
       </div>
 
       {/* Modal de Confirmação de Exclusão */}
-      <Modal isOpen={isOpen} onClose={closeModal}>
-        <div className="p-6">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-            Confirmar Exclusão
-          </h2>
-
-          <p className="text-gray-700 dark:text-gray-300 mb-2">
-            Tem certeza que deseja excluir este check-in?
-          </p>
-          <p className="text-red-600 dark:text-red-400 font-semibold mb-4">
-            Esta ação não pode ser desfeita.
-          </p>
-
-          {selectedSession && (
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6">
-              <div className="space-y-2">
-                <p className="text-sm">
-                  <strong className="text-gray-700 dark:text-gray-300">
-                    Paciente:
-                  </strong>{" "}
-                  <span className="text-gray-600 dark:text-gray-400">
-                    {selectedSession.funcionario?.nome || "N/A"}
-                  </span>
-                </p>
-                <p className="text-sm">
-                  <strong className="text-gray-700 dark:text-gray-300">
-                    Data/Hora:
-                  </strong>{" "}
-                  <span className="text-gray-600 dark:text-gray-400">
-                    {formatDateTime(
-                      selectedSession.dataSessao,
-                      selectedSession.horaSessao
-                    )}
-                  </span>
-                </p>
-                <p className="text-sm">
-                  <strong className="text-gray-700 dark:text-gray-300">
-                    Status:
-                  </strong>{" "}
-                  <Badge
-                    size="sm"
-                    color={
-                      getStatusColor(selectedSession.statusSessao) as any
-                    }
-                  >
-                    {getStatusLabel(selectedSession.statusSessao)}
-                  </Badge>
-                </p>
-              </div>
+      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
+        <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <div className="space-y-4">
+            <div className="px-2 pr-14">
+              <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+                Confirmar Exclusão
+              </h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Tem certeza que deseja excluir este check-in?
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-400 font-semibold mt-2">
+                Esta ação não pode ser desfeita.
+              </p>
             </div>
-          )}
 
-          <div className="flex gap-3">
-            <Button
-              onClick={closeModal}
-              variant="outline"
-              disabled={isDeleting}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleDelete}
-              variant="outline"
-              disabled={isDeleting}
-              className="flex-1"
-            >
-              {isDeleting ? "Excluindo..." : "Excluir"}
-            </Button>
+            {selectedSession && (
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mx-2">
+                <div className="space-y-2">
+                  <p className="text-sm">
+                    <strong className="text-gray-700 dark:text-gray-300">
+                      Fisioterapeuta:
+                    </strong>{" "}
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {selectedSession.funcionario?.nome || "N/A"}
+                    </span>
+                  </p>
+                  <p className="text-sm">
+                    <strong className="text-gray-700 dark:text-gray-300">
+                      Data/Hora:
+                    </strong>{" "}
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {formatDateTime(
+                        selectedSession.dataSessao,
+                        selectedSession.horaSessao
+                      )}
+                    </span>
+                  </p>
+                  <p className="text-sm">
+                    <strong className="text-gray-700 dark:text-gray-300">
+                      Status:
+                    </strong>{" "}
+                    <Badge
+                      size="sm"
+                      color={
+                        getStatusColor(selectedSession.statusSessao) as any
+                      }
+                    >
+                      {getStatusLabel(selectedSession.statusSessao)}
+                    </Badge>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 px-2 mt-6">
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={isDeleting}
+                className="flex-1 h-11 text-text-secondary border border-border-secondary hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 h-11 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? "Excluindo..." : "Excluir"}
+              </button>
+            </div>
           </div>
         </div>
       </Modal>
