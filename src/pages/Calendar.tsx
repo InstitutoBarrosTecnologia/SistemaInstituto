@@ -483,10 +483,16 @@ const Calendar: React.FC = () => {
       const originalStartDate = new Date(eventStartDate);
       const originalEndDate = new Date(eventEndDate);
 
-      const startHours = originalStartDate.getHours();
-      const startMinutes = originalStartDate.getMinutes();
+      let startHours = originalStartDate.getHours();
+      let startMinutes = originalStartDate.getMinutes();
       let endHours = originalEndDate.getHours();
       let endMinutes = originalEndDate.getMinutes();
+
+      // Se selectedHorarioRecorrente foi definido, usar ele ao invés do horário do evento
+      // (evita problema de fuso horário ao usar new Date(eventStartDate).getHours())
+      if (selectedHorarioRecorrente) {
+        [startHours, startMinutes] = selectedHorarioRecorrente.split(":").map(Number);
+      }
 
       // Se horarioFinalRecorrente foi definido, usar ele ao invés do horário do evento
       if (horarioFinalRecorrente) {
@@ -522,7 +528,8 @@ const Calendar: React.FC = () => {
 
             // Atualizar os campos dataInicio e dataFim no objeto session
             // Combinar a NOVA data com os horários extraídos dos campos
-            const newDateOnly = newDate.toISOString().split("T")[0]; // Apenas a data (YYYY-MM-DD)
+            // Usar partes locais da data para evitar flip de dia por conversão UTC
+            const newDateOnly = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, "0")}-${String(newDate.getDate()).padStart(2, "0")}`;
             const startTimeFormatted = `${startHours.toString().padStart(2, "0")}:${startMinutes.toString().padStart(2, "0")}:00`;
             const endTimeFormatted = `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}:00`;
 
@@ -551,7 +558,8 @@ const Calendar: React.FC = () => {
 
           // Atualizar os campos dataInicio e dataFim no objeto session
           // Combinar a data EXISTENTE com os horários extraídos dos campos
-          const existingDateOnly = existingDate.toISOString().split("T")[0]; // Apenas a data (YYYY-MM-DD)
+          // Usar partes locais da data para evitar flip de dia por conversão UTC
+          const existingDateOnly = `${existingDate.getFullYear()}-${String(existingDate.getMonth() + 1).padStart(2, "0")}-${String(existingDate.getDate()).padStart(2, "0")}`;
           const startTimeFormatted = `${startHours.toString().padStart(2, "0")}:${startMinutes.toString().padStart(2, "0")}:00`;
           const endTimeFormatted = `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}:00`;
 
