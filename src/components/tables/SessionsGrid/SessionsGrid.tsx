@@ -71,9 +71,10 @@ export default function SessionsGrid() {
 
   // Filtrar sessões
   const filteredSessions = sessions.filter((session: any) => {
+    // Forcar parse como hora local (mesmo comportamento do dataSessao '2026-03-11T00:00:00')
     const sessionDate = new Date(session.dataSessao);
-    const startDate = new Date(dataInicio);
-    const endDate = new Date(dataFim);
+    const startDate = new Date(dataInicio + 'T00:00:00');
+    const endDate = new Date(dataFim + 'T00:00:00');
     endDate.setHours(23, 59, 59, 999);
 
     const matchesDate =
