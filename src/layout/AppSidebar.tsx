@@ -103,7 +103,7 @@ const allNavItems: NavItem[] = [
         name: "Acessos Clientes", 
         path: "/customer-access", 
         pro: false,
-        permissions: MENU_PERMISSIONS.LOGS, // Mesma permissão do App.tsx - Apenas Administradores
+        permissions: MENU_PERMISSIONS.CUSTOMER_ACCESS,
       },
     ],
   },
