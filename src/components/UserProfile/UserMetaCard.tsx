@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
@@ -6,14 +7,22 @@ import Label from "../form/Label";
 import { EmployeeResponseDto } from "../../services/model/Dto/Response/EmployeeResponseDto";
 import { UserResponseDto } from "../../services/model/Dto/Response/UserResponseDto";
 import { formatCPF, formatPhone, formatRG, formatDate } from "../helper/formatUtils";
+import { PencilIcon } from "../../icons";
 
 interface UserMetaCardProps {
   userData: UserResponseDto | null;
   employeeData: EmployeeResponseDto | null;
 }
 
+const TOOLTIP_MSG = "Procure o administrativo para alterar as informações cadastradas.";
+
 export default function UserMetaCard({ userData, employeeData }: UserMetaCardProps) {
   const { isOpen, closeModal } = useModal();
+  const [activeTooltip, setActiveTooltip] = useState<"personal" | "address" | null>(null);
+
+  const handleTooltipClick = (section: "personal" | "address") => {
+    setActiveTooltip((prev) => (prev === section ? null : section));
+  };
 
   return (
     <>
@@ -55,9 +64,34 @@ export default function UserMetaCard({ userData, employeeData }: UserMetaCardPro
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
-              Informações pessoais
-            </h4>
+            <div className="flex items-center gap-2 lg:mb-6">
+              <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+                Informações pessoais
+              </h4>
+              <div
+                className="relative group"
+                onClick={() => handleTooltipClick("personal")}
+              >
+                <span
+                  role="button"
+                  aria-disabled="true"
+                  aria-label="Editar informações pessoais"
+                  className="flex items-center justify-center w-7 h-7 rounded-full text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50 hover:opacity-70 transition-opacity"
+                >
+                  <PencilIcon className="w-4 h-4" />
+                </span>
+                <div
+                  className={`absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 rounded-lg bg-gray-800 dark:bg-gray-700 text-white text-xs text-center px-3 py-2 transition-opacity duration-200 pointer-events-none z-50 shadow-lg ${
+                    activeTooltip === "personal"
+                      ? "opacity-100"
+                      : "opacity-0 group-hover:opacity-100"
+                  }`}
+                >
+                  {TOOLTIP_MSG}
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-gray-800 dark:border-b-gray-700"></div>
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
               <div>
@@ -146,9 +180,34 @@ export default function UserMetaCard({ userData, employeeData }: UserMetaCardPro
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
-              Endereço
-            </h4>
+            <div className="flex items-center gap-2 lg:mb-6">
+              <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+                Endereço
+              </h4>
+              <div
+                className="relative group"
+                onClick={() => handleTooltipClick("address")}
+              >
+                <span
+                  role="button"
+                  aria-disabled="true"
+                  aria-label="Editar endereço"
+                  className="flex items-center justify-center w-7 h-7 rounded-full text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50 hover:opacity-70 transition-opacity"
+                >
+                  <PencilIcon className="w-4 h-4" />
+                </span>
+                <div
+                  className={`absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 rounded-lg bg-gray-800 dark:bg-gray-700 text-white text-xs text-center px-3 py-2 transition-opacity duration-200 pointer-events-none z-50 shadow-lg ${
+                    activeTooltip === "address"
+                      ? "opacity-100"
+                      : "opacity-0 group-hover:opacity-100"
+                  }`}
+                >
+                  {TOOLTIP_MSG}
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-gray-800 dark:border-b-gray-700"></div>
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
               <div className="col-span-1 lg:col-span-2">
