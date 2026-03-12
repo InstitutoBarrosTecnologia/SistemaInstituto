@@ -27,6 +27,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   const [selectedOptions, setSelectedOptions] =
     useState<string[]>(defaultSelected);
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Sincronizar estado interno com defaultSelected quando ele mudar
@@ -52,7 +53,12 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   }, [isOpen]);
 
   const toggleDropdown = () => {
-    if (!disabled) setIsOpen((prev) => !prev);
+    if (!disabled) {
+      setIsOpen((prev) => !prev);
+      if (!isOpen) {
+        setSearchTerm(""); // Reset search when opening dropdown
+      }
+    }
   };
 
   const handleSelect = (optionValue: string) => {
@@ -78,6 +84,11 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
   const selectedValuesText = selectedOptions.map(
     (value) => options.find((option) => option.value === value)?.text || ""
+  );
+
+  // Filter options based on search term
+  const filteredOptions = options.filter((option) =>
+    option.text.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -173,52 +184,71 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col">
-                {options.map((option, index) => (
-                  <div
-                    key={index}
-                    className={`hover:bg-primary/5 w-full cursor-pointer rounded-t border-b border-gray-200 dark:border-gray-800`}
-                    onClick={() => handleSelect(option.value)}
-                  >
+                {/* Search input */}
+                <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                  <input
+                    type="text"
+                    placeholder="Buscar..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full px-3 py-2 text-sm text-gray-800 dark:text-white bg-transparent border-0 outline-hidden focus:ring-0 focus:outline-hidden placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                  />
+                </div>
+                
+                {/* Options list */}
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map((option, index) => (
                     <div
-                      className={`relative flex w-full items-center p-2 pl-2 ${selectedOptions.includes(option.value)
-                        ? "bg-primary/10"
-                        : ""
-                        }`}
+                      key={index}
+                      className={`hover:bg-primary/5 w-full cursor-pointer rounded-t border-b border-gray-200 dark:border-gray-800`}
+                      onClick={() => handleSelect(option.value)}
                     >
-                      <div className="flex items-center justify-between w-full">
-                        <div className="mx-2 leading-6 text-gray-800 dark:text-white/90">
-                          {option.text}
-                        </div>
-                        {selectedOptions.includes(option.value) && (
-                          <div className="mr-2 text-green-600 dark:text-green-400">
-                            <svg
-                              width="18"
-                              height="18"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M9 12L11 14L15 10"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <circle
-                                cx="12"
-                                cy="12"
-                                r="9"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                              />
-                            </svg>
+                      <div
+                        className={`relative flex w-full items-center p-2 pl-2 ${selectedOptions.includes(option.value)
+                          ? "bg-primary/10"
+                          : ""
+                          }`}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="mx-2 leading-6 text-gray-800 dark:text-white/90">
+                            {option.text}
                           </div>
-                        )}
+                          {selectedOptions.includes(option.value) && (
+                            <div className="mr-2 text-green-600 dark:text-green-400">
+                              <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M9 12L11 14L15 10"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <circle
+                                  cx="12"
+                                  cy="12"
+                                  r="9"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="px-3 py-2 text-sm text-center text-gray-500 dark:text-gray-400">
+                    Nenhum resultado encontrado
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
