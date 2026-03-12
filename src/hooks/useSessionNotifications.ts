@@ -15,8 +15,22 @@ export const useSessionNotifications = () => {
   const previousSessionsCount = useRef<number | null>(null); // null indica que ainda não carregou dados
   const [notificationSessions, setNotificationSessions] = useState<SessionNotificationData[]>([]);
   const isFirstLoad = useRef(true); // Flag para controlar primeira carga
+  const [isPageVisible, setIsPageVisible] = useState(true); // Estado de visibilidade da página
 
-  // Query com refetch automático a cada 5 minutos
+  // Monitorar visibilidade da página usando Page Visibility API
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Query com refetch automático a cada 5 minutos (apenas quando página está visível)
   const { 
     data: sessionsData, 
     isLoading, 
@@ -25,8 +39,8 @@ export const useSessionNotifications = () => {
   } = useQuery<DailySessionsSummaryResponseDto>({
     queryKey: ['daily-sessions-summary-notifications'],
     queryFn: () => getDailySessionsSummaryAsync(),
-    refetchInterval: 5 * 60 * 1000, // 5 minutos
-    refetchIntervalInBackground: true,
+    refetchInterval: isPageVisible ? 5 * 60 * 1000 : false, // 5 minutos se visível, desabilita se não
+    refetchIntervalInBackground: false, // Desabilitar refetch em background
     staleTime: 0, // Sempre considerar dados como stale para garantir fetch
     cacheTime: 10 * 60 * 1000, // 10 minutos de cache
   });
@@ -46,6 +60,13 @@ export const useSessionNotifications = () => {
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays}d atrás`;
   };
+
+  // Refetch quando a página se tornar visível novamente
+  useEffect(() => {
+    if (isPageVisible && !isFirstLoad.current) {
+      queryClient.invalidateQueries(['daily-sessions-summary-notifications']);
+    }
+  }, [isPageVisible, queryClient]);
 
   // Monitora mudanças nos dados das sessões
   // LÓGICA DE NOTIFICAÇÃO:

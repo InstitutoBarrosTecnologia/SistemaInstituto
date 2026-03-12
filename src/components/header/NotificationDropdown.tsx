@@ -1,17 +1,44 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Modal } from "../ui/modal";
 import { useNotifications } from "../../hooks/useNotifications";
 import { useSessionNotifications } from "../../hooks/useSessionNotifications";
 import { NotificationResponseDto } from "../../services/model/Dto/Response/NotificationResponseDto";
+import { SessionDetailResponseDto } from "../../services/model/Dto/Response/DailySessionsSummaryResponseDto";
+import { NotificationType } from "../../types/enums";
+import { NotificationService } from "../../services/service/NotificationService";
+import { AlertTriangle } from "lucide-react";
+
+// Configuração do DOMPurify para sanitizar mensagens
+const sanitizeConfig = {
+  ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br', 'p', 'span'],
+  ALLOWED_ATTR: ['class'],
+};
+
+// Helper para sanitizar texto
+const sanitizeText = (text: string): string => {
+  return DOMPurify.sanitize(text, sanitizeConfig);
+};
+
+// Tipo estendido para notificações de sessão (inclui metadata adicional)
+interface SessionNotificationData extends SessionDetailResponseDto {
+  isNew?: boolean;
+  timeAgo?: string;
+}
+
+// Helper para verificar se é notificação de exclusão
+const isNotificacaoExclusao = (notification: NotificationResponseDto): boolean => {
+  return notification.tipo === NotificationType.CheckInExcluido;
+};
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [viewedNotifications, setViewedNotifications] = useState<Set<string>>(new Set());
   const [viewedSessions, setViewedSessions] = useState<Set<string>>(new Set());
   const [selectedNotification, setSelectedNotification] = useState<NotificationResponseDto | null>(null);
-  const [selectedSession, setSelectedSession] = useState<any | null>(null);
+  const [selectedSession, setSelectedSession] = useState<SessionNotificationData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Hook para notificações do sistema
@@ -70,16 +97,31 @@ export default function NotificationDropdown() {
   };
 
   // Função para lidar com clique em notificação do sistema
-  const handleNotificationClick = (notification: NotificationResponseDto) => {
-    setSelectedNotification(notification);
-    setSelectedSession(null);
-    setViewedNotifications(prev => new Set(prev).add(notification.id));
-    setIsModalOpen(true);
-    closeDropdown();
+  const handleNotificationClick = async (notification: NotificationResponseDto) => {
+    try {
+      // Marcar como visualizada no backend
+      await NotificationService.markAsViewed(notification.id);
+      
+      // Atualizar estado local
+      setSelectedNotification(notification);
+      setSelectedSession(null);
+      setViewedNotifications(prev => new Set(prev).add(notification.id));
+      setIsModalOpen(true);
+      closeDropdown();
+      
+      // Recarregar lista de notificações
+      loadNotifications();
+    } catch (error) {
+      console.error('Erro ao marcar notificação como visualizada:', error);
+      // Mesmo com erro, abrir modal
+      setSelectedNotification(notification);
+      setIsModalOpen(true);
+      closeDropdown();
+    }
   };
 
   // Função para lidar com clique em notificação de sessão
-  const handleSessionClick = (session: any) => {
+  const handleSessionClick = (session: SessionNotificationData) => {
     setSelectedSession(session);
     setSelectedNotification(null);
     setViewedSessions(prev => new Set(prev).add(session.sessionId));
@@ -253,60 +295,91 @@ export default function NotificationDropdown() {
           {/* Notificações do Sistema */}
           {!isLoading &&
             !notificationsError &&
-            activeNotifications.map((notification) => (
-              <li key={`system-${notification.id}`}>
-                <DropdownItem
-                  onItemClick={() => handleNotificationClick(notification)}
-                  className="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 cursor-pointer"
-                >
-                  {/* Ícone de notificação */}
-                  <span className="relative block w-full h-10 rounded-full z-1 max-w-10">
-                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                      <svg
-                        className="w-5 h-5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
+            activeNotifications.map((notification) => {
+              const isExclusao = isNotificacaoExclusao(notification);
+              
+              return (
+                <li key={`system-${notification.id}`}>
+                  <DropdownItem
+                    onItemClick={() => handleNotificationClick(notification)}
+                    className={`flex gap-3 rounded-lg border-b p-3 px-4.5 py-3 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer ${
+                      isExclusao
+                        ? "bg-red-50 border-red-500 dark:bg-red-900/20 dark:border-red-700"
+                        : "border-gray-100 dark:border-gray-800"
+                    }`}
+                  >
+                    {/* Ícone de notificação */}
+                    <span className="relative block w-full h-10 rounded-full z-1 max-w-10">
+                      <div
+                        className={`w-full h-full rounded-full flex items-center justify-center text-white text-sm font-medium ${
+                          isExclusao
+                            ? "bg-gradient-to-br from-red-500 to-red-700"
+                            : "bg-gradient-to-br from-blue-500 to-purple-600"
+                        }`}
                       >
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
-                        />
-                      </svg>
-                    </div>
-                    <span className="absolute bottom-0 right-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white bg-green-500 dark:border-gray-900"></span>
-                  </span>
-
-                  <span className="block flex-1">
-                    <span className="mb-1.5 block text-theme-sm text-gray-500 dark:text-gray-400">
-                      <span className="font-medium text-gray-800 dark:text-white/90">
-                        {notification.titulo}
-                      </span>
+                        {isExclusao ? (
+                          <AlertTriangle className="w-5 h-5" />
+                        ) : (
+                          <svg
+                            className="w-5 h-5"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              clipRule="evenodd"
+                              d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="absolute bottom-0 right-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white bg-green-500 dark:border-gray-900"></span>
                     </span>
 
-                    <span className="mb-1 block text-theme-xs text-gray-600 dark:text-gray-300">
-                      {notification.mensagem}
-                    </span>
+                    <span className="block flex-1">
+                      <span className="mb-1.5 block text-theme-sm text-gray-500 dark:text-gray-400">
+                        <span className={`font-medium ${
+                          isExclusao
+                            ? "text-red-800 dark:text-red-300"
+                            : "text-gray-800 dark:text-white/90"
+                        }`}>
+                          {sanitizeText(notification.titulo)}
+                        </span>
+                      </span>
 
-                    <span className="flex items-center gap-2 text-gray-500 text-theme-xs dark:text-gray-400">
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-blue-500 text-white">
-                        Sistema
-                      </span>
-                      <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                      <span>
-                        {new Date(notification.dataCriacao).toLocaleString("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                      <span 
+                        className={`mb-1 block text-theme-xs ${
+                          isExclusao
+                            ? "text-red-700 dark:text-red-200"
+                            : "text-gray-600 dark:text-gray-300"
+                        }`}
+                        dangerouslySetInnerHTML={{ __html: sanitizeText(notification.mensagem) }}
+                      />
+
+                      <span className="flex items-center gap-2 text-gray-500 text-theme-xs dark:text-gray-400">
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${
+                          isExclusao
+                            ? "bg-red-500 text-white"
+                            : "bg-blue-500 text-white"
+                        }`}>
+                          {isExclusao ? "Exclusão" : "Sistema"}
+                        </span>
+                        <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                        <span>
+                          {new Date(notification.dataCriacao).toLocaleString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </span>
                     </span>
-                  </span>
-                </DropdownItem>
-              </li>
-            ))}
+                  </DropdownItem>
+                </li>
+              );
+            })}
 
           {/* Notificações de Sessões */}
           {!isLoading &&
@@ -381,7 +454,7 @@ export default function NotificationDropdown() {
             <>
               <div className="px-2 pr-14 mb-6">
                 <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-                  {selectedNotification.titulo}
+                  {sanitizeText(selectedNotification.titulo)}
                 </h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Notificação do Sistema
@@ -394,9 +467,10 @@ export default function NotificationDropdown() {
                     Mensagem:
                   </label>
                   <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-gray-900 dark:text-white">
-                      {selectedNotification.mensagem}
-                    </p>
+                    <p 
+                      className="text-gray-900 dark:text-white"
+                      dangerouslySetInnerHTML={{ __html: sanitizeText(selectedNotification.mensagem) }}
+                    />
                   </div>
                 </div>
 

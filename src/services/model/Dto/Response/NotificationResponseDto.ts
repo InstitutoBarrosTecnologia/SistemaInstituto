@@ -1,4 +1,5 @@
 import { BaseResponseDto } from "./BaseResponseDto";
+import { NotificationType } from "../../../../types/enums";
 
 export interface NotificationResponseDto extends BaseResponseDto {
   id: string;
@@ -15,4 +16,6 @@ export interface NotificationResponseDto extends BaseResponseDto {
   orderServiceId?: string;
   orderServiceReferencia?: string;
   orderServiceNomeServico?: string;
+  tipo: NotificationType;
+  visualizada: boolean;
 }

@@ -45,9 +45,9 @@ export class NotificationService {
         queryParams.append('destinatarios', destinatarios);
       }
 
-      const response = await instanceApi.get<NotificationListResponseDto>(
-        `${(admin ? this.adminBaseUrl : this.baseUrl)}?${queryParams.toString()}`
-      );
+      const url = `${(admin ? this.adminBaseUrl : this.baseUrl)}?${queryParams.toString()}`;
+
+      const response = await instanceApi.get<NotificationListResponseDto>(url);
       
       // Verificação de segurança para garantir resposta válida
       if (response && response.data) {
@@ -61,8 +61,8 @@ export class NotificationService {
         page: 1,
         pageSize: 10,
       };
-    } catch (error) {
-      console.error('Erro no getNotifications:', error);
+    } catch (error: any) {
+      console.error('Erro ao buscar notificações:', error);
       // Em caso de erro, retorna estrutura padrão
       return {
         data: [],
@@ -179,5 +179,10 @@ export class NotificationService {
         pageSize: 10,
       };
     }
+  }
+
+  // Marcar notificação como visualizada
+  static async markAsViewed(id: string): Promise<void> {
+    await instanceApi.patch(`${this.baseUrl}/${id}/mark-as-viewed`);
   }
 }

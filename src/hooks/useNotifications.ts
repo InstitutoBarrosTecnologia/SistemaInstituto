@@ -23,9 +23,22 @@ export const useNotifications = (params: NotificationFilterParams = {}) => {
       
       // Verificação de segurança para garantir que response.data é um array
       if (response && Array.isArray(response.data)) {
-        setNotifications(response.data);
+        // Filtrar notificações expiradas
+        const now = new Date();
+        const notificationsAtivas = response.data.filter((notification) => {
+          // Se não tem data de expiração, mantém a notificação
+          if (!notification.dataExpiracao) {
+            return true;
+          }
+          
+          // Compara com a data atual para filtrar expiradas
+          const dataExpiracao = new Date(notification.dataExpiracao);
+          return dataExpiracao > now;
+        });
+        
+        setNotifications(notificationsAtivas);
         setPagination({
-          totalCount: response.totalCount || 0,
+          totalCount: notificationsAtivas.length, // Atualiza com o total filtrado
           page: response.page || 1,
           pageSize: response.pageSize || 10,
         });
@@ -39,7 +52,7 @@ export const useNotifications = (params: NotificationFilterParams = {}) => {
         });
       }
     } catch (err: any) {
-      console.error('Erro no loadNotifications:', err);
+      console.error('[useNotifications] Erro no loadNotifications:', err);
       const errorMessage = err?.response?.data?.message || err?.message || 'Erro ao carregar notificações';
       setError(errorMessage);
       setNotifications([]); // Garantir que notifications seja um array mesmo em caso de erro
