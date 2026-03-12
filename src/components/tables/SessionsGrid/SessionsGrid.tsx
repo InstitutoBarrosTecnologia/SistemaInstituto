@@ -14,12 +14,12 @@ import Badge from "../../ui/badge/Badge";
 import Button from "../../ui/button/Button";
 import { ESessionStatus } from "../../../services/model/Enum/ESessionStatus";
 import { OrderServiceSessionResponseDto } from "../../../services/model/Dto/Response/OrderServiceSessionResponseDto";
-import { format, subDays } from "date-fns";
+import { format, startOfMonth } from "date-fns";
 
 export default function SessionsGrid() {
   // Estados de filtros
   const [dataInicio, setDataInicio] = useState(
-    format(subDays(new Date(), 30), "yyyy-MM-dd")
+    format(startOfMonth(new Date()), "yyyy-MM-dd")
   );
   const [dataFim, setDataFim] = useState(format(new Date(), "yyyy-MM-dd"));
   const [paciente, setPaciente] = useState("");
@@ -124,7 +124,7 @@ export default function SessionsGrid() {
   };
 
   const handleClearFilters = () => {
-    setDataInicio(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+    setDataInicio(format(startOfMonth(new Date()), "yyyy-MM-dd"));
     setDataFim(format(new Date(), "yyyy-MM-dd"));
     setPaciente("");
     setFisioterapeuta("");

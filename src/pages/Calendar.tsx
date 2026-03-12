@@ -173,6 +173,9 @@ const Calendar: React.FC = () => {
   >([]);
   const [allRecurrenceSessions, setAllRecurrenceSessions] = useState<any[]>([]);
 
+  // Estado para confirmação de exclusão total de recorrência
+  const [isConfirmingFullRecurrenceDeletion, setIsConfirmingFullRecurrenceDeletion] = useState<boolean>(false);
+
   // Opções para o select de status
   const statusOptions = Object.entries(ScheduleStatusLabels).map(
     ([value, label]) => ({
@@ -1526,7 +1529,7 @@ const Calendar: React.FC = () => {
     }
   };
 
-  // Função para deletar toda a recorrência
+  // Função para abrir modal de confirmação para deletar toda a recorrência
   const handleDeleteRecurrence = async () => {
     if (!currentEventData) {
       toast.error("Dados insuficientes para excluir recorrência.");
@@ -1534,7 +1537,21 @@ const Calendar: React.FC = () => {
       return;
     }
 
-    // Fechar modais imediatamente
+    // Abrir modal de confirmação severa
+    setIsConfirmingFullRecurrenceDeletion(true);
+  };
+
+  // Função para confirmar e executar a exclusão total de toda a recorrência
+  const handleConfirmedFullRecurrenceDeletion = async () => {
+    if (!currentEventData) {
+      toast.error("Dados insuficientes para excluir recorrência.");
+      setIsConfirmingFullRecurrenceDeletion(false);
+      closeModalDeleteRecurrence();
+      return;
+    }
+
+    // Fechar ambos os modais
+    setIsConfirmingFullRecurrenceDeletion(false);
     closeModalDeleteRecurrence();
     closeModal();
 
@@ -1708,6 +1725,9 @@ const Calendar: React.FC = () => {
     setIsCustomDelete(false);
     setSelectedSessionsToDelete([]);
     setAllRecurrenceSessions([]);
+
+    // Reset do estado de confirmação de exclusão total
+    setIsConfirmingFullRecurrenceDeletion(false);
   };
 
   const handleOpenModal = () => {
@@ -3530,7 +3550,84 @@ const Calendar: React.FC = () => {
             </form>
           </div>
           <Toaster position="bottom-right" />
+         </Modal>
+
+        {/* Modal de Confirmação Severa para Exclusão Total de Recorrência */}
+        <Modal
+          isOpen={isConfirmingFullRecurrenceDeletion}
+          onClose={() => setIsConfirmingFullRecurrenceDeletion(false)}
+          className="max-w-[600px] m-4"
+        >
+          <div className="no-scrollbar relative w-full max-w-[600px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+            {/* Ícone de aviso em vermelho escuro */}
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4 animate-pulse">
+                <svg
+                  className="h-8 w-8 text-red-700 dark:text-red-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m9.303-6.376c.866 1.5-.217 3.374-1.948 3.374h-14.71c-1.73 0-2.813-1.874-1.948-3.374L13.949 3.378c.866-1.5 3.032-1.5 3.898 0L21.303 16.126zM12 15.75h.007v.008H12v-.008z"
+                  />
+                </svg>
+              </div>
+
+              {/* Título em vermelho */}
+              <h4 className="mb-4 text-2xl font-bold text-red-700 dark:text-red-400">
+                Confirmação de Exclusão Total
+              </h4>
+
+              {/* Mensagem severa */}
+              <div className="mb-6 text-left bg-red-50 dark:bg-red-900/10 border-l-4 border-red-600 dark:border-red-400 p-4 rounded">
+                <p className="text-sm text-gray-800 dark:text-gray-200 mb-4">
+                  Você tem certeza que deseja excluir <strong>TODA A RECORRÊNCIA</strong> deste evento?
+                </p>
+
+                <div className="bg-white dark:bg-gray-800 rounded p-3 mb-4 border border-red-200 dark:border-red-800">
+                  <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2">
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    ATENÇÃO - Isto irá excluir:
+                  </p>
+                  <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-1 ml-6">
+                    <li>✕ Todas as sessões <strong>PASSADAS</strong> dessa recorrência</li>
+                    <li>✕ Todas as sessões <strong>FUTURAS</strong> dessa recorrência</li>
+                    <li>✕ Esta ação <strong>NÃO pode ser desfeita</strong></li>
+                  </ul>
+                </div>
+
+                <p className="text-xs text-gray-600 dark:text-gray-400 italic">
+                  Se você deseja excluir apenas algumas sessões, clique em "Cancelar" e selecione "Exclusão Personalizada".
+                </p>
+              </div>
+            </div>
+
+            {/* Botões de ação */}
+            <div className="flex items-center justify-center gap-3 mt-8">
+              <button
+                type="button"
+                onClick={() => setIsConfirmingFullRecurrenceDeletion(false)}
+                className="flex justify-center rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmedFullRecurrenceDeletion}
+                className="flex justify-center rounded-lg bg-red-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 transition-colors shadow-lg"
+              >
+                Sim, Tenho Certeza
+              </button>
+            </div>
+          </div>
         </Modal>
+
         {isLoading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 dark:bg-gray-900/60">
             <svg
