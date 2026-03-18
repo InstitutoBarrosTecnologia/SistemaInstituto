@@ -3224,10 +3224,12 @@ const Calendar: React.FC = () => {
           onClose={closeModalCheckIn}
           className="max-w-[700px] m-4"
         >
-          <FormSession
+           <FormSession
             clienteId={selectedCliente}
+            scheduleData={currentEventData}
             closeModal={closeModalCheckIn}
             onSuccess={handleReloadSessoes}
+            onCalendarRefresh={refetchCalendar}
           />
         </Modal>
 
