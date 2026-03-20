@@ -33,6 +33,7 @@ import {
   getUserRoleFromToken,
   getUserFuncionarioIdFromToken,
   shouldApplyAgendaFilter,
+  canCreateCalendarEvent,
 } from "../services/util/rolePermissions";
 import {
   EScheduleStatus,
@@ -1998,48 +1999,52 @@ const Calendar: React.FC = () => {
       {/* Header com Título e Botão Novo Evento */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <PageBreadcrumb pageTitle="Agenda" />
-        {/* Botão circular para mobile */}
-        <button
-          onClick={handleOpenModal}
-          className="sm:hidden flex items-center justify-center w-10 h-10 text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-full transition-colors shadow-lg hover:shadow-xl"
-          title="Novo Evento"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-        </button>
-        {/* Botão com texto para desktop */}
-        <button
-          onClick={handleOpenModal}
-          className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors shadow-sm"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          <span>Novo Evento</span>
-        </button>
+        {canCreateCalendarEvent(userRole) && (
+          <>
+            {/* Botão circular para mobile */}
+            <button
+              onClick={handleOpenModal}
+              className="sm:hidden flex items-center justify-center w-10 h-10 text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-full transition-colors shadow-lg hover:shadow-xl"
+              title="Novo Evento"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </button>
+            {/* Botão com texto para desktop */}
+            <button
+              onClick={handleOpenModal}
+              className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors shadow-sm"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              <span>Novo Evento</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* Seção de Filtros */}

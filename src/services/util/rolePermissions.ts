@@ -266,3 +266,12 @@ export const shouldApplyAgendaFilter = (userRoles: string | string[] | null): bo
   // Se é fisioterapeuta (mas não coordenador), aplica filtro
   return userHasRole(userRoles, USER_ROLES.FISIOTERAPEUTA);
 };
+
+// Função para verificar se o usuário pode criar eventos no calendário
+// Apenas Administrador e Administrativo podem criar eventos
+export const canCreateCalendarEvent = (userRoles: string | string[] | null): boolean => {
+  if (!userRoles) return false;
+  
+  return userHasRole(userRoles, USER_ROLES.ADMINISTRADOR) || 
+         userHasRole(userRoles, USER_ROLES.ADMINISTRATIVO);
+};
