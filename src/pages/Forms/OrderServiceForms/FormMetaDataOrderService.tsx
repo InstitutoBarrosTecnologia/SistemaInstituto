@@ -18,7 +18,7 @@ export default function FormMetaDataOrderService({ data, edit }: FormOrderServic
 
     const [formData, setFormData] = useState<OrderServiceRequestDto>({
         referencia: "",
-        status: 0,
+        status: 2,
         precoOrdem: 0,
         precoDesconto: 0,
         percentualGanho: 0,

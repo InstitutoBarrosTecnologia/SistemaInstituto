@@ -56,7 +56,7 @@ export default function FormOrderService({
   const [selectedHorario, setSelectedHorario] = useState<string>("");
   const [formData, setFormData] = useState<OrderServiceRequestDto>({
     referencia: "",
-    status: 0,
+    status: 2,
     precoOrdem: 0,
     precoDesconto: 0,
     percentualGanho: 0,
