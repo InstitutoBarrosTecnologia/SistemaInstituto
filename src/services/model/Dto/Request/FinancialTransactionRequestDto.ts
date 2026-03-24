@@ -1,5 +1,6 @@
 import { BaseRequestDto } from "./BaseRequestDto";
 import { ETipoTransacao } from "../../Enum/ETipoTransacao";
+import { EDespesaStatus } from "../../Enum/EDespesaStatus";
 
 export interface FinancialTransactionRequestDto extends BaseRequestDto {
     nomeDespesa: string;
@@ -19,4 +20,5 @@ export interface FinancialTransactionRequestDto extends BaseRequestDto {
     usrDescricaoCadastro?: string;
     usrCadastro?: string;
     dataCadastro?: string;
+    status?: EDespesaStatus; // Status da transação (Pendente=1, Aprovada=2, Cancelada=3, Concluida=4)
 }

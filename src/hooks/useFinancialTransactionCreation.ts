@@ -186,17 +186,18 @@ export function useFinancialTransactionCreation() {
       }
 
       const promises = installmentsToCreate.map((installment) => {
-        const transaction: FinancialTransactionRequestDto = {
-          nomeDespesa: installment.description,
-          valores: installment.amount,
-          tipo: ETipoTransacao.Recebimento,
-          formaPagamento: 'PIX',
-          conta: 'Principal',
-          ordemServicoId: transactionData.orderId!,
-          dataVencimento: installment.dueDate.toISOString().split('T')[0],
-          descricao: `Parcela ${installment.number} de ${transactionData.numberOfInstallments}`,
-          observacoes: `Parcela ${installment.number} de ${transactionData.numberOfInstallments}`,
-        };
+         const transaction: FinancialTransactionRequestDto = {
+           nomeDespesa: installment.description,
+           valores: installment.amount,
+           tipo: ETipoTransacao.Recebimento,
+           formaPagamento: 'PIX',
+           conta: 'Principal',
+           ordemServicoId: transactionData.orderId!,
+           dataVencimento: installment.dueDate.toISOString().split('T')[0],
+           descricao: `Parcela ${installment.number} de ${transactionData.numberOfInstallments}`,
+           observacoes: `Parcela ${installment.number} de ${transactionData.numberOfInstallments}`,
+           status: 2, // EDespesaStatus.Aprovada
+         };
 
         return FinancialTransactionService.create(transaction);
       });

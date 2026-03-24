@@ -290,6 +290,7 @@ export default function FormOrderService({
         observacoes: "",
         clienteId: orderServiceData.clienteId,
         numeroParcelas: orderServiceData.formaPagamento === EFormaPagamento.CartaoCreditoParcelado ? numeroParcelas : 0,
+        status: 2, // EDespesaStatus.Aprovada
       };
 
       await FinancialTransactionService.create(transactionData);

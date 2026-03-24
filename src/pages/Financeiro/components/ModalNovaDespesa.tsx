@@ -183,6 +183,7 @@ export default function ModalNovaDespesa({
         numeroParcelas: data.numeroParcelas,
         dataVencimento: new Date().toISOString(), // Data atual como padrão
         dataCadastro: new Date().toISOString(),
+        status: 2, // EDespesaStatus.Aprovada
       };
 
       return await FinancialTransactionService.create(transactionData);
