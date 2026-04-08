@@ -21,4 +21,10 @@ export interface FinancialTransactionRequestDto extends BaseRequestDto {
     usrCadastro?: string;
     dataCadastro?: string;
     status?: EDespesaStatus; // Status da transação (Pendente=1, Aprovada=2, Cancelada=3, Concluida=4)
+
+    // Campos para pagamento misto (sinal + restante)
+    valorSinal?: number;
+    formaPagamentoSinal?: string;
+    contaSinal?: string;
+    dataVencimentoRestante?: string;
 }

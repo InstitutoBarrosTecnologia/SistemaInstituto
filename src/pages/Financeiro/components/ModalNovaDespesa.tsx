@@ -44,6 +44,12 @@ interface TransacaoFormData {
   tipoDocumento: "pj" | "cpf";
   arquivo?: File;
   parcelas: Parcela[];
+  // Mixed payment
+  mixedPayment: boolean;
+  downPaymentAmount: number;
+  downPaymentMethod: string;
+  downPaymentAccount: string;
+  remainingDueDate: string;
 }
 
 export default function ModalNovaDespesa({
@@ -63,6 +69,12 @@ export default function ModalNovaDespesa({
     conta: "",
     tipoDocumento: "cpf",
     parcelas: [],
+    // Mixed payment
+    mixedPayment: false,
+    downPaymentAmount: 0,
+    downPaymentMethod: "",
+    downPaymentAccount: "",
+    remainingDueDate: "",
   });
 
   const [unidades, setUnidades] = useState<{ label: string; value: string }[]>(
@@ -184,6 +196,13 @@ export default function ModalNovaDespesa({
         dataVencimento: new Date().toISOString(), // Data atual como padrão
         dataCadastro: new Date().toISOString(),
         status: 2, // EDespesaStatus.Aprovada
+        // Mixed payment
+        ...(data.mixedPayment && {
+          valorSinal: data.downPaymentAmount,
+          formaPagamentoSinal: data.downPaymentMethod,
+          contaSinal: data.downPaymentAccount,
+          dataVencimentoRestante: data.remainingDueDate,
+        }),
       };
 
       return await FinancialTransactionService.create(transactionData);
@@ -259,6 +278,12 @@ export default function ModalNovaDespesa({
       conta: "",
       tipoDocumento: "cpf",
       parcelas: [],
+      // Mixed payment
+      mixedPayment: false,
+      downPaymentAmount: 0,
+      downPaymentMethod: "",
+      downPaymentAccount: "",
+      remainingDueDate: "",
     });
   };
 
@@ -335,6 +360,30 @@ export default function ModalNovaDespesa({
     if (!formData.conta) {
       toast.error("Selecione uma conta");
       return;
+    }
+
+    // Mixed payment validations
+    if (formData.mixedPayment) {
+      if (formData.downPaymentAmount <= 0) {
+        toast.error("Valor do sinal deve ser maior que zero");
+        return;
+      }
+      if (formData.downPaymentAmount >= formData.valores) {
+        toast.error("Valor do sinal deve ser menor que o valor total");
+        return;
+      }
+      if (!formData.downPaymentMethod) {
+        toast.error("Selecione a forma de pagamento do sinal");
+        return;
+      }
+      if (!formData.downPaymentAccount) {
+        toast.error("Selecione a conta do sinal");
+        return;
+      }
+      if (!formData.remainingDueDate) {
+        toast.error("Informe a data de vencimento do restante");
+        return;
+      }
     }
 
     mutation.mutate(formData);
@@ -586,6 +635,144 @@ export default function ModalNovaDespesa({
                     required
                   />
                 </div>
+
+                {/* Toggle Mixed Payment */}
+                <div className="lg:col-span-2">
+                  <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={formData.mixedPayment}
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          mixedPayment: !prev.mixedPayment,
+                          // Reset down payment fields when disabling
+                          ...(!prev.mixedPayment
+                            ? {}
+                            : {
+                                downPaymentAmount: 0,
+                                downPaymentMethod: "",
+                                downPaymentAccount: "",
+                                remainingDueDate: "",
+                              }),
+                        }))
+                      }
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
+                        formData.mixedPayment
+                          ? "bg-brand-500"
+                          : "bg-gray-300 dark:bg-gray-600"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          formData.mixedPayment
+                            ? "translate-x-5"
+                            : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Pagamento Misto (Sinal + Restante)
+                      </span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Divide o pagamento em sinal (agora) e restante (depois)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mixed Payment Section */}
+                {formData.mixedPayment && (
+                  <div className="lg:col-span-2">
+                    <div className="p-4 rounded-lg border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20 space-y-4">
+                      <h5 className="text-sm font-semibold text-brand-700 dark:text-brand-300">
+                        Detalhes do Pagamento Misto
+                      </h5>
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-4 lg:grid-cols-2">
+                        {/* Down Payment Amount */}
+                        <div>
+                          <Label>
+                            Valor do Sinal (R$)<span className="text-red-500">*</span>
+                          </Label>
+                          <NumericFormat
+                            value={formData.downPaymentAmount}
+                            onValueChange={(values) => {
+                              const { floatValue } = values;
+                              setFormData((prev) => ({
+                                ...prev,
+                                downPaymentAmount: floatValue || 0,
+                              }));
+                            }}
+                            thousandSeparator="."
+                            decimalSeparator=","
+                            decimalScale={2}
+                            fixedDecimalScale
+                            allowNegative={false}
+                            placeholder="Ex: 500,00"
+                            className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                          />
+                        </div>
+
+                        {/* Remaining Amount (readonly) */}
+                        <div>
+                          <Label>Valor Restante (R$)</Label>
+                          <div className="h-11 w-full rounded-lg border px-4 py-2.5 text-sm bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 flex items-center">
+                            {(formData.valores - formData.downPaymentAmount) > 0
+                              ? `R$ ${formatCurrency(formData.valores - formData.downPaymentAmount)}`
+                              : "—"}
+                          </div>
+                        </div>
+
+                        {/* Down Payment Method */}
+                        <div>
+                          <Label>
+                            Forma de Pagamento do Sinal<span className="text-red-500">*</span>
+                          </Label>
+                          <Select
+                            options={formaPagamentoOptions}
+                            value={formData.downPaymentMethod}
+                            placeholder="Selecione a forma de pagamento"
+                            onChange={(value) =>
+                              handleSelectChange("downPaymentMethod", value)
+                            }
+                            className="dark:bg-dark-900"
+                          />
+                        </div>
+
+                        {/* Down Payment Account */}
+                        <div>
+                          <Label>
+                            Conta do Sinal<span className="text-red-500">*</span>
+                          </Label>
+                          <Select
+                            options={contaOptions}
+                            value={formData.downPaymentAccount}
+                            placeholder="Selecione uma conta"
+                            onChange={(value) =>
+                              handleSelectChange("downPaymentAccount", value)
+                            }
+                            className="dark:bg-dark-900"
+                          />
+                        </div>
+
+                        {/* Remaining Due Date */}
+                        <div className="lg:col-span-2">
+                          <Label>
+                            Data de Vencimento do Restante<span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            type="date"
+                            name="remainingDueDate"
+                            value={formData.remainingDueDate}
+                            onChange={handleChange}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <Label>

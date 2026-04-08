@@ -12,6 +12,7 @@ export interface TransactionFilters {
     status?: EDespesaStatus;
     dataInicio?: string;
     dataFim?: string;
+    ordemServicoId?: string;
 }
 
 export const FinancialTransactionService = {
@@ -49,6 +50,9 @@ export const FinancialTransactionService = {
             }
             if (filters?.dataFim) {
                 params.append('dataFim', filters.dataFim);
+            }
+            if (filters?.ordemServicoId) {
+                params.append('ordemServicoId', filters.ordemServicoId);
             }
 
             const queryString = params.toString();

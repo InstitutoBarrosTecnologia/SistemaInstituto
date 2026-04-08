@@ -27,6 +27,7 @@ import { postScheduleAsync } from "../../../services/service/ScheduleService";
 import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
 import { FinancialTransactionService } from "../../../services/service/FinancialTransactionService";
 import { FinancialTransactionRequestDto } from "../../../services/model/Dto/Request/FinancialTransactionRequestDto";
+import { EDespesaStatus, EDespesaStatusLabels } from "../../../services/model/Enum/EDespesaStatus";
 
 interface FormOrderServiceProps {
   data?: OrderServiceResponseDto;
@@ -85,6 +86,12 @@ export default function FormOrderService({
   const [totalComGanhoInput, setTotalComGanhoInput] = useState<string>("");
   const [descontoPercentualInput, setDescontoPercentualInput] = useState<string>("");
   const [descontoReaisInput, setDescontoReaisInput] = useState<string>("");
+  // Mixed payment
+  const [mixedPayment, setMixedPayment] = useState<boolean>(false);
+  const [downPaymentAmount, setDownPaymentAmount] = useState<number>(0);
+  const [downPaymentMethod, setDownPaymentMethod] = useState<string>("");
+  const [downPaymentAccount, setDownPaymentAccount] = useState<string>("");
+  const [remainingDueDate, setRemainingDueDate] = useState<string>("");
 
   const queryClient = useQueryClient();
 
@@ -239,7 +246,14 @@ export default function FormOrderService({
 
   // Função para criar transação financeira automaticamente
   const createFinancialTransaction = async (
-    orderServiceData: OrderServiceResponseDto
+    orderServiceData: OrderServiceResponseDto,
+    options?: {
+      mixedPayment: boolean;
+      downPaymentAmount: number;
+      downPaymentMethod: string;
+      downPaymentAccount: string;
+      remainingDueDate: string;
+    }
   ) => {
     try {
       // Calcular valor total dos serviços
@@ -291,6 +305,13 @@ export default function FormOrderService({
         clienteId: orderServiceData.clienteId,
         numeroParcelas: orderServiceData.formaPagamento === EFormaPagamento.CartaoCreditoParcelado ? numeroParcelas : 0,
         status: 2, // EDespesaStatus.Aprovada
+        // Mixed payment
+        ...(options?.mixedPayment && {
+          valorSinal: options.downPaymentAmount,
+          formaPagamentoSinal: options.downPaymentMethod,
+          contaSinal: options.downPaymentAccount,
+          dataVencimentoRestante: options.remainingDueDate,
+        }),
       };
 
       await FinancialTransactionService.create(transactionData);
@@ -315,7 +336,13 @@ export default function FormOrderService({
 
         // Criar transação financeira automaticamente
         if (response.data) {
-          await createFinancialTransaction(response.data);
+          await createFinancialTransaction(response.data, {
+            mixedPayment,
+            downPaymentAmount,
+            downPaymentMethod,
+            downPaymentAccount,
+            remainingDueDate,
+          });
         }
 
         setTimeout(() => {
@@ -387,6 +414,26 @@ export default function FormOrderService({
   const { data: filiaisData } = useQuery({
     queryKey: ["filiais"],
     queryFn: () => BranchOfficeService.getAll(),
+  });
+
+  // Fetch transactions linked to this OS when in edit mode
+  const { data: linkedTransactions = [] } = useQuery({
+    queryKey: ["transactionsByOS", data?.id],
+    queryFn: () => FinancialTransactionService.getAll({ ordemServicoId: data!.id }),
+    enabled: !!edit && !!data?.id,
+  });
+
+  // Mutation to update the status of a linked transaction
+  const mutationTransactionStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: EDespesaStatus }) =>
+      FinancialTransactionService.updateStatus(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["transactionsByOS", data?.id]);
+      toast.success("Status da transação atualizado!");
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar status da transação.");
+    },
   });
 
   useEffect(() => {
@@ -594,6 +641,31 @@ export default function FormOrderService({
       }
       if (numeroParcelas > 24) {
         toast.error("O número máximo de parcelas é 24.");
+        return;
+      }
+    }
+
+    // Mixed payment validations
+    if (mixedPayment) {
+      const totalAmount = selectedServices.reduce((acc, s) => acc + parseFloat(s.preco || "0"), 0);
+      if (downPaymentAmount <= 0) {
+        toast.error("Valor do sinal deve ser maior que zero");
+        return;
+      }
+      if (downPaymentAmount >= totalAmount) {
+        toast.error("Valor do sinal deve ser menor que o valor total");
+        return;
+      }
+      if (!downPaymentMethod) {
+        toast.error("Selecione a forma de pagamento do sinal");
+        return;
+      }
+      if (!downPaymentAccount) {
+        toast.error("Selecione a conta do sinal");
+        return;
+      }
+      if (!remainingDueDate) {
+        toast.error("Informe a data de vencimento do restante");
         return;
       }
     }
@@ -1196,6 +1268,218 @@ export default function FormOrderService({
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-5">
+                {/* Toggle Mixed Payment */}
+                <div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={mixedPayment}
+                      onClick={() => {
+                        setMixedPayment((prev) => {
+                          if (prev) {
+                            // Reset fields when disabling
+                            setDownPaymentAmount(0);
+                            setDownPaymentMethod("");
+                            setDownPaymentAccount("");
+                            setRemainingDueDate("");
+                          }
+                          return !prev;
+                        });
+                      }}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
+                        mixedPayment
+                          ? "bg-brand-500"
+                          : "bg-gray-300 dark:bg-gray-600"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          mixedPayment ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Pagamento Misto (Sinal + Restante)
+                      </span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Divide o pagamento em sinal (agora) e restante (depois)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mixed Payment Section */}
+                {mixedPayment && (
+                  <div className="p-4 rounded-lg border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20 space-y-4">
+                    <h5 className="text-sm font-semibold text-brand-700 dark:text-brand-300">
+                      Detalhes do Pagamento Misto
+                    </h5>
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-4 lg:grid-cols-2">
+                      {/* Down Payment Amount */}
+                      <div>
+                        <Label>
+                          Valor do Sinal (R$)<span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="number"
+                          placeholder="0,00"
+                          value={downPaymentAmount.toString()}
+                          min="0"
+                          onChange={(e) => setDownPaymentAmount(parseFloat(e.target.value) || 0)}
+                        />
+                      </div>
+
+                      {/* Remaining Amount (readonly) */}
+                      <div>
+                        <Label>Valor Restante (R$)</Label>
+                        <div className="h-11 w-full rounded-lg border px-4 py-2.5 text-sm bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 flex items-center">
+                          {(selectedServices.reduce((acc, s) => acc + parseFloat(s.preco || "0"), 0) - downPaymentAmount) > 0
+                            ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                                selectedServices.reduce((acc, s) => acc + parseFloat(s.preco || "0"), 0) - downPaymentAmount
+                              )
+                            : "—"}
+                        </div>
+                      </div>
+
+                      {/* Down Payment Method */}
+                      <div>
+                        <Label>
+                          Forma de Pagamento do Sinal<span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                          options={[
+                            { label: "Dinheiro", value: "dinheiro" },
+                            { label: "Cartão de Débito", value: "debito" },
+                            { label: "Cartão de Crédito", value: "credito" },
+                            { label: "PIX", value: "pix" },
+                            { label: "Transferência", value: "transferencia" },
+                            { label: "Boleto", value: "boleto" },
+                          ]}
+                          value={downPaymentMethod}
+                          placeholder="Selecione a forma de pagamento"
+                          onChange={(value) => setDownPaymentMethod(value)}
+                          className="dark:bg-dark-900"
+                        />
+                      </div>
+
+                      {/* Down Payment Account */}
+                      <div>
+                        <Label>
+                          Conta do Sinal<span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                          options={contaOptions}
+                          value={downPaymentAccount}
+                          placeholder="Selecione uma conta"
+                          onChange={(value) => setDownPaymentAccount(value)}
+                          className="dark:bg-dark-900"
+                        />
+                      </div>
+
+                      {/* Remaining Due Date */}
+                      <div className="lg:col-span-2">
+                        <Label>
+                          Data de Vencimento do Restante<span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="date"
+                          value={remainingDueDate}
+                          onChange={(e) => setRemainingDueDate(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Read-only Transactions Panel — only visible when editing */}
+              {edit && linkedTransactions.length > 0 && (
+                <div className="mb-5">
+                  <h5 className="mb-3 text-base font-semibold text-gray-800 dark:text-white/90">
+                    Transações Financeiras Vinculadas
+                  </h5>
+                  <div className="space-y-3">
+                    {linkedTransactions.map((tx) => {
+                      const statusColors: Record<EDespesaStatus, string> = {
+                        [EDespesaStatus.Pendente]: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+                        [EDespesaStatus.Aprovada]: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+                        [EDespesaStatus.Cancelada]: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+                        [EDespesaStatus.Concluida]: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+                      };
+                      const badgeClass = statusColors[tx.status as EDespesaStatus] ?? "bg-gray-100 text-gray-800";
+                      const isFinal = tx.status === EDespesaStatus.Concluida || tx.status === EDespesaStatus.Cancelada;
+                      const isPending = mutationTransactionStatus.isPending;
+                      return (
+                        <div
+                          key={tx.id}
+                          className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-800 dark:text-white/90 truncate pr-2">
+                              {tx.nomeDespesa}
+                            </span>
+                            <span className={`shrink-0 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${badgeClass}`}>
+                              {EDespesaStatusLabels[tx.status as EDespesaStatus] ?? tx.status}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400 mb-3">
+                            <span>
+                              <strong>Valor:</strong>{" "}
+                              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(tx.valores)}
+                            </span>
+                            <span>
+                              <strong>Pagamento:</strong> {tx.formaPagamento ?? "—"}
+                            </span>
+                            <span>
+                              <strong>Conta:</strong> {tx.conta ?? "—"}
+                            </span>
+                            <span>
+                              <strong>Vencimento:</strong>{" "}
+                              {tx.dataVencimento
+                                ? new Date(tx.dataVencimento).toLocaleDateString("pt-BR")
+                                : "—"}
+                            </span>
+                          </div>
+                          {!isFinal && tx.id && (
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() =>
+                                  mutationTransactionStatus.mutate({
+                                    id: tx.id!,
+                                    status: EDespesaStatus.Concluida,
+                                  })
+                                }
+                                className="flex-1 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-medium py-1.5 transition"
+                              >
+                                Marcar como Concluída
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() =>
+                                  mutationTransactionStatus.mutate({
+                                    id: tx.id!,
+                                    status: EDespesaStatus.Cancelada,
+                                  })
+                                }
+                                className="flex-1 rounded-md border border-red-300 hover:bg-red-50 disabled:opacity-50 text-red-600 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20 text-xs font-medium py-1.5 transition"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1 mb-5">
                 <div>
                   <Label>Observação</Label>
                   <Input
@@ -1220,6 +1504,7 @@ export default function FormOrderService({
                 className="bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 px-4 py-3 text-sm inline-flex items-center justify-center gap-2 rounded-lg transition"
                 type="submit"
                 disabled={mutation.isPending || mutationEdit.isPending}
+                style={{ display: edit && linkedTransactions.length >= 2 ? "none" : undefined }}
               >
                 {(mutation.isPending || mutationEdit.isPending) ? (
                   <>
