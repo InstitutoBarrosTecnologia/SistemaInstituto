@@ -42,6 +42,11 @@ export const MENU_PERMISSIONS = {
     USER_ROLES.ADMINISTRATIVO,
     USER_ROLES.COMERCIAL
   ],
+
+  // WhatsApp Config - apenas Administrador
+  WHATSAPP_CONFIG: [
+    USER_ROLES.ADMINISTRADOR
+  ],
   
   // Pacientes - Fisioterapeuta, Funcionário e Administradores
   PACIENTES: [

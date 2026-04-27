@@ -34,6 +34,7 @@ import Historico from "./pages/Notificacoes/Historico";
 import Log from "./pages/Log/Log";
 import CustomerAccessPage from "./pages/CustomerAccess/CustomerAccess"; // TEMPORÁRIO - Sistema de acesso clientes
 import GerenciarCheckIns from "./pages/CheckIns/GerenciarCheckIns";
+import WhatsappConfigPage from "./pages/Whatsapp/WhatsappConfigPage";
 
 
 export default function App() {
@@ -136,6 +137,14 @@ export default function App() {
 
           {/* Tables */}
           <Route path="/basic-tables" element={<BasicTables />} />
+          <Route
+            path="/whatsapp/config"
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.WHATSAPP_CONFIG}>
+                <WhatsappConfigPage />
+              </RoleProtectedRoute>
+            }
+          />
           
           {/* Form Funcionários - Administrador, Administrativo, Comercial, Funcionário */}
           <Route 

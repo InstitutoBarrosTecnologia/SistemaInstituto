@@ -51,6 +51,11 @@ const allNavItems: NavItem[] = [
       path: "/basic-tables", 
       pro: false,
       permissions: MENU_PERMISSIONS.WHATSAPP,
+    }, {
+      name: "Config",
+      path: "/whatsapp/config",
+      pro: false,
+      permissions: MENU_PERMISSIONS.WHATSAPP_CONFIG,
     }],
   },
   {
