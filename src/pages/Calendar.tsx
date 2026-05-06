@@ -11,8 +11,9 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { BranchOfficeService } from "../services/service/BranchOfficeService";
 import EmployeeService from "../services/service/EmployeeService";
-import { getAllCustomersAsync } from "../services/service/CustomerService";
+import { getAllCustomersAsync, getCustomerHistoryAsync } from "../services/service/CustomerService";
 import { CustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
+import { HistoryCustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
 import { getAllSessionsAsync } from "../services/service/SessionService";
 import { OrderServiceSessionResponseDto } from "../services/model/Dto/Response/OrderServiceSessionResponseDto";
 import Label from "../components/form/Label";
@@ -155,11 +156,16 @@ const Calendar: React.FC = () => {
     useState<boolean>(false);
   const [showHistorico, setShowHistorico] = useState<boolean>(false);
   const [showServicos, setShowServicos] = useState<boolean>(false);
+  const [showHistoricoCliente, setShowHistoricoCliente] = useState<boolean>(false);
   const [isLoadingCustomerData, setIsLoadingCustomerData] =
     useState<boolean>(false);
   const [isLoadingHistorico, setIsLoadingHistorico] = useState<boolean>(false);
+  const [isLoadingHistoricoCliente, setIsLoadingHistoricoCliente] = useState<boolean>(false);
   const [sessoesData, setSessoesData] = useState<
     OrderServiceSessionResponseDto[] | null
+  >(null);
+  const [historicosClienteData, setHistoricosClienteData] = useState<
+    HistoryCustomerResponseDto[] | null
   >(null);
 
   // Estado para status do agendamento
@@ -1941,8 +1947,10 @@ const Calendar: React.FC = () => {
       setShowCustomerDetails(false);
       setShowHistorico(false);
       setShowServicos(false);
+      setShowHistoricoCliente(false);
       setSelectedClienteData(null);
       setSessoesData(null);
+      setHistoricosClienteData(null);
     }
   }, [isOpen]);
 
@@ -1968,6 +1976,28 @@ const Calendar: React.FC = () => {
 
     fetchSessoes();
   }, [showHistorico, selectedCliente]);
+
+  // Buscar histórico do paciente quando o accordion de Histórico for aberto
+  useEffect(() => {
+    const fetchHistoricoCliente = async () => {
+      if (showHistoricoCliente && selectedCliente) {
+        if (!historicosClienteData) {
+          try {
+            setIsLoadingHistoricoCliente(true);
+            const historicos = await getCustomerHistoryAsync(selectedCliente);
+            setHistoricosClienteData(historicos);
+          } catch (error) {
+            console.error("Erro ao buscar histórico do paciente:", error);
+            setHistoricosClienteData(null);
+          } finally {
+            setIsLoadingHistoricoCliente(false);
+          }
+        }
+      }
+    };
+
+    fetchHistoricoCliente();
+  }, [showHistoricoCliente, selectedCliente]);
 
   // Função para recarregar sessões após check-in
   const handleReloadSessoes = async () => {
@@ -3127,18 +3157,129 @@ const Calendar: React.FC = () => {
                                             colSpan={4}
                                             className="px-5 py-4 text-center text-gray-500 dark:text-gray-400"
                                           >
-                                            Nenhum serviço registrado para este
-                                            paciente.
-                                          </TableCell>
-                                        </TableRow>
-                                      )}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        ) : (
+                                             Nenhum serviço registrado para este
+                                             paciente.
+                                           </TableCell>
+                                         </TableRow>
+                                       )}
+                                     </TableBody>
+                                   </Table>
+                                 </div>
+                               )}
+                             </div>
+
+                             {/* Accordion Histórico do Paciente */}
+                             <div className="mb-2">
+                               <button
+                                 onClick={() => setShowHistoricoCliente(!showHistoricoCliente)}
+                                 type="button"
+                                 className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+                               >
+                                 <span>Histórico do Paciente</span>
+                                 <svg
+                                   className={`w-4 h-4 transform transition-transform ${showHistoricoCliente ? "rotate-180" : ""}`}
+                                   fill="none"
+                                   stroke="currentColor"
+                                   viewBox="0 0 24 24"
+                                 >
+                                   <path
+                                     strokeLinecap="round"
+                                     strokeLinejoin="round"
+                                     strokeWidth="2"
+                                     d="M19 9l-7 7-7-7"
+                                   />
+                                 </svg>
+                               </button>
+
+                               {showHistoricoCliente && (
+                                 <div className="mt-3">
+                                   {isLoadingHistoricoCliente ? (
+                                     <div className="text-center py-4">
+                                       <span className="text-gray-600 dark:text-gray-400">
+                                         Carregando histórico...
+                                       </span>
+                                     </div>
+                                   ) : (
+                                     <Table>
+                                       <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                                         <TableRow>
+                                           <TableCell
+                                             isHeader
+                                             className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                           >
+                                             Assunto
+                                           </TableCell>
+                                           <TableCell
+                                             isHeader
+                                             className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                           >
+                                             Informação
+                                           </TableCell>
+                                           <TableCell
+                                             isHeader
+                                             className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                           >
+                                             Data do histórico
+                                           </TableCell>
+                                         </TableRow>
+                                       </TableHeader>
+                                       <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                                         {historicosClienteData &&
+                                         historicosClienteData.length > 0 ? (
+                                           historicosClienteData.map(
+                                             (historico, index) => (
+                                               <TableRow key={index}>
+                                                 <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                   <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                     {historico.assunto || "—"}
+                                                   </span>
+                                                 </TableCell>
+                                                 <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                   <span className="block text-gray-800 text-theme-sm dark:text-white/90 whitespace-pre-wrap">
+                                                     {historico.descricao || "—"}
+                                                   </span>
+                                                 </TableCell>
+                                                 <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                                   <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                                     {historico.dataAtualizacao
+                                                       ? new Date(
+                                                           historico.dataAtualizacao,
+                                                         ).toLocaleString(
+                                                           "pt-BR",
+                                                           {
+                                                             day: "2-digit",
+                                                             month: "2-digit",
+                                                             year: "numeric",
+                                                             hour: "2-digit",
+                                                             minute: "2-digit",
+                                                           },
+                                                         )
+                                                       : "—"}
+                                                   </span>
+                                                 </TableCell>
+                                               </TableRow>
+                                             ),
+                                           )
+                                         ) : (
+                                           <TableRow>
+                                             <TableCell
+                                               colSpan={3}
+                                               className="px-5 py-4 text-center text-gray-500 dark:text-gray-400"
+                                             >
+                                               Nenhum histórico registrado para
+                                               este paciente.
+                                             </TableCell>
+                                           </TableRow>
+                                         )}
+                                       </TableBody>
+                                     </Table>
+                                   )}
+                                 </div>
+                               )}
+                             </div>
+
+                           </>
+                         ) : (
                           <div className="text-center py-4">
                             <span className="text-gray-600 dark:text-gray-400">
                               Nenhum dado disponível para este paciente.
