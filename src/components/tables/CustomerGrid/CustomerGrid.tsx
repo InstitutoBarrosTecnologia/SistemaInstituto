@@ -29,7 +29,7 @@ import { formatPhone, formatCPF } from "../../helper/formatUtils";
 import FormMetaDataCustomer from "../../../pages/Forms/Customer/FormMetaDataCustomer";
 import FormSession from "../../../pages/Forms/OrderServiceForms/FormSession";
 import { CustomerFilterRequestDto } from "../../../services/model/Dto/Request/CustomerFilterRequestDto";
-import { getUserRoleFromToken, userHasRole, USER_ROLES } from "../../../services/util/rolePermissions";
+import { getUserRoleFromToken, userHasRole, USER_ROLES, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 type SortField = 'nome' | 'sessoes' | 'status' | null;
 type SortDirection = 'asc' | 'desc';
@@ -58,6 +58,8 @@ export default function CustomerTableComponent({ filters, sortField, sortDirecti
     // Fisioterapeuta que não é coordenador tem restrições
     const isFisioterapeuta = userHasRole(userRoles, USER_ROLES.FISIOTERAPEUTA) && 
                              !userHasRole(userRoles, USER_ROLES.COORDENADOR_FISIOTERAPEUTA);
+    // Financeiro: somente leitura, sem botões de edição/exclusão
+    const isReadOnly = isReadOnlyRole(userRoles);
 
 
     const queryClient = useQueryClient();
@@ -365,6 +367,7 @@ export default function CustomerTableComponent({ filters, sortField, sortDirecti
                                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             {/* Se for Fisioterapeuta, mostrar apenas o botão de check-in (sessão) */}
+                                            {/* Se for perfil somente-leitura (Financeiro), não mostrar nenhum botão de ação */}
                                             {isFisioterapeuta ? (
                                                 <button
                                                     onClick={() => handleOpenModalSession(customer.id!)}
@@ -386,7 +389,7 @@ export default function CustomerTableComponent({ filters, sortField, sortDirecti
                                                         />
                                                     </svg>
                                                 </button>
-                                            ) : (
+                                            ) : isReadOnly ? null : (
                                                 /* Para outros perfis, mostrar todos os botões */
                                                 <>
                                                     <button

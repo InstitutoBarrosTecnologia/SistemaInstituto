@@ -49,6 +49,7 @@ import Button from "../../ui/button/Button";
 import Select from "../../form/Select";
 import { TransactionFilters } from "../../../services/financialTransactions";
 import { toast } from "react-hot-toast";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 interface DespesasGridProps {
   filters?: TransactionFilters;
@@ -56,6 +57,7 @@ interface DespesasGridProps {
 
 export default function DespesasGrid({ filters }: DespesasGridProps) {
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
+  const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
   const [selectedDespesa, setSelectedDespesa] = useState<any>(undefined);
   const [selectedTransactionId, setSelectedTransactionId] =
     useState<string>("");
@@ -99,13 +101,22 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
     isDeleting,
   } = useFinancialTransactions(filters);
 
-  const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil((transactions?.length ?? 0) / PAGE_SIZE));
-  const paginated = useMemo(() => {
+  // Filtragem local por clienteId e formaPagamento (não enviados ao backend)
+  const filteredTransactions = useMemo(() => {
     if (!transactions) return [];
+    return transactions.filter((tx) => {
+      if (filters?.clienteId && tx.cliente?.id !== filters.clienteId) return false;
+      if (filters?.formaPagamento && tx.formaPagamento !== filters.formaPagamento) return false;
+      return true;
+    });
+  }, [transactions, filters?.clienteId, filters?.formaPagamento]);
+
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
+  const paginated = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
-    return transactions.slice(start, start + PAGE_SIZE);
-  }, [transactions, page]);
+    return filteredTransactions.slice(start, start + PAGE_SIZE);
+  }, [filteredTransactions, page]);
 
   const handleOpenModalDelete = (id: string) => {
     setIdDeleteRegister(id);
@@ -365,6 +376,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                     </TableCell>
                     <TableCell className="px-4 py-3 text-start">
                       <div className="flex gap-2">
+                        {!isReadOnly && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -389,6 +401,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                         >
                           Excluir
                         </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -401,7 +414,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                         >
                           Parcelas
                         </Button>
-                        {transaction.formaPagamento === "a_definir" &&
+                        {!isReadOnly && transaction.formaPagamento === "a_definir" &&
                           transaction.status !== EDespesaStatus.Concluida &&
                           transaction.status !== EDespesaStatus.Cancelada && (
                           <Button

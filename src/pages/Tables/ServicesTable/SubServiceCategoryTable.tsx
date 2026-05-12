@@ -6,11 +6,13 @@ import { Modal } from "../../../components/ui/modal";
 import SearchInput from "../../../components/common/SearchInput";
 import FormSubCategoryService from "../../Forms/ServicesForms/FormSubCategoryService";
 import SubServiceCategoryGrid from "../../../components/tables/ServicesTables/SubServiceCategoryGrid";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 export default function SubServiceCategoryTable() {
 
     const { isOpen, openModal, closeModal } = useModal();
     const { searchTerm, setSearchTerm } = useTableSearch();
+    const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
 
     return (
         <>
@@ -29,7 +31,7 @@ export default function SubServiceCategoryTable() {
                         placeholder="Buscar por título, descrição, valor..."
                     />
                 </div>
-                <button onClick={openModal} className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition  px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 ">
+                <button onClick={openModal} style={isReadOnly ? { display: "none" } : {}} className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition  px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 ">
                     <span className="flex items-center">
                         <svg
                             width="1em"

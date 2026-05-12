@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { useFinancialTransactions } from './useFinancialTransactions';
 import { 
     ETipoTransacao, 
-    EDespesaStatus
+    EDespesaStatus,
+    TransactionFilters
 } from '../services/financialTransactions';
 
 export interface FinancialStats {
@@ -13,11 +14,13 @@ export interface FinancialStats {
     totalTransacoes: number;
     receitasAprovadas: number;
     despesasAprovadas: number;
+    aprovadoNoFiltro: number;
+    concluidoNoFiltro: number;
     isLoading: boolean;
 }
 
-export function useFinancialStats(): FinancialStats {
-    const { transactions, isLoading } = useFinancialTransactions();
+export function useFinancialStats(filters?: TransactionFilters): FinancialStats {
+    const { transactions, isLoading } = useFinancialTransactions(filters);
 
     const stats = useMemo(() => {
         if (!transactions || transactions.length === 0) {
@@ -28,51 +31,62 @@ export function useFinancialStats(): FinancialStats {
                 pendentes: 0,
                 totalTransacoes: 0,
                 receitasAprovadas: 0,
-                despesasAprovadas: 0
+                despesasAprovadas: 0,
+                aprovadoNoFiltro: 0,
+                concluidoNoFiltro: 0,
             };
         }
 
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
 
-        // Filtrar transações do mês atual
+        // Filtrar transações do mês atual (para cards históricos sem filtro de data)
         const transacoesDoMes = transactions.filter(transaction => {
             if (!transaction.dataCadastro) return false;
-            
             const transactionDate = new Date(transaction.dataCadastro);
-            return transactionDate.getMonth() === currentMonth && 
+            return transactionDate.getMonth() === currentMonth &&
                    transactionDate.getFullYear() === currentYear;
         });
 
-        // Calcular receitas do mês (tipo = recebimento)
+        // Receitas do mês (Aprovada ou Concluída)
         const receitasMes = transacoesDoMes
-            .filter(t => t.tipo === ETipoTransacao.Recebimento && (t.status == EDespesaStatus.Aprovada || t.status == EDespesaStatus.Concluida))
+            .filter(t => t.tipo === ETipoTransacao.Recebimento && (t.status === EDespesaStatus.Aprovada || t.status === EDespesaStatus.Concluida))
             .reduce((sum, t) => sum + (t.valores || 0), 0);
 
-        // Calcular despesas do mês (tipo = despesa)
+        // Despesas do mês (Aprovada ou Concluída)
         const despesasMes = transacoesDoMes
-            .filter(t => t.tipo === ETipoTransacao.Despesa && (t.status == EDespesaStatus.Aprovada || t.status == EDespesaStatus.Concluida))
+            .filter(t => t.tipo === ETipoTransacao.Despesa && (t.status === EDespesaStatus.Aprovada || t.status === EDespesaStatus.Concluida))
             .reduce((sum, t) => sum + (t.valores || 0), 0);
 
-        // Calcular saldo líquido
+        // Saldo líquido
         const saldoLiquido = receitasMes - despesasMes;
 
-        // Calcular pendentes (status = pendente, independente do mês)
+        // Pendentes (dentro do período filtrado)
         const pendentes = transactions
             .filter(t => t.status === EDespesaStatus.Pendente)
             .reduce((sum, t) => sum + (t.valores || 0), 0);
 
-        // Calcular total de transações
+        // Total de transações
         const totalTransacoes = transactions.length;
 
-        // Calcular receitas aprovadas (tipo = recebimento e status = aprovada)
+        // Receitas aprovadas
         const receitasAprovadas = transactions
             .filter(t => t.tipo === ETipoTransacao.Recebimento && t.status === EDespesaStatus.Aprovada)
             .reduce((sum, t) => sum + (t.valores || 0), 0);
 
-        // Calcular despesas aprovadas (tipo = despesa e status = aprovada)
+        // Despesas aprovadas
         const despesasAprovadas = transactions
             .filter(t => t.tipo === ETipoTransacao.Despesa && t.status === EDespesaStatus.Aprovada)
+            .reduce((sum, t) => sum + (t.valores || 0), 0);
+
+        // Total aprovado no período filtrado (apenas Recebimentos com status Aprovada)
+        const aprovadoNoFiltro = transactions
+            .filter(t => t.tipo === ETipoTransacao.Recebimento && t.status === EDespesaStatus.Aprovada)
+            .reduce((sum, t) => sum + (t.valores || 0), 0);
+
+        // Total concluído no período filtrado (apenas Recebimentos com status Concluída)
+        const concluidoNoFiltro = transactions
+            .filter(t => t.tipo === ETipoTransacao.Recebimento && t.status === EDespesaStatus.Concluida)
             .reduce((sum, t) => sum + (t.valores || 0), 0);
 
         return {
@@ -82,7 +96,9 @@ export function useFinancialStats(): FinancialStats {
             pendentes,
             totalTransacoes,
             receitasAprovadas,
-            despesasAprovadas
+            despesasAprovadas,
+            aprovadoNoFiltro,
+            concluidoNoFiltro,
         };
     }, [transactions]);
 

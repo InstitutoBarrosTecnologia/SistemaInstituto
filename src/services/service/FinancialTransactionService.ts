@@ -13,6 +13,10 @@ export interface TransactionFilters {
     dataInicio?: string;
     dataFim?: string;
     ordemServicoId?: string;
+    /** Filtrado localmente — ID do cliente */
+    clienteId?: string;
+    /** Filtrado localmente — forma de pagamento (ex: "pix", "credito") */
+    formaPagamento?: string;
 }
 
 export const FinancialTransactionService = {

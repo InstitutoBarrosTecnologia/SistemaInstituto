@@ -16,6 +16,7 @@ import { useState, useMemo } from "react";
 import FormSubCategoryService from "../../../pages/Forms/ServicesForms/FormSubCategoryService";
 import { SubCategoryServiceResponseDto } from "../../../services/model/Dto/Response/SubCategoryServiceResponseDto";
 import { getAllSubCategoriasAsync, desativarSubCategoriaAsync, getSubCategoriaByIdAsync } from "../../../services/service/SubCategoryService";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 interface SubServiceCategoryGridProps {
     searchTerm?: string;
@@ -30,6 +31,7 @@ export default function SubServiceCategoryGrid({ searchTerm = "" }: SubServiceCa
         valorServico: 0
     });
     const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
+    const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
 
 
 
@@ -211,6 +213,7 @@ export default function SubServiceCategoryGrid({ searchTerm = "" }: SubServiceCa
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                                        {!isReadOnly && (
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             <button
                                                 onClick={() => handleOpenModal(subCategory.id!.toString())}
@@ -242,6 +245,7 @@ export default function SubServiceCategoryGrid({ searchTerm = "" }: SubServiceCa
                                                 </svg>
                                             </button>
                                         </div>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             )) : <></>}

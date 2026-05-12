@@ -6,12 +6,14 @@ import { useTableSearch } from "../../../hooks/useTableSearch";
 import SearchInput from "../../../components/common/SearchInput";
 import EmployeeGrid from "../../../components/tables/EmployeeGrid/EmployeeGrid";
 import FromEmployee from "../../Forms/Employee/FormEmployee";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 
 export default function EmployeeTables() {
 
     const { isOpen, openModal, closeModal } = useModal();
     const { searchTerm, setSearchTerm } = useTableSearch();
+    const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
 
     return (
         <>
@@ -30,7 +32,7 @@ export default function EmployeeTables() {
                         placeholder="Buscar por nome, telefone, CPF, email, cargo..."
                     />
                 </div>
-                <button onClick={openModal} className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition  px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 ">
+                <button onClick={openModal} style={isReadOnly ? { display: "none" } : {}} className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition  px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 ">
                     <span className="flex items-center">
                         <svg
                             width="1em"

@@ -124,16 +124,14 @@ export const MENU_PERMISSIONS = {
     USER_ROLES.FUNCIONARIO
   ],
 
-  // Módulo Financeiro - Administradores e Financeiro
+  // Módulo Financeiro - apenas Administrador
   FINANCEIRO: [
-    USER_ROLES.ADMINISTRADOR,
-    USER_ROLES.FINANCEIRO
+    USER_ROLES.ADMINISTRADOR
   ],
 
-  // Financeiro - Despesas
+  // Financeiro - Despesas - apenas Administrador
   FINANCEIRO_DESPESAS: [
-    USER_ROLES.ADMINISTRADOR,
-    USER_ROLES.FINANCEIRO
+    USER_ROLES.ADMINISTRADOR
   ],
 
   // Módulo Notificações - todos os perfis podem acessar pelo menos o histórico
@@ -179,10 +177,9 @@ export const MENU_PERMISSIONS = {
     USER_ROLES.ADMINISTRADOR
   ],
 
-  // E-mail - módulo (Administrador e Administrativo)
+  // E-mail - módulo (apenas Administrador)
   EMAIL: [
-    USER_ROLES.ADMINISTRADOR,
-    USER_ROLES.ADMINISTRATIVO
+    USER_ROLES.ADMINISTRADOR
   ],
 
   // E-mail - Configurações SMTP (apenas Administrador)
@@ -190,37 +187,33 @@ export const MENU_PERMISSIONS = {
     USER_ROLES.ADMINISTRADOR
   ],
 
-  // E-mail - Disparar (Administrador e Administrativo)
+  // E-mail - Disparar (apenas Administrador)
   EMAIL_DISPARAR: [
+    USER_ROLES.ADMINISTRADOR
+  ],
+
+  // Relatórios - módulo (Administrador e Administrativo)
+  RELATORIOS: [
     USER_ROLES.ADMINISTRADOR,
     USER_ROLES.ADMINISTRATIVO
   ],
 
-  // Relatórios - módulo
-  RELATORIOS: [
-    USER_ROLES.ADMINISTRADOR,
-    USER_ROLES.ADMINISTRATIVO,
-    USER_ROLES.FINANCEIRO
-  ],
-
-  // Relatório Agenda
+  // Relatório Agenda (Administrador e Administrativo)
   RELATORIO_AGENDA: [
     USER_ROLES.ADMINISTRADOR,
-    USER_ROLES.ADMINISTRATIVO,
-    USER_ROLES.FINANCEIRO
+    USER_ROLES.ADMINISTRATIVO
   ],
 
-  // Relatório Financeiro
+  // Relatório Financeiro (Administrador e Administrativo)
   RELATORIO_FINANCEIRO: [
     USER_ROLES.ADMINISTRADOR,
-    USER_ROLES.FINANCEIRO
+    USER_ROLES.ADMINISTRATIVO
   ],
 
-  // Relatório Operacional
+  // Relatório Operacional (Administrador e Administrativo)
   RELATORIO_OPERACIONAL: [
     USER_ROLES.ADMINISTRADOR,
-    USER_ROLES.ADMINISTRATIVO,
-    USER_ROLES.FINANCEIRO
+    USER_ROLES.ADMINISTRATIVO
   ]
 } as const;
 
@@ -259,6 +252,18 @@ export const getUserRoleFromToken = (token: string | null): string | string[] | 
     console.error("Erro ao decodificar token:", e);
     return null;
   }
+};
+
+// Perfis somente-leitura: podem visualizar e filtrar mas não criar/editar/excluir dados
+export const READ_ONLY_ROLES: readonly string[] = [USER_ROLES.FINANCEIRO];
+
+// Retorna true se o usuário for de um perfil somente-leitura
+export const isReadOnlyRole = (userRoles: string | string[] | null): boolean => {
+  if (!userRoles) return false;
+  if (Array.isArray(userRoles)) {
+    return userRoles.some(role => READ_ONLY_ROLES.includes(role));
+  }
+  return READ_ONLY_ROLES.includes(userRoles);
 };
 
 // Função auxiliar para verificar se o usuário tem um role específico

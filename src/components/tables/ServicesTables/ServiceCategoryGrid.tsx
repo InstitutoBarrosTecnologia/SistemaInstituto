@@ -17,6 +17,7 @@ import Alert, { AlertProps } from "../../ui/alert/Alert";
 import FormCategoryService from "../../../pages/Forms/ServicesForms/FormCategoryService";
 import { CategoryServiceResponseDto } from "../../../services/model/Dto/Response/CategoryServiceResponseDto";
 import { getAllCategoriasAsync, desativarCategoriaAsync, getCategoriaByIdAsync } from "../../../services/service/ServiceCategoryService";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 interface ServiceCategoryGridProps {
     searchTerm?: string;
@@ -30,6 +31,7 @@ export default function ServiceCategoryGrid({ searchTerm = "" }: ServiceCategory
         desc: "",
     });
     const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
+    const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
 
     const [showAlert] = useState<AlertProps | null>(null);
 
@@ -191,6 +193,7 @@ export default function ServiceCategoryGrid({ searchTerm = "" }: ServiceCategory
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                                        {!isReadOnly && (
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             <button
                                                 onClick={() => handleOpenModal(category.id!.toString())}
@@ -222,6 +225,7 @@ export default function ServiceCategoryGrid({ searchTerm = "" }: ServiceCategory
                                                 </svg>
                                             </button>
                                         </div>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             )) : <></>}

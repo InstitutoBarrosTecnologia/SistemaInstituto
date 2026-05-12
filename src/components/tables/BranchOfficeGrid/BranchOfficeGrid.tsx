@@ -16,6 +16,7 @@ import FormBranchOffice from "../../../pages/Forms/BranchOffice/FormBranchOffice
 import { BranchOfficeService } from "../../../services/service/BranchOfficeService";
 import EmployeeService from "../../../services/service/EmployeeService";
 import Button from "../../ui/button/Button";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 interface BranchOfficeGridProps {
   searchTerm?: string;
@@ -34,6 +35,7 @@ export default function BranchOfficeGrid({ searchTerm = "" }: BranchOfficeGridPr
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
 
   const queryClient = useQueryClient();
+  const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
 
   const {
     data: branches = [],
@@ -212,6 +214,7 @@ export default function BranchOfficeGrid({ searchTerm = "" }: BranchOfficeGridPr
                     </TableCell>
 
                     <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                      {!isReadOnly && (
                       <div className="flex flex-col sm:flex-row gap-2">
                         <button
                           onClick={() => handleOpenModal(branch)}
@@ -254,6 +257,7 @@ export default function BranchOfficeGrid({ searchTerm = "" }: BranchOfficeGridPr
                           </svg>
                         </button>
                       </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
