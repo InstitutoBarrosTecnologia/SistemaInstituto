@@ -31,7 +31,7 @@ const COLS: ColDef[] = [
   { key: "paciente",        type: "string", accessor: (r) => (r as S).cliente?.nome },
   { key: "fisio",           type: "string", accessor: (r) => (r as S).funcionario?.nome },
   { key: "localizacao",     type: "string", accessor: (r) => (r as S).localizacao },
-  { key: "usrCadastroDesc", type: "string", accessor: (r) => (r as S).usrCadastroDesc },
+  { key: "usrCadastroDesc", type: "string", accessor: (r) => (r as S).usrDescricaoCadastro ?? (r as S).usrCadastroDesc },
   { key: "dataCadastro",    type: "date",   accessor: (r) => (r as S).dataCadastro },
 ];
 
@@ -175,7 +175,7 @@ export default function RelatorioAgenda() {
       Fisioterapeuta: s.funcionario?.nome ?? "—",
       Localização: s.localizacao ?? "—",
       Observação: s.observacao ?? "—",
-      "Cadastrado Por": s.usrCadastroDesc ?? "—",
+      "Cadastrado Por": s.usrDescricaoCadastro ?? s.usrCadastroDesc ?? "—",
       "Data Cadastro": fmtDate(s.dataCadastro),
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -197,7 +197,7 @@ export default function RelatorioAgenda() {
       `"${s.funcionario?.nome ?? ""}"`,
       `"${s.localizacao ?? ""}"`,
       `"${(s.observacao ?? "").replace(/"/g, "'")}"`,
-      `"${(s.usrCadastroDesc ?? "").replace(/"/g, "'")}"`,
+      `"${((s.usrDescricaoCadastro ?? s.usrCadastroDesc) ?? "").replace(/"/g, "'")}"`,
       `"${fmtDate(s.dataCadastro)}"`,
     ]);
     const csv = [header.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
@@ -363,7 +363,7 @@ export default function RelatorioAgenda() {
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.cliente?.nome ?? "—"}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.funcionario?.nome ?? "—"}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.localizacao ?? "—"}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.usrCadastroDesc ?? "—"}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{s.usrDescricaoCadastro ?? s.usrCadastroDesc ?? "—"}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{fmtDate(s.dataCadastro)}</td>
                       </tr>
                     ))}

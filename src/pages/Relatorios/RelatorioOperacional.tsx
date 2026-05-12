@@ -50,12 +50,16 @@ function getServicosNomes(os: OS): string {
   return (os.servicos ?? []).map((s) => s.descricao ?? "").filter(Boolean).join(", ") || "—";
 }
 
-/** Retorna os títulos de subcategoria da OS concatenados */
-function getCategoriaTitulo(os: OS): string {
-  return (os.servicos ?? [])
-    .map((s) => s.subCategoriaServico?.titulo ?? "")
-    .filter(Boolean)
-    .join(", ") || "—";
+/** Retorna os nomes de categoria da OS concatenados (lookup pelo categoriaId) */
+function getCategoriaTitulo(os: OS, categorias: CategoryServiceResponseDto[]): string {
+  const ids = (os.servicos ?? [])
+    .map((s) => s.subCategoriaServico?.categoriaId ?? "")
+    .filter(Boolean);
+  const unicos = [...new Set(ids)];
+  const nomes = unicos
+    .map((id) => categorias.find((c) => c.id === id)?.titulo ?? "")
+    .filter(Boolean);
+  return nomes.join(", ") || "—";
 }
 
 /** Retorna o categoriaId do primeiro serviço (para filtro) */
@@ -65,18 +69,27 @@ function getCategoriasIds(os: OS): string[] {
     .filter(Boolean);
 }
 
+/** Retorna o nome do fisioterapeuta da sessão realizada mais recente */
+function getUltimoFisio(os: OS): string {
+  const realizadas = (os.sessoes ?? []).filter((s) => s.statusSessao === 0);
+  if (realizadas.length === 0) return "—";
+  realizadas.sort((a, b) => new Date(b.dataSessao).getTime() - new Date(a.dataSessao).getTime());
+  return (realizadas[0].funcionario as { nome?: string } | undefined)?.nome ?? "—";
+}
+
 const COLS: ColDef[] = [
   { key: "referencia",            type: "string",   accessor: (r) => (r as OS).referencia },
   { key: "status",                type: "string",   accessor: (r) => STATUS_MAP[(r as OS).status] ?? "" },
   { key: "paciente",              type: "string",   accessor: (r) => ((r as OS).cliente as NomeObj)?.nome },
   { key: "fisioterapeuta",        type: "string",   accessor: (r) => ((r as OS).funcionario as NomeObj)?.nome },
   { key: "servicos",              type: "string",   accessor: (r) => getServicosNomes(r as OS) },
-  { key: "categoria",             type: "string",   accessor: (r) => getCategoriaTitulo(r as OS) },
+  { key: "categoria",             type: "string",   accessor: () => "" }, // preenchido dentro do componente
+  { key: "ultimoFisio",           type: "string",   accessor: (r) => getUltimoFisio(r as OS) },
   { key: "formaPagamento",        type: "string",   accessor: (r) => FORMA_PAGAMENTO_MAP[(r as OS).formaPagamento] ?? "" },
   { key: "preco",                 type: "currency", accessor: (r) => (r as OS).precoDescontado ?? (r as OS).precoOrdem },
   { key: "sessoes",               type: "number",   accessor: (r) => (r as OS).qtdSessaoRealizada },
   { key: "dataConclusaoServico",  type: "date",     accessor: (r) => (r as OS).dataConclusaoServico },
-  { key: "usrCadastroDesc",       type: "string",   accessor: (r) => (r as OS).usrCadastroDesc },
+  { key: "usrCadastroDesc",       type: "string",   accessor: (r) => (r as OS).usrDescricaoCadastro ?? (r as OS).usrCadastroDesc },
   { key: "dataCadastro",          type: "date",     accessor: (r) => (r as OS).dataCadastro },
 ];
 
@@ -87,6 +100,7 @@ const COL_HEADERS: { key: string; label: string }[] = [
   { key: "fisioterapeuta",       label: "Fisioterapeuta" },
   { key: "servicos",             label: "Serviços" },
   { key: "categoria",            label: "Categoria" },
+  { key: "ultimoFisio",          label: "Último Fisio" },
   { key: "formaPagamento",       label: "Forma Pgto" },
   { key: "preco",                label: "Preço" },
   { key: "sessoes",              label: "Sessões" },
@@ -221,8 +235,14 @@ export default function RelatorioOperacional() {
     });
   }, [items, dataInicio, dataFim, statusFiltro, categoriaFiltro, clienteId, funcionarioId]);
 
+  const cols = useMemo<ColDef[]>(() => COLS.map((c) =>
+    c.key === "categoria"
+      ? { ...c, accessor: (r) => getCategoriaTitulo(r as OS, categorias) }
+      : c
+  ), [categorias]);
+
   const { sorted, paginated, sort, toggleSort, page, setPage, totalPages } = useSortedPaginated<OS>(
-    itensFiltrados, COLS, { key: "dataCadastro", direction: "desc" }
+    itensFiltrados, cols, { key: "dataCadastro", direction: "desc" }
   );
 
   const totalFaturamento       = useMemo(() => itensFiltrados.reduce((s, os) => s + (os.precoDescontado ?? os.precoOrdem ?? 0), 0), [itensFiltrados]);
@@ -236,14 +256,15 @@ export default function RelatorioOperacional() {
       Paciente: (os.cliente as NomeObj)?.nome ?? "—",
       Fisioterapeuta: (os.funcionario as NomeObj)?.nome ?? "—",
       Serviços: getServicosNomes(os),
-      Categoria: getCategoriaTitulo(os),
+      Categoria: getCategoriaTitulo(os, categorias),
+      "Último Fisio": getUltimoFisio(os),
       "Forma Pagamento": FORMA_PAGAMENTO_MAP[os.formaPagamento] ?? os.formaPagamento,
       "Preço Total": os.precoOrdem ?? 0,
       "Preço c/ Desconto": os.precoDescontado ?? 0,
       "Sessões Total": os.qtdSessaoTotal ?? 0,
       "Sessões Realizadas": os.qtdSessaoRealizada ?? 0,
       "Data Conclusão": fmtDate(os.dataConclusaoServico),
-      "Cadastrado Por": os.usrCadastroDesc ?? "—",
+      "Cadastrado Por": os.usrDescricaoCadastro ?? os.usrCadastroDesc ?? "—",
       "Data Cadastro": fmtDate(os.dataCadastro),
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -254,7 +275,7 @@ export default function RelatorioOperacional() {
 
   const exportCsv = () => {
     const header = [
-      "ID", "Referência", "Status", "Paciente", "Fisioterapeuta", "Serviços", "Categoria",
+      "ID", "Referência", "Status", "Paciente", "Fisioterapeuta", "Serviços", "Categoria", "Último Fisio",
       "Forma Pagamento", "Preço Total", "Preço c/ Desconto",
       "Sessões Total", "Sessões Realizadas", "Data Conclusão", "Cadastrado Por", "Data Cadastro",
     ];
@@ -265,14 +286,15 @@ export default function RelatorioOperacional() {
       `"${(os.cliente as NomeObj)?.nome ?? ""}"`,
       `"${(os.funcionario as NomeObj)?.nome ?? ""}"`,
       `"${getServicosNomes(os).replace(/"/g, "'")}"`,
-      `"${getCategoriaTitulo(os).replace(/"/g, "'")}"`,
+      `"${getCategoriaTitulo(os, categorias).replace(/"/g, "'")}"`,
+      `"${getUltimoFisio(os).replace(/"/g, "'")}"`,
       `"${FORMA_PAGAMENTO_MAP[os.formaPagamento] ?? os.formaPagamento}"`,
       os.precoOrdem ?? 0,
       os.precoDescontado ?? 0,
       os.qtdSessaoTotal ?? 0,
       os.qtdSessaoRealizada ?? 0,
       `"${fmtDate(os.dataConclusaoServico)}"`,
-      `"${(os.usrCadastroDesc ?? "").replace(/"/g, "'")}"`,
+      `"${((os.usrDescricaoCadastro ?? os.usrCadastroDesc) ?? "").replace(/"/g, "'")}"`,
       `"${fmtDate(os.dataCadastro)}"`,
     ]);
     const csv = [header.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
@@ -439,12 +461,13 @@ export default function RelatorioOperacional() {
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300 max-w-[200px] truncate" title={getServicosNomes(os)}>
                           {getServicosNomes(os)}
                         </td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{getCategoriaTitulo(os)}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{getCategoriaTitulo(os, categorias)}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{getUltimoFisio(os)}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{FORMA_PAGAMENTO_MAP[os.formaPagamento] ?? os.formaPagamento}</td>
                         <td className="px-4 py-3 font-semibold text-gray-800 dark:text-white whitespace-nowrap">{fmtBrl(os.precoDescontado ?? os.precoOrdem)}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{os.qtdSessaoRealizada ?? 0}/{os.qtdSessaoTotal ?? 0}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{fmtDate(os.dataConclusaoServico)}</td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{os.usrCadastroDesc ?? "—"}</td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{os.usrDescricaoCadastro ?? os.usrCadastroDesc ?? "—"}</td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{fmtDate(os.dataCadastro)}</td>
                       </tr>
                     ))}
