@@ -125,7 +125,12 @@ export default function RelatorioAgenda() {
       const filtros: Record<string, unknown> = {};
       if (dataInicio) filtros.data = dataInicio;
       if (dataFim) filtros.dataFim = dataFim;
-      if (statusFiltro !== "") filtros.status = Number(statusFiltro);
+      // Só envia status se foi selecionado um valor específico (não "Todos")
+      // Isso permite que status 0 (A Confirmar) funcione corretamente
+      if (statusFiltro !== "") {
+        filtros.status = Number(statusFiltro);
+      }
+      // Se statusFiltro === "", não adiciona ao filtros, backend receberá null e usará -1
       const result = await getAllSchedulesAsync(filtros as Parameters<typeof getAllSchedulesAsync>[0]);
       setItems(result ?? []);
     } catch {
