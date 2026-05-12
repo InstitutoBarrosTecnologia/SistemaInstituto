@@ -7,7 +7,34 @@ import {
 } from "../../ui/table";
 import { Modal } from "../../ui/modal";
 import { useModal } from "../../../hooks/useModal";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+
+const PAGE_SIZE = 20;
+
+function Pagination({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+  const pages: (number | "…")[] = [];
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) pages.push(i);
+    else if (pages[pages.length - 1] !== "…") pages.push("…");
+  }
+  return (
+    <div className="flex items-center justify-center gap-1 pt-4 pb-2">
+      <button onClick={() => onPage(page - 1)} disabled={page === 1}
+        className="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700">‹</button>
+      {pages.map((p, i) =>
+        p === "…" ? <span key={`e${i}`} className="px-1 text-gray-400">…</span> : (
+          <button key={p} onClick={() => onPage(p as number)}
+            className={`rounded px-2.5 py-1 text-sm font-medium transition ${p === page ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"}`}>
+            {p}
+          </button>
+        )
+      )}
+      <button onClick={() => onPage(page + 1)} disabled={page === totalPages}
+        className="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700">›</button>
+    </div>
+  );
+}
 import ModalParcelasContent from "../../../pages/Financeiro/components/ModalParcelas";
 
 import {
@@ -71,6 +98,14 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
     isUpdating,
     isDeleting,
   } = useFinancialTransactions(filters);
+
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil((transactions?.length ?? 0) / PAGE_SIZE));
+  const paginated = useMemo(() => {
+    if (!transactions) return [];
+    const start = (page - 1) * PAGE_SIZE;
+    return transactions.slice(start, start + PAGE_SIZE);
+  }, [transactions, page]);
 
   const handleOpenModalDelete = (id: string) => {
     setIdDeleteRegister(id);
@@ -230,8 +265,8 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-              {transactions && transactions.length > 0 ? (
-                transactions.map((transaction) => (
+              {paginated.length > 0 ? (
+                paginated.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell className="px-4 py-3 text-start">
                       <Badge
@@ -414,6 +449,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
           </Table>
         </div>
       </div>
+      <Pagination page={page} totalPages={totalPages} onPage={(p) => { setPage(p); }} />
 
       {/* Modal de Atualização de Status */}
       <Modal

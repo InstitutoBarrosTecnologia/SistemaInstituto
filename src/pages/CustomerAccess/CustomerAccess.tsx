@@ -3,7 +3,7 @@
  * Pode ser removido no futuro sem afetar funcionalidades existentes
  */
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { Modal } from "../../components/ui/modal";
@@ -37,6 +37,8 @@ export default function CustomerAccessPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'with' | 'without'>('all');
   const [disableTarget, setDisableTarget] = useState<{ id: string; name: string } | null>(null);
   const [disableReason, setDisableReason] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   // Carregar todos os clientes com status de acesso
   useEffect(() => {
@@ -74,6 +76,7 @@ export default function CustomerAccessPage() {
     
     // Limpar seleção ao mudar filtro
     setSelectedCustomers([]);
+    setPage(1);
   };
 
   const handleGenerateBatch = async () => {
@@ -192,6 +195,37 @@ export default function CustomerAccessPage() {
   const totalClients = customers.length;
   const withAccess = customers.filter(c => c.hasAccess && !c.isAccessDisabled).length;
   const withoutAccess = customers.filter(c => !c.hasAccess || c.isAccessDisabled).length;
+
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / PAGE_SIZE));
+  const paginatedCustomers = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filteredCustomers.slice(start, start + PAGE_SIZE);
+  }, [filteredCustomers, page, PAGE_SIZE]);
+
+  function PaginationBar() {
+    if (totalPages <= 1) return null;
+    const pages: (number | "…")[] = [];
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) pages.push(i);
+      else if (pages[pages.length - 1] !== "…") pages.push("…");
+    }
+    return (
+      <div className="flex items-center justify-center gap-1 pt-4">
+        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+          className="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700">‹</button>
+        {pages.map((p, i) =>
+          p === "…" ? <span key={`e${i}`} className="px-1 text-gray-400">…</span> : (
+            <button key={p} onClick={() => setPage(p as number)}
+              className={`rounded px-2.5 py-1 text-sm font-medium transition ${p === page ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"}`}>
+              {p}
+            </button>
+          )
+        )}
+        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+          className="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-gray-700">›</button>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -344,7 +378,7 @@ export default function CustomerAccessPage() {
                   </td>
                 </tr>
               ) : (
-                filteredCustomers.map((customer) => (
+                paginatedCustomers.map((customer) => (
                   <tr key={customer.id} className="border-b border-stroke dark:border-strokedark">
                     <td className="px-4 py-4">
                       <input
@@ -415,6 +449,8 @@ export default function CustomerAccessPage() {
             </tbody>
           </table>
         </div>
+
+        <PaginationBar />
 
         {/* Informações Importantes */}
         <div className="mt-6 rounded-md bg-warning bg-opacity-10 p-4 border border-warning">

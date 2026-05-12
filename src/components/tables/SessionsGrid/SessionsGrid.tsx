@@ -29,7 +29,7 @@ export default function SessionsGrid() {
 
   // Estados de paginação
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 20;
 
   // Modal de exclusão
   const { isOpen, openModal, closeModal } = useModal();
