@@ -10,6 +10,10 @@ import {
   EmailConfigurationResponseDto,
 } from "../../services/model/email.types";
 import { CustomerResponseDto } from "../../services/model/Dto/Response/CustomerResponseDto";
+import EmailPreview from "../../components/Email/EmailPreview";
+import EmailEditor from "../../components/Email/EmailEditor";
+import { getTemplateList, getTemplateById } from "../../constants/emailTemplates";
+import { EmailVariables, replaceVariables } from "../../utils/emailVariables";
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   Pendente: { label: "Pendente", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
@@ -29,6 +33,11 @@ export default function EmailDispatchPage() {
   const [searchCliente, setSearchCliente] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Novo: Estado para template selecionado
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  // Novo: Variáveis customizadas do template (ex: CTA link)
+  const [templateVariables, setTemplateVariables] = useState<EmailVariables>({});
 
   const [form, setForm] = useState<EmailDispatchRequestDto>({
     titulo: "",
@@ -86,6 +95,30 @@ export default function EmailDispatchPage() {
     setForm((prev) => ({ ...prev, destinatarioIds: [] }));
   };
 
+  // Novo: Handler para seleção de template
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    
+    if (templateId === "") {
+      // Se limpar template, não altera o corpo
+      return;
+    }
+    
+    const template = getTemplateById(templateId);
+    if (template) {
+      setForm((prev) => ({ ...prev, corpo: template.html }));
+      
+      // Inicializa variáveis específicas do template
+      if (templateId === 'promocional') {
+        setTemplateVariables((prev) => ({
+          ...prev,
+          cta_texto: prev.cta_texto || 'Agendar Agora',
+          cta_link: prev.cta_link || '#',
+        }));
+      }
+    }
+  };
+
   const clientesFiltrados = customers.filter((c) => {
     if (!searchCliente) return true;
     const q = searchCliente.toLowerCase();
@@ -93,6 +126,15 @@ export default function EmailDispatchPage() {
       c.nome?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q)
     );
   });
+
+  // Função para limpar todos os campos do formulário
+  const resetForm = () => {
+    setForm({ titulo: "", corpo: "", destinatarioIds: [], emailConfigurationId: configs[0]?.id });
+    setSelectedTemplate("");
+    setTemplateVariables({});
+    setSearchCliente("");
+    setError(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,10 +149,25 @@ export default function EmailDispatchPage() {
     setSending(true);
     setError(null);
     try {
-      await EmailDispatchService.send(form);
+      // Se há template selecionado, substitui as variáveis do template antes de enviar
+      let corpoFinal = form.corpo;
+      if (selectedTemplate) {
+        corpoFinal = replaceVariables(form.corpo, {
+          ...templateVariables,
+          titulo: form.titulo,
+        }, false); // useDefaults = false para não substituir variáveis do cliente
+      }
+      
+      await EmailDispatchService.send({
+        ...form,
+        corpo: corpoFinal,
+      });
       setSuccessMsg("Disparo iniciado com sucesso!");
       setShowForm(false);
-      setForm({ titulo: "", corpo: "", destinatarioIds: [], emailConfigurationId: configs[0]?.id });
+      
+      // Limpa todos os campos do formulário
+      resetForm();
+      
       await carregarDados();
       setTimeout(() => setSuccessMsg(null), 5000);
     } catch (err: unknown) {
@@ -150,7 +207,14 @@ export default function EmailDispatchPage() {
               </div>
             </div>
             <button
-              onClick={() => setShowForm((v) => !v)}
+              onClick={() => {
+                const newShowForm = !showForm;
+                setShowForm(newShowForm);
+                // Se está fechando o formulário, limpa os campos
+                if (!newShowForm) {
+                  resetForm();
+                }
+              }}
               className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition"
             >
               <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -173,58 +237,133 @@ export default function EmailDispatchPage() {
             </div>
           )}
 
-          {/* Formulário de disparo */}
+          {/* Formulário de disparo com Preview */}
           {showForm && (
-            <form onSubmit={handleSubmit} className="mb-6 rounded-xl border border-blue-200 bg-blue-50/30 p-5 dark:border-blue-900/50 dark:bg-blue-900/10 space-y-5">
-              <h2 className="text-base font-semibold text-gray-800 dark:text-white">Novo Disparo</h2>
+            <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* COLUNA ESQUERDA: Formulário */}
+              <form onSubmit={handleSubmit} className="rounded-xl border border-blue-200 bg-blue-50/30 p-5 dark:border-blue-900/50 dark:bg-blue-900/10 space-y-5 h-fit">
+                <h2 className="text-base font-semibold text-gray-800 dark:text-white">Novo Disparo</h2>
 
-              {/* Config SMTP */}
-              <div>
-                <label className={labelClass}>Conta de Envio (SMTP) *</label>
-                {configs.length === 0 ? (
-                  <p className="text-sm text-red-500">Nenhuma configuração SMTP ativa. Cadastre uma em E-mail → Configurações.</p>
-                ) : (
+                {/* Config SMTP */}
+                <div>
+                  <label className={labelClass}>Conta de Envio (SMTP) *</label>
+                  {configs.length === 0 ? (
+                    <p className="text-sm text-red-500">Nenhuma configuração SMTP ativa. Cadastre uma em E-mail → Configurações.</p>
+                  ) : (
+                    <select
+                      className={inputClass}
+                      value={form.emailConfigurationId ?? ""}
+                      onChange={(e) => setForm((p) => ({ ...p, emailConfigurationId: e.target.value }))}
+                      required
+                    >
+                      {configs.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nomeRemetente} &lt;{c.email}&gt; — {c.provedor}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* NOVO: Seletor de Template */}
+                <div>
+                  <label className={labelClass}>Template de Email</label>
                   <select
                     className={inputClass}
-                    value={form.emailConfigurationId ?? ""}
-                    onChange={(e) => setForm((p) => ({ ...p, emailConfigurationId: e.target.value }))}
-                    required
+                    value={selectedTemplate}
+                    onChange={(e) => handleTemplateChange(e.target.value)}
                   >
-                    {configs.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nomeRemetente} &lt;{c.email}&gt; — {c.provedor}
+                    <option value="">Selecione um template (opcional)</option>
+                    {getTemplateList().map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
                       </option>
                     ))}
                   </select>
+                  {selectedTemplate && (
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      {getTemplateById(selectedTemplate)?.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Assunto */}
+                <div>
+                  <label className={labelClass}>Assunto *</label>
+                  <input
+                    className={inputClass}
+                    required
+                    placeholder="Ex: Novidades do Instituto Barros"
+                    value={form.titulo}
+                    onChange={(e) => {
+                      setForm((p) => ({ ...p, titulo: e.target.value }));
+                      setTemplateVariables((prev) => ({ ...prev, titulo: e.target.value }));
+                    }}
+                  />
+                </div>
+
+                {/* NOVO: Campo de Conteúdo quando template é selecionado */}
+                {selectedTemplate && (
+                  <div>
+                    <label className={labelClass}>Conteúdo do E-mail *</label>
+                    <textarea
+                      className={`${inputClass} min-h-[150px] resize-y`}
+                      required
+                      placeholder="Digite o conteúdo principal do seu e-mail aqui. Você pode usar HTML (ex: <p>, <strong>, <ul>, etc.)"
+                      value={templateVariables.conteudo || ''}
+                      onChange={(e) => setTemplateVariables((prev) => ({ ...prev, conteudo: e.target.value }))}
+                    />
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      💡 Dica: Você pode usar tags HTML como <code className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">&lt;p&gt;</code>, <code className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">&lt;strong&gt;</code>, <code className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">&lt;ul&gt;</code> para formatar seu texto.
+                    </p>
+                  </div>
                 )}
-              </div>
 
-              {/* Assunto */}
-              <div>
-                <label className={labelClass}>Assunto *</label>
-                <input
-                  className={inputClass}
-                  required
-                  placeholder="Ex: Novidades do Instituto Barros"
-                  value={form.titulo}
-                  onChange={(e) => setForm((p) => ({ ...p, titulo: e.target.value }))}
-                />
-              </div>
+                {/* NOVO: Campos adicionais para template promocional */}
+                {selectedTemplate === 'promocional' && (
+                  <div className="space-y-3 p-3 bg-orange-50 border border-orange-200 rounded-lg dark:bg-orange-900/10 dark:border-orange-800">
+                    <p className="text-xs font-medium text-orange-700 dark:text-orange-400">
+                      📢 Campos do Template Promocional
+                    </p>
+                    <div>
+                      <label className={labelClass}>Texto do Botão CTA</label>
+                      <input
+                        className={inputClass}
+                        placeholder="Ex: Agendar Consulta, Saiba Mais, etc."
+                        value={templateVariables.cta_texto || ''}
+                        onChange={(e) => setTemplateVariables((prev) => ({ ...prev, cta_texto: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Link do Botão CTA</label>
+                      <input
+                        className={inputClass}
+                        type="url"
+                        placeholder="https://exemplo.com"
+                        value={templateVariables.cta_link || ''}
+                        onChange={(e) => setTemplateVariables((prev) => ({ ...prev, cta_link: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
 
-              {/* Corpo */}
-              <div>
-                <label className={labelClass}>Corpo do E-mail *</label>
-                <textarea
-                  className={`${inputClass} min-h-[160px] resize-y`}
-                  required
-                  placeholder="Digite o conteúdo do e-mail aqui..."
-                  value={form.corpo}
-                  onChange={(e) => setForm((p) => ({ ...p, corpo: e.target.value }))}
-                />
-              </div>
+                {/* Corpo - Editor Visual/HTML */}
+                <div>
+                  <label className={labelClass}>Corpo do E-mail *</label>
+                  <EmailEditor
+                    value={form.corpo}
+                    onChange={(newCorpo) => {
+                      setForm((p) => ({ ...p, corpo: newCorpo }));
+                    }}
+                    placeholder="Digite o conteúdo do e-mail aqui ou selecione um template acima..."
+                    required
+                    forceHtmlMode={selectedTemplate !== ''}
+                    defaultMode="html"
+                  />
+                </div>
 
-              {/* Destinatários */}
-              <div>
+                {/* Destinatários */}
+                <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className={labelClass + " mb-0"}>
                     Destinatários *{" "}
@@ -280,39 +419,73 @@ export default function EmailDispatchPage() {
                 </div>
               </div>
 
-              {/* Ações */}
-              <div className="flex gap-3 justify-end pt-1">
-                <button
-                  type="button"
-                  onClick={() => { setShowForm(false); setError(null); }}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={sending || configs.length === 0}
-                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 transition disabled:opacity-60"
-                >
-                  {sending ? (
-                    <>
-                      <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                      </svg>
-                      Disparando...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                      Disparar E-mail
-                    </>
-                  )}
-                </button>
+                {/* Ações */}
+                <div className="flex gap-3 justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => { 
+                      setShowForm(false); 
+                      resetForm();
+                    }}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={sending || configs.length === 0}
+                    className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 transition disabled:opacity-60"
+                  >
+                    {sending ? (
+                      <>
+                        <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                        </svg>
+                        Disparando...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Disparar E-mail
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              {/* COLUNA DIREITA: Preview */}
+              <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] overflow-hidden h-fit lg:sticky lg:top-4">
+                <EmailPreview
+                  htmlContent={form.corpo}
+                  variables={{
+                    ...templateVariables,
+                    titulo: form.titulo,
+                    // Usa nome do primeiro cliente selecionado, ou valor padrão
+                    nome_cliente: form.destinatarioIds.length > 0 
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.nome || 'Cliente'
+                      : undefined,
+                    // Outros dados do primeiro cliente selecionado
+                    email_cliente: form.destinatarioIds.length > 0
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.email || undefined
+                      : undefined,
+                    telefone_cliente: form.destinatarioIds.length > 0
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.telefone || undefined
+                      : undefined,
+                    cidade_cliente: form.destinatarioIds.length > 0
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.cidade || undefined
+                      : undefined,
+                    estado_cliente: form.destinatarioIds.length > 0
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.estado || undefined
+                      : undefined,
+                  }}
+                  title="Preview do Email"
+                  usingRealData={form.destinatarioIds.length > 0}
+                />
               </div>
-            </form>
+            </div>
           )}
 
           {/* Histórico de disparos */}
