@@ -1,0 +1,202 @@
+/* Estilos customizados para React Quill */
+
+/* Container do editor */
+.email-editor-container .ql-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  min-height: 300px;
+}
+
+.email-editor-container .ql-editor {
+  min-height: 300px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.email-editor-container .ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: normal;
+}
+
+/* Toolbar styling */
+.email-editor-container .ql-toolbar {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem 0.5rem 0 0;
+  padding: 8px;
+}
+
+.email-editor-container .ql-container {
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 0.5rem 0.5rem;
+  background: white;
+}
+
+.email-editor-container .ql-toolbar button {
+  width: 28px;
+  height: 28px;
+  padding: 3px 5px;
+}
+
+.email-editor-container .ql-toolbar button:hover {
+  color: #2563eb;
+}
+
+.email-editor-container .ql-toolbar button.ql-active {
+  color: #2563eb;
+}
+
+.email-editor-container .ql-stroke {
+  stroke: #4b5563;
+}
+
+.email-editor-container .ql-fill {
+  fill: #4b5563;
+}
+
+.email-editor-container .ql-toolbar button:hover .ql-stroke {
+  stroke: #2563eb;
+}
+
+.email-editor-container .ql-toolbar button:hover .ql-fill {
+  fill: #2563eb;
+}
+
+.email-editor-container .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #2563eb;
+}
+
+.email-editor-container .ql-toolbar button.ql-active .ql-fill {
+  fill: #2563eb;
+}
+
+/* Dark mode styles */
+.dark .email-editor-container .ql-toolbar {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.dark .email-editor-container .ql-container {
+  background: #111827;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+.dark .email-editor-container .ql-editor {
+  color: #f9fafb;
+}
+
+.dark .email-editor-container .ql-editor.ql-blank::before {
+  color: #6b7280;
+}
+
+.dark .email-editor-container .ql-stroke {
+  stroke: #9ca3af;
+}
+
+.dark .email-editor-container .ql-fill {
+  fill: #9ca3af;
+}
+
+.dark .email-editor-container .ql-picker-label {
+  color: #9ca3af;
+}
+
+.dark .email-editor-container .ql-toolbar button:hover .ql-stroke {
+  stroke: #60a5fa;
+}
+
+.dark .email-editor-container .ql-toolbar button:hover .ql-fill {
+  fill: #60a5fa;
+}
+
+.dark .email-editor-container .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #3b82f6;
+}
+
+.dark .email-editor-container .ql-toolbar button.ql-active .ql-fill {
+  fill: #3b82f6;
+}
+
+.dark .email-editor-container .ql-toolbar button:hover {
+  color: #60a5fa;
+}
+
+.dark .email-editor-container .ql-toolbar button.ql-active {
+  color: #3b82f6;
+}
+
+/* Dropdown menus */
+.ql-picker-options {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.dark .ql-picker-options {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.ql-picker-item {
+  color: #374151;
+}
+
+.dark .ql-picker-item {
+  color: #d1d5db;
+}
+
+.ql-picker-item:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.dark .ql-picker-item:hover {
+  background: #374151;
+  color: #f9fafb;
+}
+
+/* Focus states */
+.email-editor-container .ql-container.ql-snow:focus-within {
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dark .email-editor-container .ql-container.ql-snow:focus-within {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+/* Scrollbar styling */
+.email-editor-container .ql-editor::-webkit-scrollbar {
+  width: 8px;
+}
+
+.email-editor-container .ql-editor::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.email-editor-container .ql-editor::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.email-editor-container .ql-editor::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark .email-editor-container .ql-editor::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.dark .email-editor-container .ql-editor::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.dark .email-editor-container .ql-editor::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
