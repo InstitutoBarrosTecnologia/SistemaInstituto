@@ -95,9 +95,12 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
     isError,
     updateTransactionStatus,
     updateTransaction,
+    updateTransactionAsync,
+    updateFormaPagamentoAsync,
     deleteTransaction,
     isUpdatingStatus,
     isUpdating,
+    isUpdatingFormaPagamento,
     isDeleting,
   } = useFinancialTransactions(filters);
 
@@ -140,26 +143,19 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
     openModalEditFormaPagamento();
   };
 
-  const handleSubmitEditFormaPagamento = (e: React.FormEvent) => {
+  const handleSubmitEditFormaPagamento = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingFormaPagamentoTx?.id || !novaFormaPagamento) return;
-    updateTransaction({
-      id: editingFormaPagamentoTx.id,
-      data: {
-        nomeDespesa: editingFormaPagamentoTx.nomeDespesa,
-        valores: editingFormaPagamentoTx.valores,
-        tipo: editingFormaPagamentoTx.tipo,
+    try {
+      await updateFormaPagamentoAsync({
+        id: editingFormaPagamentoTx.id,
         formaPagamento: novaFormaPagamento,
-        conta: editingFormaPagamentoTx.conta,
-        dataVencimento: editingFormaPagamentoTx.dataVencimento,
-        status: editingFormaPagamentoTx.status,
-        descricao: editingFormaPagamentoTx.descricao,
-        observacoes: editingFormaPagamentoTx.observacoes,
-        tipoDocumento: editingFormaPagamentoTx.tipoDocumento,
-      },
-    });
-    closeModalEditFormaPagamento();
-    setEditingFormaPagamentoTx(undefined);
+      });
+      closeModalEditFormaPagamento();
+      setEditingFormaPagamentoTx(undefined);
+    } catch {
+      // erro já exibido pelo onError do hook (toast)
+    }
   };
 
   const handleDeleteRegister = () => {
@@ -377,6 +373,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                     <TableCell className="px-4 py-3 text-start">
                       <div className="flex gap-2">
                         {!isReadOnly && (
+                        <>
                         <Button
                           size="sm"
                           variant="outline"
@@ -401,6 +398,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                         >
                           Excluir
                         </Button>
+                        </>
                         )}
                         <Button
                           size="sm"
@@ -415,13 +413,12 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                           Parcelas
                         </Button>
                         {!isReadOnly && transaction.formaPagamento === "a_definir" &&
-                          transaction.status !== EDespesaStatus.Concluida &&
                           transaction.status !== EDespesaStatus.Cancelada && (
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleOpenModalEditFormaPagamento(transaction)}
-                            disabled={isUpdating}
+                            disabled={isUpdatingFormaPagamento}
                           >
                             Pagamento
                           </Button>
@@ -575,8 +572,8 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                 ]}
               />
               <div className="flex gap-2">
-                <Button disabled={isUpdating || !novaFormaPagamento} className="flex-1">
-                  {isUpdating ? "Salvando..." : "Confirmar"}
+                <Button disabled={isUpdatingFormaPagamento || !novaFormaPagamento} className="flex-1">
+                  {isUpdatingFormaPagamento ? "Salvando..." : "Confirmar"}
                 </Button>
                 <Button
                   variant="outline"

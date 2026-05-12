@@ -446,18 +446,7 @@ export default function FormOrderService({
       tx: (typeof linkedTransactions)[number];
       novaFormaPagamento: string;
     }) =>
-      FinancialTransactionService.update(tx.id!, {
-        nomeDespesa: tx.nomeDespesa,
-        valores: tx.valores,
-        tipo: tx.tipo,
-        formaPagamento: novaFormaPagamento,
-        conta: tx.conta,
-        dataVencimento: tx.dataVencimento,
-        status: tx.status,
-        descricao: tx.descricao,
-        observacoes: tx.observacoes,
-        tipoDocumento: tx.tipoDocumento,
-      }),
+      FinancialTransactionService.updateFormaPagamento(tx.id!, novaFormaPagamento),
     onSuccess: () => {
       queryClient.invalidateQueries(["transactionsByOS", data?.id]);
       setEditingTxId(null);

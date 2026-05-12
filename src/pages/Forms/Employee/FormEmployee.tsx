@@ -13,6 +13,7 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import { ChromePicker } from "react-color";
 import { getRoleOptionsForEmployeeForm } from "../../../services/util/roleOptions";
 import { getUserRoleFromToken, userHasRole, USER_ROLES } from "../../../services/util/rolePermissions";
+import { useCepLookup } from "../../../hooks/useCepLookup";
 
 interface FormEmployeeProps {
   data?: EmployeeResponseDto;
@@ -25,6 +26,7 @@ export default function FormEmployee({
   edit,
   closeModal,
 }: FormEmployeeProps) {
+  const { fetchCep, cepLoading } = useCepLookup();
   // Função para converter data ISO para formato brasileiro DD/MM/YYYY
   const formatDateToBrazilian = (isoDate: string): string => {
     if (!isoDate) return "";
@@ -86,6 +88,16 @@ export default function FormEmployee({
   });
   const [color, setColor] = useState<string>(data?.cor ?? "#000000");
   const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // Estado local para campos de endereço (o backend recebe endereco como string)
+  const [enderecoFields, setEnderecoFields] = useState({
+    cep: "",
+    rua: "",
+    numero: "",
+    bairro: "",
+    cidade: "",
+    estado: "",
+  });
 
   const [optionsFilial, setOptionsFilial] = useState<
     { label: string; value: string }[]
@@ -250,6 +262,20 @@ export default function FormEmployee({
         "0"
       )}-${day.padStart(2, "0")}`;
     }
+
+    // Monta string de endereço a partir dos campos visuais
+    const partes = [
+      enderecoFields.rua,
+      enderecoFields.numero ? `nº ${enderecoFields.numero}` : "",
+      enderecoFields.bairro,
+      enderecoFields.cidade,
+      enderecoFields.estado,
+      enderecoFields.cep,
+    ].filter(Boolean);
+    if (partes.length > 0) {
+      formData.endereco = partes.join(", ");
+    }
+
     mutation.mutate(formData);
   };
 
@@ -436,11 +462,79 @@ export default function FormEmployee({
                 />
               </div>
               <div>
-                <Label>Endereço</Label>
+                <Label>CEP</Label>
+                <div className="relative">
+                  <InputMask
+                    mask="99999-999"
+                    maskChar=""
+                    name="cep"
+                    value={enderecoFields.cep}
+                    onChange={async (e) => {
+                      const cep = e.target.value;
+                      setEnderecoFields((prev) => ({ ...prev, cep }));
+                      if (cep.replace(/\D/g, "").length === 8) {
+                        const fields = await fetchCep(cep);
+                        if (fields) {
+                          setEnderecoFields((prev) => ({
+                            ...prev,
+                            cep,
+                            rua: fields.rua,
+                            bairro: fields.bairro,
+                            cidade: fields.cidade,
+                            estado: fields.estado,
+                          }));
+                        }
+                      }
+                    }}
+                    onKeyPress={handleKeyPress}
+                    placeholder="00000-000"
+                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+                  />
+                  {cepLoading && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500">
+                      Buscando...
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <Label>Rua</Label>
                 <Input
-                  name="endereco"
-                  value={formData.endereco}
-                  onChange={handleChange}
+                  type="text"
+                  value={enderecoFields.rua}
+                  onChange={(e) => setEnderecoFields((prev) => ({ ...prev, rua: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Número</Label>
+                <Input
+                  type="text"
+                  value={enderecoFields.numero}
+                  onChange={(e) => setEnderecoFields((prev) => ({ ...prev, numero: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Bairro</Label>
+                <Input
+                  type="text"
+                  value={enderecoFields.bairro}
+                  onChange={(e) => setEnderecoFields((prev) => ({ ...prev, bairro: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Cidade</Label>
+                <Input
+                  type="text"
+                  value={enderecoFields.cidade}
+                  onChange={(e) => setEnderecoFields((prev) => ({ ...prev, cidade: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Estado</Label>
+                <Input
+                  type="text"
+                  value={enderecoFields.estado}
+                  onChange={(e) => setEnderecoFields((prev) => ({ ...prev, estado: e.target.value }))}
                 />
               </div>
               <div>

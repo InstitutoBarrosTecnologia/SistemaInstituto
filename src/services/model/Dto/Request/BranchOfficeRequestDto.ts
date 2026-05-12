@@ -7,6 +7,9 @@ export interface BranchOfficeRequestDto extends BaseRequestDto {
         rua: string;
         cep: string;
         numero: string;
+        bairro?: string;
+        cidade?: string;
+        estado?: string;
     };
     matriz: boolean;
     idGerenteFilial?: string;

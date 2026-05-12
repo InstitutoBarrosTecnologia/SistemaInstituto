@@ -95,8 +95,36 @@ export const FinancialTransactionService = {
             const response = await instanceApi.put<FinancialTransactionResponseDto>(`/transactions/${id}`, data);
             return response.data;
         } catch (error: any) {
-            // Propagar o erro original para que o componente possa tratá-lo adequadamente
-            throw error;
+            const responseData = error.response?.data;
+            if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].errorMensagem) {
+                throw new Error(responseData[0].errorMensagem);
+            }
+            if (typeof responseData === "string" && responseData) {
+                throw new Error(responseData);
+            }
+            throw new Error("Erro ao atualizar transação");
+        }
+    },
+
+    /**
+     * Atualizar apenas a forma de pagamento (somente quando estiver como 'a_definir')
+     */
+    async updateFormaPagamento(id: string, formaPagamento: string): Promise<FinancialTransactionResponseDto> {
+        try {
+            const response = await instanceApi.patch<FinancialTransactionResponseDto>(
+                `/transactions/${id}/forma-pagamento`,
+                { formaPagamento }
+            );
+            return response.data;
+        } catch (error: any) {
+            const responseData = error.response?.data;
+            if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].errorMensagem) {
+                throw new Error(responseData[0].errorMensagem);
+            }
+            if (typeof responseData === "string" && responseData) {
+                throw new Error(responseData);
+            }
+            throw new Error("Erro ao atualizar forma de pagamento");
         }
     },
 

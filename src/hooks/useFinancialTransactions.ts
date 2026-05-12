@@ -78,6 +78,19 @@ export const useFinancialTransactions = (filters?: TransactionFilters) => {
         }
     });
 
+    // Mutation para atualizar forma de pagamento
+    const updateFormaPagamentoMutation = useMutation({
+        mutationFn: ({ id, formaPagamento }: { id: string; formaPagamento: string }) =>
+            FinancialTransactionService.updateFormaPagamento(id, formaPagamento),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
+            toast.success('Forma de pagamento atualizada com sucesso!');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || 'Erro ao atualizar forma de pagamento');
+        }
+    });
+
     return {
         // Data
         transactions,
@@ -89,14 +102,17 @@ export const useFinancialTransactions = (filters?: TransactionFilters) => {
         refetch,
         createTransaction: createMutation.mutate,
         updateTransaction: updateMutation.mutate,
+        updateTransactionAsync: updateMutation.mutateAsync,
         updateTransactionStatus: updateStatusMutation.mutate,
         deleteTransaction: deleteMutation.mutate,
-        
+        updateFormaPagamentoAsync: updateFormaPagamentoMutation.mutateAsync,
+
         // Mutation states
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
         isUpdatingStatus: updateStatusMutation.isPending,
-        isDeleting: deleteMutation.isPending
+        isDeleting: deleteMutation.isPending,
+        isUpdatingFormaPagamento: updateFormaPagamentoMutation.isPending,
     };
 };
 

@@ -10,6 +10,7 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import Select from "../../../components/form/Select";
 import InputMask from "react-input-mask";
 import EmployeeService from "../../../services/service/EmployeeService";
+import { useCepLookup } from "../../../hooks/useCepLookup";
 
 interface FormBranchOfficeProps {
   data?: BranchOfficeRequestDto;
@@ -18,6 +19,7 @@ interface FormBranchOfficeProps {
 }
 
 export default function FormBranchOffice({ data, edit, closeModal }: FormBranchOfficeProps) {
+  const { fetchCep, cepLoading } = useCepLookup();
   const [formData, setFormData] = useState<BranchOfficeRequestDto>({
     id: edit && data?.id ? data.id : undefined,
     nomeFilial: data?.nomeFilial ?? "",
@@ -26,6 +28,9 @@ export default function FormBranchOffice({ data, edit, closeModal }: FormBranchO
       rua: data?.endereco?.rua ?? "",
       numero: data?.endereco?.numero ?? "",
       cep: data?.endereco?.cep ?? "",
+      bairro: data?.endereco?.bairro ?? "",
+      cidade: data?.endereco?.cidade ?? "",
+      estado: data?.endereco?.estado ?? "",
     },
     matriz: data?.matriz ?? false,
     idGerenteFilial: data?.idGerenteFilial ?? undefined,
@@ -95,7 +100,7 @@ export default function FormBranchOffice({ data, edit, closeModal }: FormBranchO
   const handleChange = (e: React.ChangeEvent<any>) => {
     const { name, value } = e.target;
 
-    if (["rua", "numero", "cep"].includes(name)) {
+    if (["rua", "numero", "cep", "bairro", "cidade", "estado"].includes(name)) {
       setFormData((prev) => ({
         ...prev,
         endereco: {
@@ -139,6 +144,48 @@ export default function FormBranchOffice({ data, edit, closeModal }: FormBranchO
                 <Input type="text" placeholder="Nome da filial" name="nomeFilial" value={formData.nomeFilial} onChange={handleChange} required />
               </div>
               <div>
+                <Label>CEP<span className="text-red-500">*</span></Label>
+                <div className="relative">
+                  <InputMask
+                    mask="99999-999"
+                    maskChar=""
+                    name="cep"
+                    value={formData.endereco.cep}
+                    onChange={async (e) => {
+                      const cep = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        endereco: { ...prev.endereco, cep },
+                      }));
+                      if (cep.replace(/\D/g, "").length === 8) {
+                        const fields = await fetchCep(cep);
+                        if (fields) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            endereco: {
+                              ...prev.endereco,
+                              cep,
+                              rua: fields.rua,
+                              bairro: fields.bairro,
+                              cidade: fields.cidade,
+                              estado: fields.estado,
+                            },
+                          }));
+                        }
+                      }
+                    }}
+                    placeholder="00000-000"
+                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                    required
+                  />
+                  {cepLoading && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500">
+                      Buscando...
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div>
                 <Label>Logradouro<span className="text-red-500">*</span></Label>
                 <Input type="text" placeholder="Rua instituto barros, Jardins" name="rua" value={formData.endereco.rua} onChange={handleChange} required />
               </div>
@@ -147,17 +194,16 @@ export default function FormBranchOffice({ data, edit, closeModal }: FormBranchO
                 <Input type="text" min="0" placeholder="900" name="numero" value={formData.endereco.numero} onChange={handleChange} required />
               </div>
               <div>
-                <Label>CEP<span className="text-red-500">*</span></Label>
-                <InputMask
-                  mask="99999-999"
-                  maskChar=""
-                  name="cep"
-                  value={formData.endereco.cep}
-                  onChange={handleChange}
-                  placeholder="00000-000"
-                  className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
-                  required
-                />
+                <Label>Bairro</Label>
+                <Input type="text" name="bairro" value={formData.endereco.bairro ?? ""} onChange={handleChange} />
+              </div>
+              <div>
+                <Label>Cidade</Label>
+                <Input type="text" name="cidade" value={formData.endereco.cidade ?? ""} onChange={handleChange} />
+              </div>
+              <div>
+                <Label>Estado</Label>
+                <Input type="text" name="estado" value={formData.endereco.estado ?? ""} onChange={handleChange} />
               </div>
             </div>
             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">

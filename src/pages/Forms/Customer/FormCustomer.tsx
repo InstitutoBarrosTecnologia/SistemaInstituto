@@ -11,6 +11,7 @@ import { postCustomerAsync, putCustomerAsync } from "../../../services/service/C
 import toast, { Toaster } from "react-hot-toast";
 import InputMask from "react-input-mask";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/ui/table";
+import { useCepLookup } from "../../../hooks/useCepLookup";
 
 interface FormCustomerProps {
   data?: CustomerRequestDto;
@@ -21,6 +22,7 @@ interface FormCustomerProps {
 
 export default function FormCustomer({ data, edit, closeModal, onSuccess }: FormCustomerProps) {
   const [historicoTemp, setHistoricoTemp] = useState("");
+  const { fetchCep, cepLoading } = useCepLookup();
 
   // Função para converter data ISO para formato brasileiro DD/MM/YYYY
   const formatDateToBrazilian = (isoDate: string): string => {
@@ -421,6 +423,49 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                 <h5 className="mb-3 text-lg font-medium text-gray-800 dark:text-white/90">Endereço</h5>
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div>
+                    <Label>CEP</Label>
+                    <div className="relative">
+                      <InputMask
+                        mask="99999-999"
+                        maskChar=""
+                        name="cep"
+                        value={formData.endereco?.cep ?? ""}
+                        onChange={async (e) => {
+                          const cep = e.target.value;
+                          setFormData((prev) => ({
+                            ...prev,
+                            endereco: { ...prev.endereco!, cep },
+                          }));
+                          if (cep.replace(/\D/g, "").length === 8) {
+                            const fields = await fetchCep(cep);
+                            if (fields) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                endereco: {
+                                  ...prev.endereco!,
+                                  cep,
+                                  rua: fields.rua,
+                                  bairro: fields.bairro,
+                                  cidade: fields.cidade,
+                                  estado: fields.estado,
+                                },
+                              }));
+                            }
+                          }
+                        }}
+                        onKeyPress={handleKeyPress}
+                        placeholder="00000-000"
+                        className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
+                      />
+                      {cepLoading && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500">
+                          Buscando...
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
                     <Label>Rua</Label>
                     <Input
                       type="text"
@@ -487,25 +532,6 @@ export default function FormCustomer({ data, edit, closeModal, onSuccess }: Form
                           endereco: { ...prev.endereco!, estado: e.target.value },
                         }))
                       }
-                    />
-                  </div>
-
-                  <div>
-                    <Label>CEP</Label>
-                    <InputMask
-                      mask="99999-999"
-                      maskChar=""
-                      name="cep"
-                      value={formData.endereco?.cep ?? ""}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          endereco: { ...prev.endereco!, cep: e.target.value },
-                        }))
-                      }
-                      onKeyPress={handleKeyPress}
-                      placeholder="00000-000"
-                      className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900  dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90  dark:focus:border-brand-800"
                     />
                   </div>
                 </div>
