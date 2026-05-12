@@ -3,8 +3,11 @@ import * as XLSX from "xlsx";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { getAllSchedulesAsync } from "../../services/service/ScheduleService";
+import { getAllCustomersAsync } from "../../services/service/CustomerService";
+import { EmployeeService } from "../../services/service/EmployeeService";
 import { ScheduleResponseDto } from "../../services/model/Dto/Response/ScheduleResponseDto";
 import { useSortedPaginated, ColDef } from "../../hooks/useSortedPaginated";
+import SelectWithSearch, { Option } from "../../components/form/SelectWithSearch";
 
 const STATUS_MAP: Record<number, string> = {
   0: "A Confirmar", 1: "Finalizado", 2: "Confirmado pelo Paciente", 3: "Em Espera",
@@ -80,6 +83,8 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
 
 export default function RelatorioAgenda() {
   const [items, setItems] = useState<S[]>([]);
+  const [optionsCliente, setOptionsCliente]         = useState<Option[]>([]);
+  const [optionsFuncionario, setOptionsFuncionario] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,9 +99,9 @@ export default function RelatorioAgenda() {
   const [statusFiltro, setStatusFiltro] = useState<string>("");
 
   // Filtros client-side
-  const [searchTitulo, setSearchTitulo] = useState("");
-  const [searchPaciente, setSearchPaciente] = useState("");
-  const [searchFisio, setSearchFisio] = useState("");
+  const [searchTitulo,    setSearchTitulo]    = useState("");
+  const [clienteId,       setClienteId]       = useState("");
+  const [funcionarioId,   setFuncionarioId]   = useState("");
   const [apenasAvaliacao, setApenasAvaliacao] = useState(false);
 
   const buscar = useCallback(async () => {
@@ -118,19 +123,41 @@ export default function RelatorioAgenda() {
 
   useEffect(() => { buscar(); }, []);
 
+  // Carrega listas de suporte uma única vez
+  useEffect(() => {
+    getAllCustomersAsync()
+      .then((res) => {
+        if (Array.isArray(res))
+          setOptionsCliente(
+            res.filter((c) => c.id && c.nome)
+               .map((c) => ({ value: c.id!, label: c.nome! }))
+               .sort((a, b) => a.label.localeCompare(b.label))
+          );
+      })
+      .catch(() => {});
+
+    EmployeeService.getAll()
+      .then((res) => {
+        if (Array.isArray(res))
+          setOptionsFuncionario(
+            res.filter((e) => e.id && e.nome)
+               .map((e) => ({ value: e.id!, label: e.nome! }))
+          );
+      })
+      .catch(() => {});
+  }, []);
+
   const itensFiltrados = useMemo(() => {
-    const tituloQ    = searchTitulo.trim().toLowerCase();
-    const pacienteQ  = searchPaciente.trim().toLowerCase();
-    const fisioQ     = searchFisio.trim().toLowerCase();
+    const tituloQ = searchTitulo.trim().toLowerCase();
 
     return items.filter((s) => {
       if (apenasAvaliacao && !s.isAvaliacao) return false;
-      if (tituloQ   && !(s.titulo ?? "").toLowerCase().includes(tituloQ))               return false;
-      if (pacienteQ && !(s.cliente?.nome ?? "").toLowerCase().includes(pacienteQ))       return false;
-      if (fisioQ    && !(s.funcionario?.nome ?? "").toLowerCase().includes(fisioQ))      return false;
+      if (tituloQ      && !(s.titulo ?? "").toLowerCase().includes(tituloQ)) return false;
+      if (clienteId    && s.clienteId     !== clienteId)    return false;
+      if (funcionarioId && s.funcionarioId !== funcionarioId) return false;
       return true;
     });
-  }, [items, searchTitulo, searchPaciente, searchFisio, apenasAvaliacao]);
+  }, [items, searchTitulo, clienteId, funcionarioId, apenasAvaliacao]);
 
   const { sorted, paginated, sort, toggleSort, page, setPage, totalPages } = useSortedPaginated<S>(
     itensFiltrados, COLS, { key: "dataInicio", direction: "desc" }
@@ -255,13 +282,23 @@ export default function RelatorioAgenda() {
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Título</label>
               <input type="text" className={inputClass} placeholder="Buscar por título..." value={searchTitulo} onChange={(e) => setSearchTitulo(e.target.value)} />
             </div>
-            <div className="flex flex-col gap-1 min-w-[180px]">
+            <div className="flex flex-col gap-1 min-w-[220px]">
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Paciente</label>
-              <input type="text" className={inputClass} placeholder="Nome do paciente..." value={searchPaciente} onChange={(e) => setSearchPaciente(e.target.value)} />
+              <SelectWithSearch
+                options={optionsCliente}
+                value={clienteId}
+                onChange={setClienteId}
+                placeholder="Buscar paciente..."
+              />
             </div>
-            <div className="flex flex-col gap-1 min-w-[180px]">
+            <div className="flex flex-col gap-1 min-w-[220px]">
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Fisioterapeuta</label>
-              <input type="text" className={inputClass} placeholder="Nome do fisioterapeuta..." value={searchFisio} onChange={(e) => setSearchFisio(e.target.value)} />
+              <SelectWithSearch
+                options={optionsFuncionario}
+                value={funcionarioId}
+                onChange={setFuncionarioId}
+                placeholder="Buscar fisioterapeuta..."
+              />
             </div>
             <div className="flex items-end pb-0.5">
               <label className="flex items-center gap-2 cursor-pointer select-none">
