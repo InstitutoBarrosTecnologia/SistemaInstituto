@@ -4,6 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import TransactionsMetrics from "../../components/ecommerce/TransactionsMetrics";
 import PieChartGeneric from "../../components/ecommerce/PieChartGeneric";
 import BarChartGeneric from "../../components/ecommerce/BarChartGeneric";
+import DashboardFilters, { DashboardFilterValues } from "../../components/common/DashboardFilters";
 import { useEntradaSaida } from "../../hooks/useEntradaSaida";
 import { useTiposPagamento } from "../../hooks/useTiposPagamento";
 import { useTransacoesPorUnidade } from "../../hooks/useTransacoesPorUnidade";
@@ -17,13 +18,22 @@ export default function Home() {
     graficos: true,
   });
 
+  const [filters, setFilters] = useState<DashboardFilterValues>({ periodo: "mes" });
+
   // Hook para dados de entrada e saída da API
   const {
     data: entradaSaidaData,
     loading: loadingEntradaSaida,
     error: errorEntradaSaida,
     refetch: refetchEntradaSaida,
-  } = useEntradaSaida({ periodo: "mes" });
+  } = useEntradaSaida({
+    periodo: filters.periodo,
+    dataInicio: filters.dataInicio,
+    dataFim: filters.dataFim,
+    filialId: filters.filialId,
+    formaPagamento: filters.formaPagamento,
+    funcionarioId: filters.funcionarioId,
+  });
 
   // Hook para dados de tipos de pagamento da API
   const {
@@ -31,7 +41,14 @@ export default function Home() {
     loading: loadingTiposPagamento,
     error: errorTiposPagamento,
     refetch: refetchTiposPagamento,
-  } = useTiposPagamento({ periodo: "mes" });
+  } = useTiposPagamento({
+    periodo: filters.periodo,
+    dataInicio: filters.dataInicio,
+    dataFim: filters.dataFim,
+    filialId: filters.filialId,
+    formaPagamento: filters.formaPagamento,
+    funcionarioId: filters.funcionarioId,
+  });
 
   // Hook para dados de transações por unidade da API
   const {
@@ -39,7 +56,14 @@ export default function Home() {
     loading: loadingUnidadeTransacao,
     error: errorUnidadeTransacao,
     refetch: refetchUnidadeTransacao,
-  } = useTransacoesPorUnidade({ periodo: "mes" });
+  } = useTransacoesPorUnidade({
+    periodo: filters.periodo,
+    dataInicio: filters.dataInicio,
+    dataFim: filters.dataFim,
+    filialId: filters.filialId,
+    formaPagamento: filters.formaPagamento,
+    funcionarioId: filters.funcionarioId,
+  });
 
   // Hook para dados de faturamento mensal da API
   const {
@@ -47,7 +71,7 @@ export default function Home() {
     loading: loadingFaturamentoMensal,
     error: errorFaturamentoMensal,
     refetch: refetchFaturamentoMensal,
-  } = useFaturamentoMensal(new Date().getFullYear());
+  } = useFaturamentoMensal(new Date().getFullYear(), filters.filialId);
 
   // Hook para dados de faturamento por categoria de serviço
   const {
@@ -55,7 +79,14 @@ export default function Home() {
     loading: loadingCategoria,
     error: errorCategoria,
     refetch: refetchCategoria,
-  } = useFaturamentoPorCategoriaServico({ periodo: "mes" });
+  } = useFaturamentoPorCategoriaServico({
+    periodo: filters.periodo,
+    dataInicio: filters.dataInicio,
+    dataFim: filters.dataFim,
+    filialId: filters.filialId,
+    formaPagamento: filters.formaPagamento,
+    funcionarioId: filters.funcionarioId,
+  });
 
   // Hook para dados de faturamento comparativo da API
   const {
@@ -63,7 +94,7 @@ export default function Home() {
     loading: loadingFaturamentoComparativo,
     error: errorFaturamentoComparativo,
     refetch: refetchFaturamentoComparativo,
-  } = useFaturamentoComparativo();
+  } = useFaturamentoComparativo({ filialId: filters.filialId });
 
   // Função para atualizar dados de entrada e saída
   const handleRefreshEntradaSaida = () => {
@@ -134,7 +165,15 @@ export default function Home() {
         title="Sistema Instituto Barros"
         description="Dashboard do Sistema Instituto Barros"
       />
-      <TransactionsMetrics />
+      <DashboardFilters variant="financeiro" onChange={setFilters} />
+      <TransactionsMetrics filters={{
+        periodo: filters.periodo,
+        dataInicio: filters.dataInicio,
+        dataFim: filters.dataFim,
+        filialId: filters.filialId,
+        formaPagamento: filters.formaPagamento,
+        funcionarioId: filters.funcionarioId,
+      }} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-8">
         <div>
           {errorEntradaSaida ? (

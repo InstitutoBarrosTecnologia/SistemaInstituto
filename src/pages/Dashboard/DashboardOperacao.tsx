@@ -14,9 +14,13 @@ import UnidadesPieChart from "../../components/ecommerce/UnidadesPieChart";
 import FisioterapeutasBarChart from "../../components/ecommerce/FisioterapeutasBarChart";
 import ServicosPieChart from "../../components/ecommerce/ServicosPieChart";
 import PatologiasPieChart from "../../components/ecommerce/PatologiasPieChart";
+import DashboardFilters, { DashboardFilterValues } from "../../components/common/DashboardFilters";
 import { useDashboard } from "../../hooks/useDashboard";
+import { useState } from "react";
 
 export default function DashboardOperacao() {
+  const [filters, setFilters] = useState<DashboardFilterValues>({ periodo: "mes" });
+
   const {
     pacientesAtivos,
     agendamentosMes,
@@ -39,7 +43,13 @@ export default function DashboardOperacao() {
     error,
     isLoading,
     recarregarDados,
-  } = useDashboard();
+  } = useDashboard({
+    periodo: filters.periodo,
+    dataInicio: filters.dataInicio,
+    dataFim: filters.dataFim,
+    filialId: filters.filialId,
+    funcionarioId: filters.funcionarioId,
+  });
 
   // Função para renderizar badge com variação
   const renderVariacaoBadge = (variacao: number) => {
@@ -104,6 +114,8 @@ export default function DashboardOperacao() {
             </div>
           )}
         </div>
+
+        <DashboardFilters variant="operacional" onChange={setFilters} />
 
         {/* Primeira linha de indicadores */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">

@@ -35,7 +35,9 @@ export function useTiposPagamento(filters: DashboardFilterRequestDto = {}): UseT
     filters.periodo,
     filters.dataInicio, 
     filters.dataFim,
-    filters.filialId
+    filters.filialId,
+    filters.formaPagamento,
+    filters.funcionarioId,
   ]);
 
   const refetch = () => {

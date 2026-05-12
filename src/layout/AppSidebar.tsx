@@ -152,6 +152,50 @@ const allNavItems: NavItem[] = [
     permissions: MENU_PERMISSIONS.LOGS,
   },
   {
+    icon: <PaperPlaneIcon />,
+    name: "E-mail",
+    permissions: MENU_PERMISSIONS.EMAIL,
+    subItems: [
+      {
+        name: "Configurações",
+        path: "/email/configuracoes",
+        pro: false,
+        permissions: MENU_PERMISSIONS.EMAIL_CONFIGURACOES,
+      },
+      {
+        name: "Disparar",
+        path: "/email/disparar",
+        pro: false,
+        permissions: MENU_PERMISSIONS.EMAIL_DISPARAR,
+      },
+    ],
+  },
+  {
+    icon: <DocsIcon />,
+    name: "Relatórios",
+    permissions: MENU_PERMISSIONS.RELATORIOS,
+    subItems: [
+      {
+        name: "Agenda",
+        path: "/relatorios/agenda",
+        pro: false,
+        permissions: MENU_PERMISSIONS.RELATORIO_AGENDA,
+      },
+      {
+        name: "Financeiro",
+        path: "/relatorios/financeiro",
+        pro: false,
+        permissions: MENU_PERMISSIONS.RELATORIO_FINANCEIRO,
+      },
+      {
+        name: "Operacional",
+        path: "/relatorios/operacional",
+        pro: false,
+        permissions: MENU_PERMISSIONS.RELATORIO_OPERACIONAL,
+      },
+    ],
+  },
+  {
     icon: <GridIcon />,
     name: "Dashboard",
     permissions: MENU_PERMISSIONS.DASHBOARD,

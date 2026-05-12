@@ -28,7 +28,7 @@ export const useFaturamentoPorCategoriaServico = (filters: DashboardFilterReques
 
   useEffect(() => {
     fetchData();
-  }, [filters.periodo, filters.dataInicio, filters.dataFim, filters.filialId]);
+  }, [filters.periodo, filters.dataInicio, filters.dataFim, filters.filialId, filters.formaPagamento, filters.funcionarioId]);
 
   return {
     data,

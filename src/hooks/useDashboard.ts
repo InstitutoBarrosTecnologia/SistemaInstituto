@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import DashboardService from '../services/service/DashboardService';
 import {
   DashboardState,
@@ -48,8 +48,10 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
     error: null,
   });
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Carregar todos os dados
-  const carregarDados = async () => {
+  const carregarDados = useCallback(async () => {
     try {
       setState(prev => ({
         ...prev,
@@ -168,12 +170,26 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
         error: error instanceof Error ? error.message : 'Erro desconhecido',
       }));
     }
-  };
+  }, [
+    filter.periodo,
+    filter.dataInicio,
+    filter.dataFim,
+    filter.filialId,
+    filter.funcionarioId,
+  ]);
 
-  // Carregar dados na montagem do componente
+  // Carregar dados na montagem do componente e quando o filtro mudar (debounced 400ms)
   useEffect(() => {
-    carregarDados();
-  }, []);
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      carregarDados();
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [carregarDados]);
 
   return {
     ...state,

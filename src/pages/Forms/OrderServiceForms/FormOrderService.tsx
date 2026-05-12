@@ -86,6 +86,10 @@ export default function FormOrderService({
   const [totalComGanhoInput, setTotalComGanhoInput] = useState<string>("");
   const [descontoPercentualInput, setDescontoPercentualInput] = useState<string>("");
   const [descontoReaisInput, setDescontoReaisInput] = useState<string>("");
+  // Inline edit forma de pagamento de transações vinculadas
+  const [editingTxId, setEditingTxId] = useState<string | null>(null);
+  const [editingFormaPagamento, setEditingFormaPagamento] = useState<string>("");
+
   // Mixed payment
   const [mixedPayment, setMixedPayment] = useState<boolean>(false);
   const [downPaymentAmount, setDownPaymentAmount] = useState<number>(0);
@@ -433,6 +437,35 @@ export default function FormOrderService({
     },
     onError: () => {
       toast.error("Erro ao atualizar status da transação.");
+    },
+  });
+
+  // Mutation to update formaPagamento of a linked transaction
+  const mutationUpdateFormaPagamento = useMutation({
+    mutationFn: ({ tx, novaFormaPagamento }: {
+      tx: (typeof linkedTransactions)[number];
+      novaFormaPagamento: string;
+    }) =>
+      FinancialTransactionService.update(tx.id!, {
+        nomeDespesa: tx.nomeDespesa,
+        valores: tx.valores,
+        tipo: tx.tipo,
+        formaPagamento: novaFormaPagamento,
+        conta: tx.conta,
+        dataVencimento: tx.dataVencimento,
+        status: tx.status,
+        descricao: tx.descricao,
+        observacoes: tx.observacoes,
+        tipoDocumento: tx.tipoDocumento,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["transactionsByOS", data?.id]);
+      setEditingTxId(null);
+      setEditingFormaPagamento("");
+      toast.success("Forma de pagamento atualizada!");
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar forma de pagamento.");
     },
   });
 
@@ -1430,7 +1463,10 @@ export default function FormOrderService({
                               {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(tx.valores)}
                             </span>
                             <span>
-                              <strong>Pagamento:</strong> {tx.formaPagamento ?? "—"}
+                              <strong>Pagamento:</strong>{" "}
+                              {tx.formaPagamento === "a_definir"
+                                ? <span className="text-orange-500 font-semibold">A definir</span>
+                                : tx.formaPagamento ?? "—"}
                             </span>
                             <span>
                               <strong>Conta:</strong> {tx.conta ?? "—"}
@@ -1442,8 +1478,66 @@ export default function FormOrderService({
                                 : "—"}
                             </span>
                           </div>
+
+                          {/* Inline forma de pagamento editor */}
+                          {editingTxId === tx.id && (
+                            <div className="mb-3 p-2 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700">
+                              <p className="text-xs font-medium text-yellow-800 dark:text-yellow-300 mb-2">
+                                Selecione a forma de pagamento:
+                              </p>
+                              <select
+                                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-white px-2 py-1.5 mb-2"
+                                value={editingFormaPagamento}
+                                onChange={(e) => setEditingFormaPagamento(e.target.value)}
+                              >
+                                <option value="">Selecione...</option>
+                                <option value="pix">PIX à Vista</option>
+                                <option value="boleto">Boleto</option>
+                                <option value="credito">Cartão de Crédito</option>
+                                <option value="debito">Cartão de Débito</option>
+                                <option value="dinheiro">Dinheiro</option>
+                                <option value="transferencia">Transferência</option>
+                              </select>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  disabled={!editingFormaPagamento || mutationUpdateFormaPagamento.isPending}
+                                  onClick={() =>
+                                    mutationUpdateFormaPagamento.mutate({
+                                      tx,
+                                      novaFormaPagamento: editingFormaPagamento,
+                                    })
+                                  }
+                                  className="flex-1 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white text-xs font-medium py-1.5 transition"
+                                >
+                                  {mutationUpdateFormaPagamento.isPending ? "Salvando..." : "Confirmar"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingTxId(null); setEditingFormaPagamento(""); }}
+                                  className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 text-xs font-medium py-1.5 transition hover:bg-gray-50 dark:hover:bg-gray-700"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
                           {!isFinal && tx.id && (
                             <div className="flex gap-2">
+                              {tx.formaPagamento === "a_definir" && editingTxId !== tx.id && (
+                                <button
+                                  type="button"
+                                  disabled={isPending || mutationUpdateFormaPagamento.isPending}
+                                  onClick={() => {
+                                    setEditingTxId(tx.id!);
+                                    setEditingFormaPagamento("");
+                                  }}
+                                  className="flex-1 rounded-md bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-xs font-medium py-1.5 transition"
+                                >
+                                  Editar Pagamento
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 disabled={isPending}

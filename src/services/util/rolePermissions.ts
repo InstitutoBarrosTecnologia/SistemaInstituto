@@ -177,6 +177,50 @@ export const MENU_PERMISSIONS = {
   // Gerenciar Check-ins - apenas Administradores
   GERENCIAR_CHECKINS: [
     USER_ROLES.ADMINISTRADOR
+  ],
+
+  // E-mail - módulo (Administrador e Administrativo)
+  EMAIL: [
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.ADMINISTRATIVO
+  ],
+
+  // E-mail - Configurações SMTP (apenas Administrador)
+  EMAIL_CONFIGURACOES: [
+    USER_ROLES.ADMINISTRADOR
+  ],
+
+  // E-mail - Disparar (Administrador e Administrativo)
+  EMAIL_DISPARAR: [
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.ADMINISTRATIVO
+  ],
+
+  // Relatórios - módulo
+  RELATORIOS: [
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.ADMINISTRATIVO,
+    USER_ROLES.FINANCEIRO
+  ],
+
+  // Relatório Agenda
+  RELATORIO_AGENDA: [
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.ADMINISTRATIVO,
+    USER_ROLES.FINANCEIRO
+  ],
+
+  // Relatório Financeiro
+  RELATORIO_FINANCEIRO: [
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.FINANCEIRO
+  ],
+
+  // Relatório Operacional
+  RELATORIO_OPERACIONAL: [
+    USER_ROLES.ADMINISTRADOR,
+    USER_ROLES.ADMINISTRATIVO,
+    USER_ROLES.FINANCEIRO
   ]
 } as const;
 

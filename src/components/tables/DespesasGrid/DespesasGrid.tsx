@@ -35,6 +35,8 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
   const [statusToUpdate, setStatusToUpdate] = useState<EDespesaStatus>(
     EDespesaStatus.Pendente
   );
+  const [editingFormaPagamentoTx, setEditingFormaPagamentoTx] = useState<any>(undefined);
+  const [novaFormaPagamento, setNovaFormaPagamento] = useState<string>("");
 
   const {
     isOpen: isOpenDelete,
@@ -51,6 +53,11 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
     openModal: openModalParcelas,
     closeModal: closeModalParcelas,
   } = useModal();
+  const {
+    isOpen: isOpenEditFormaPagamento,
+    openModal: openModalEditFormaPagamento,
+    closeModal: closeModalEditFormaPagamento,
+  } = useModal();
 
   // Usar o hook da nova API
   const {
@@ -58,8 +65,10 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
     isLoading,
     isError,
     updateTransactionStatus,
+    updateTransaction,
     deleteTransaction,
     isUpdatingStatus,
+    isUpdating,
     isDeleting,
   } = useFinancialTransactions(filters);
 
@@ -77,6 +86,34 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
   const handleOpenModalParcelas = (id: string) => {
     setSelectedTransactionId(id);
     openModalParcelas();
+  };
+
+  const handleOpenModalEditFormaPagamento = (transaction: any) => {
+    setEditingFormaPagamentoTx(transaction);
+    setNovaFormaPagamento("");
+    openModalEditFormaPagamento();
+  };
+
+  const handleSubmitEditFormaPagamento = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFormaPagamentoTx?.id || !novaFormaPagamento) return;
+    updateTransaction({
+      id: editingFormaPagamentoTx.id,
+      data: {
+        nomeDespesa: editingFormaPagamentoTx.nomeDespesa,
+        valores: editingFormaPagamentoTx.valores,
+        tipo: editingFormaPagamentoTx.tipo,
+        formaPagamento: novaFormaPagamento,
+        conta: editingFormaPagamentoTx.conta,
+        dataVencimento: editingFormaPagamentoTx.dataVencimento,
+        status: editingFormaPagamentoTx.status,
+        descricao: editingFormaPagamentoTx.descricao,
+        observacoes: editingFormaPagamentoTx.observacoes,
+        tipoDocumento: editingFormaPagamentoTx.tipoDocumento,
+      },
+    });
+    closeModalEditFormaPagamento();
+    setEditingFormaPagamentoTx(undefined);
   };
 
   const handleDeleteRegister = () => {
@@ -329,6 +366,18 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                         >
                           Parcelas
                         </Button>
+                        {transaction.formaPagamento === "a_definir" &&
+                          transaction.status !== EDespesaStatus.Concluida &&
+                          transaction.status !== EDespesaStatus.Cancelada && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOpenModalEditFormaPagamento(transaction)}
+                            disabled={isUpdating}
+                          >
+                            Pagamento
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -445,6 +494,51 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
       >
         <div className="no-scrollbar relative w-full max-w-[900px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <ModalParcelasContent transactionId={selectedTransactionId} />
+        </div>
+      </Modal>
+
+      {/* Modal de Edição de Forma de Pagamento */}
+      <Modal
+        isOpen={isOpenEditFormaPagamento}
+        onClose={closeModalEditFormaPagamento}
+        className="max-w-[480px] m-4"
+      >
+        <div className="no-scrollbar relative w-full max-w-[480px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-8">
+          <form onSubmit={handleSubmitEditFormaPagamento}>
+            <h3 className="mb-1 text-xl font-semibold text-gray-800 dark:text-white/90">
+              Definir Forma de Pagamento
+            </h3>
+            <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+              Transação: <strong>{editingFormaPagamentoTx?.nomeDespesa}</strong>
+            </p>
+            <div className="space-y-4">
+              <Select
+                value={novaFormaPagamento}
+                onChange={(value) => setNovaFormaPagamento(value)}
+                options={[
+                  { value: "", label: "Selecione..." },
+                  { value: "pix", label: "PIX à Vista" },
+                  { value: "boleto", label: "Boleto" },
+                  { value: "credito", label: "Cartão de Crédito" },
+                  { value: "debito", label: "Cartão de Débito" },
+                  { value: "dinheiro", label: "Dinheiro" },
+                  { value: "transferencia", label: "Transferência" },
+                ]}
+              />
+              <div className="flex gap-2">
+                <Button disabled={isUpdating || !novaFormaPagamento} className="flex-1">
+                  {isUpdating ? "Salvando..." : "Confirmar"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={closeModalEditFormaPagamento}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </form>
         </div>
       </Modal>
     </>

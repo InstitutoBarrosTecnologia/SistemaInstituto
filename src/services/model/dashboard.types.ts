@@ -6,6 +6,7 @@ export interface DashboardFilterRequestDto {
   dataFim?: string;
   filialId?: string;
   funcionarioId?: string;
+  formaPagamento?: string;
 }
 
 // Resposta para indicadores simples (pacientes ativos, avaliações executadas)

@@ -33,6 +33,8 @@ export function useFaturamento(filter: DashboardFilterRequestDto = {}) {
     filter.dataInicio,
     filter.dataFim,
     filter.filialId,
+    filter.formaPagamento,
+    filter.funcionarioId,
   ]);
 
   return {
@@ -70,6 +72,8 @@ export function useDespesas(filter: DashboardFilterRequestDto = {}) {
     filter.dataInicio,
     filter.dataFim,
     filter.filialId,
+    filter.formaPagamento,
+    filter.funcionarioId,
   ]);
 
   return {

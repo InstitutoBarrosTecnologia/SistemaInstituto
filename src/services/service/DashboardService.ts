@@ -271,6 +271,7 @@ class DashboardService {
     if (filter.dataInicio) params.append('dataInicio', filter.dataInicio);
     if (filter.dataFim) params.append('dataFim', filter.dataFim);
     if (filter.filialId) params.append('filialId', filter.filialId);
+    if (filter.formaPagamento) params.append('formaPagamento', filter.formaPagamento);
 
     try {
       const response = await instanceApi.get(
@@ -295,6 +296,7 @@ class DashboardService {
     if (filter.dataInicio) params.append('dataInicio', filter.dataInicio);
     if (filter.dataFim) params.append('dataFim', filter.dataFim);
     if (filter.filialId) params.append('filialId', filter.filialId);
+    if (filter.formaPagamento) params.append('formaPagamento', filter.formaPagamento);
 
     try {
       const response = await instanceApi.get(

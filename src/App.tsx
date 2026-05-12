@@ -34,6 +34,11 @@ import Historico from "./pages/Notificacoes/Historico";
 import Log from "./pages/Log/Log";
 import CustomerAccessPage from "./pages/CustomerAccess/CustomerAccess"; // TEMPORÁRIO - Sistema de acesso clientes
 import GerenciarCheckIns from "./pages/CheckIns/GerenciarCheckIns";
+import EmailConfigurationPage from "./pages/Email/EmailConfigurationPage";
+import EmailDispatchPage from "./pages/Email/EmailDispatchPage";
+import RelatorioAgenda from "./pages/Relatorios/RelatorioAgenda";
+import RelatorioFinanceiro from "./pages/Relatorios/RelatorioFinanceiro";
+import RelatorioOperacional from "./pages/Relatorios/RelatorioOperacional";
 
 
 export default function App() {
@@ -133,6 +138,50 @@ export default function App() {
           
 
 
+
+          {/* E-mail */}
+          <Route
+            path="/email/configuracoes"
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.EMAIL_CONFIGURACOES}>
+                <EmailConfigurationPage />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/email/disparar"
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.EMAIL_DISPARAR}>
+                <EmailDispatchPage />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* Relatórios */}
+          <Route
+            path="/relatorios/agenda"
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.RELATORIO_AGENDA}>
+                <RelatorioAgenda />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/relatorios/financeiro"
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.RELATORIO_FINANCEIRO}>
+                <RelatorioFinanceiro />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/relatorios/operacional"
+            element={
+              <RoleProtectedRoute requiredPermissions={MENU_PERMISSIONS.RELATORIO_OPERACIONAL}>
+                <RelatorioOperacional />
+              </RoleProtectedRoute>
+            }
+          />
 
           {/* Tables */}
           <Route path="/basic-tables" element={<BasicTables />} />
