@@ -99,13 +99,22 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
     isDeleting,
   } = useFinancialTransactions(filters);
 
-  const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil((transactions?.length ?? 0) / PAGE_SIZE));
-  const paginated = useMemo(() => {
+  // Filtragem local por clienteId e formaPagamento (não enviados ao backend)
+  const filteredTransactions = useMemo(() => {
     if (!transactions) return [];
+    return transactions.filter((tx) => {
+      if (filters?.clienteId && tx.cliente?.id !== filters.clienteId) return false;
+      if (filters?.formaPagamento && tx.formaPagamento !== filters.formaPagamento) return false;
+      return true;
+    });
+  }, [transactions, filters?.clienteId, filters?.formaPagamento]);
+
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
+  const paginated = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
-    return transactions.slice(start, start + PAGE_SIZE);
-  }, [transactions, page]);
+    return filteredTransactions.slice(start, start + PAGE_SIZE);
+  }, [filteredTransactions, page]);
 
   const handleOpenModalDelete = (id: string) => {
     setIdDeleteRegister(id);

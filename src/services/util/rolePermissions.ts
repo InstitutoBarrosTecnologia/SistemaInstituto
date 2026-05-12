@@ -179,10 +179,9 @@ export const MENU_PERMISSIONS = {
     USER_ROLES.ADMINISTRADOR
   ],
 
-  // E-mail - módulo (Administrador e Administrativo)
+  // E-mail - módulo (apenas Administrador)
   EMAIL: [
-    USER_ROLES.ADMINISTRADOR,
-    USER_ROLES.ADMINISTRATIVO
+    USER_ROLES.ADMINISTRADOR
   ],
 
   // E-mail - Configurações SMTP (apenas Administrador)
@@ -190,10 +189,9 @@ export const MENU_PERMISSIONS = {
     USER_ROLES.ADMINISTRADOR
   ],
 
-  // E-mail - Disparar (Administrador e Administrativo)
+  // E-mail - Disparar (apenas Administrador)
   EMAIL_DISPARAR: [
-    USER_ROLES.ADMINISTRADOR,
-    USER_ROLES.ADMINISTRATIVO
+    USER_ROLES.ADMINISTRADOR
   ],
 
   // Relatórios - módulo

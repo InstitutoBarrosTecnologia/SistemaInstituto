@@ -119,6 +119,9 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
                 response.forEach((err: { errorMensagem: string }) => {
                     toast.error(err.errorMensagem, { duration: 4000 });
                 });
+            } else if (response?.error) {
+                // 409 Conflict — mensagem estruturada do backend { error: "..." }
+                toast.error(response.error, { duration: 6000 });
             } else if (typeof response === "string") {
                 toast.error(response, { duration: 4000 });
             } else {
