@@ -5,7 +5,6 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { getAllOrderServicesAsync } from "../../services/service/OrderServiceService";
 import { getAllCategoriasAsync } from "../../services/service/ServiceCategoryService";
 import { getAllCustomersAsync } from "../../services/service/CustomerService";
-import { EmployeeService } from "../../services/service/EmployeeService";
 import { OrderServiceResponseDto } from "../../services/model/Dto/Response/OrderServiceResponseDto";
 import { CategoryServiceResponseDto } from "../../services/model/Dto/Response/CategoryServiceResponseDto";
 import { useSortedPaginated, ColDef } from "../../hooks/useSortedPaginated";
@@ -146,8 +145,8 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
 export default function RelatorioOperacional() {
   const [items, setItems] = useState<OS[]>([]);
   const [categorias, setCategorias] = useState<CategoryServiceResponseDto[]>([]);
-  const [optionsCliente, setOptionsCliente]       = useState<Option[]>([]);
-  const [optionsFuncionario, setOptionsFuncionario] = useState<Option[]>([]);
+  const [optionsCliente, setOptionsCliente]           = useState<Option[]>([]);
+  const [optionsCadastradoPor, setOptionsCadastradoPor] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -159,7 +158,7 @@ export default function RelatorioOperacional() {
   const [statusFiltro,    setStatusFiltro]    = useState<string>("");
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("");
   const [clienteId,       setClienteId]       = useState<string>("");
-  const [funcionarioId,   setFuncionarioId]   = useState<string>("");
+  const [cadastradoPorId, setCadastradoPorId] = useState<string>("");
 
   const limparFiltros = useCallback(() => {
     setDataInicio(mesAtualInicio());
@@ -167,7 +166,7 @@ export default function RelatorioOperacional() {
     setStatusFiltro("");
     setCategoriaFiltro("");
     setClienteId("");
-    setFuncionarioId("");
+    setCadastradoPorId("");
   }, []);
 
   const buscar = useCallback(async () => {
@@ -175,6 +174,24 @@ export default function RelatorioOperacional() {
     setError(null);
     try {
       const result = await getAllOrderServicesAsync();
+      
+      // Extrair lista única de usuários que cadastraram OSs (usando NOME como value e label)
+      if (Array.isArray(result)) {
+        const usuariosSet = new Set<string>();
+        result.forEach(os => {
+          const nomeUsuario = os.usrDescricaoCadastro ?? os.usrCadastroDesc;
+          if (nomeUsuario && nomeUsuario.trim() !== "") {
+            usuariosSet.add(nomeUsuario);
+          }
+        });
+        
+        const optionsUsuarios: Option[] = Array.from(usuariosSet)
+          .map(nome => ({ value: nome, label: nome }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+        
+        setOptionsCadastradoPor(optionsUsuarios);
+      }
+      
       setItems(Array.isArray(result) ? result : []);
     } catch {
       setError("Erro ao buscar ordens de serviço.");
@@ -201,18 +218,6 @@ export default function RelatorioOperacional() {
         }
       })
       .catch(() => {});
-
-    EmployeeService.getAll()
-      .then((res) => {
-        if (Array.isArray(res)) {
-          setOptionsFuncionario(
-            res
-              .filter((e) => e.id && e.nome)
-              .map((e) => ({ value: e.id!, label: e.nome! }))
-          );
-        }
-      })
-      .catch(() => {});
   }, []);
 
   useEffect(() => { buscar(); }, []);
@@ -221,7 +226,7 @@ export default function RelatorioOperacional() {
     const inicio = dataInicio ? new Date(dataInicio + "T00:00:00") : null;
     const fim    = dataFim    ? new Date(dataFim    + "T23:59:59") : null;
 
-    return items.filter((os) => {
+    const resultado = items.filter((os) => {
       // Filtro data cadastro
       if (inicio || fim) {
         const dc = os.dataCadastro ? new Date(os.dataCadastro) : null;
@@ -232,17 +237,26 @@ export default function RelatorioOperacional() {
       // Status
       if (statusFiltro !== "" && os.status !== Number(statusFiltro)) return false;
       // Categoria
-      if (categoriaFiltro) {
+      if (categoriaFiltro && categoriaFiltro.trim() !== "") {
         const ids = getCategoriasIds(os);
         if (!ids.includes(categoriaFiltro)) return false;
       }
       // Paciente (por ID)
-      if (clienteId && os.clienteId !== clienteId) return false;
-      // Fisioterapeuta (por ID)
-      if (funcionarioId && os.funcionarioId !== funcionarioId) return false;
+      if (clienteId && clienteId.trim() !== "") {
+        if (os.clienteId !== clienteId) return false;
+      }
+      // Cadastrado Por (por NOME de usuário) - filtra por quem CADASTROU a OS
+      if (cadastradoPorId && cadastradoPorId.trim() !== "") {
+        const nomeUsuarioOS = os.usrDescricaoCadastro ?? os.usrCadastroDesc ?? "";
+        if (nomeUsuarioOS !== cadastradoPorId) {
+          return false;
+        }
+      }
       return true;
     });
-  }, [items, dataInicio, dataFim, statusFiltro, categoriaFiltro, clienteId, funcionarioId]);
+
+    return resultado;
+  }, [items, dataInicio, dataFim, statusFiltro, categoriaFiltro, clienteId, cadastradoPorId]);
 
   const cols = useMemo<ColDef[]>(() => COLS.map((c) =>
     c.key === "categoria"
@@ -414,12 +428,12 @@ export default function RelatorioOperacional() {
               />
             </div>
             <div className="flex flex-col gap-1 min-w-[220px]">
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Fisioterapeuta</label>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Cadastrado Por</label>
               <SelectWithSearch
-                options={optionsFuncionario}
-                value={funcionarioId}
-                onChange={setFuncionarioId}
-                placeholder="Buscar fisioterapeuta..."
+                options={optionsCadastradoPor}
+                value={cadastradoPorId}
+                onChange={setCadastradoPorId}
+                placeholder="Buscar usuário..."
               />
             </div>
             <div className="flex items-end gap-2">
