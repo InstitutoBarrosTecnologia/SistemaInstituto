@@ -20,6 +20,7 @@ import { getAllOrderServicesAsync, desabilitarOrderServiceAsync } from "../../..
 import FormOrderService from "../../../pages/Forms/OrderServiceForms/FormOrderService";
 import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/OrderServiceResponseDto";
 import FormMetaDataOrderService from "../../../pages/Forms/OrderServiceForms/FormMetaDataOrderService";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 interface OrdemServiceGridProps {
     searchTerm?: string;
@@ -138,6 +139,8 @@ export default function OrdemServiceGrid({ searchTerm = "" }: OrdemServiceGridPr
     const { isOpen: isOpenDelete, openModal: openModalDelete, closeModal: closeModalDelete } = useModelDelete();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10; // ou qualquer número que você quiser por página
+
+    const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
 
     // Filtro inteligente com múltiplos campos
     const filteredOrdens = useMemo(() => {
@@ -331,6 +334,7 @@ export default function OrdemServiceGrid({ searchTerm = "" }: OrdemServiceGridPr
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                                                 </svg>
                                             </button>
+                                            {!isReadOnly && (<>
                                             <button
                                                 onClick={() => handleOpenModal(ordem)}
                                                 rel="noopener"
@@ -363,6 +367,7 @@ export default function OrdemServiceGrid({ searchTerm = "" }: OrdemServiceGridPr
 
 
 
+                                            </>)}
                                         </div>
                                     </TableCell>
                                 </TableRow>

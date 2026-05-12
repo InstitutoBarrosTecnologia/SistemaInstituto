@@ -49,6 +49,7 @@ import Button from "../../ui/button/Button";
 import Select from "../../form/Select";
 import { TransactionFilters } from "../../../services/financialTransactions";
 import { toast } from "react-hot-toast";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 interface DespesasGridProps {
   filters?: TransactionFilters;
@@ -56,6 +57,7 @@ interface DespesasGridProps {
 
 export default function DespesasGrid({ filters }: DespesasGridProps) {
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
+  const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
   const [selectedDespesa, setSelectedDespesa] = useState<any>(undefined);
   const [selectedTransactionId, setSelectedTransactionId] =
     useState<string>("");
@@ -374,6 +376,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                     </TableCell>
                     <TableCell className="px-4 py-3 text-start">
                       <div className="flex gap-2">
+                        {!isReadOnly && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -398,6 +401,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                         >
                           Excluir
                         </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -410,7 +414,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                         >
                           Parcelas
                         </Button>
-                        {transaction.formaPagamento === "a_definir" &&
+                        {!isReadOnly && transaction.formaPagamento === "a_definir" &&
                           transaction.status !== EDespesaStatus.Concluida &&
                           transaction.status !== EDespesaStatus.Cancelada && (
                           <Button

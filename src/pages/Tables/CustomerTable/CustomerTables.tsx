@@ -11,6 +11,7 @@ import Select from "../../../components/form/Select";
 import { useState } from "react";
 import { CustomerFilterRequestDto } from "../../../services/model/Dto/Request/CustomerFilterRequestDto";
 import InputMask from "react-input-mask";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 type SortField = 'nome' | 'sessoes' | 'status' | null;
 type SortDirection = 'asc' | 'desc';
@@ -20,6 +21,7 @@ export default function CustomerTables() {
   const { isOpen, openModal, closeModal } = useModal();
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
 
   // Estados para os valores dos inputs (para exibição imediata)
   const [inputValues, setInputValues] = useState<CustomerFilterRequestDto>({
@@ -271,6 +273,7 @@ export default function CustomerTables() {
         <button
           onClick={openModal}
           className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 flex-shrink-0"
+          style={isReadOnly ? { display: "none" } : {}}
         >
           <span className="flex items-center">
             <svg

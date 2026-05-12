@@ -16,6 +16,7 @@ import EmployeeService from "../../../services/service/EmployeeService";
 import { formatCPF, formatPhone } from "../../helper/formatUtils";
 import Button from "../../ui/button/Button";
 import FormEmployee from "../../../pages/Forms/Employee/FormEmployee";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 interface EmployeeGridProps {
     searchTerm?: string;
@@ -28,6 +29,8 @@ export default function EmployeeGrid({ searchTerm = "" }: EmployeeGridProps) {
     const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+
+    const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
 
     const queryClient = useQueryClient();
 
@@ -163,6 +166,7 @@ export default function EmployeeGrid({ searchTerm = "" }: EmployeeGridProps) {
                                         className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">{employee.dataDesativacao ? "Inativo" : "Ativo"}</TableCell>
                                     <TableCell
                                         className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                                        {!isReadOnly && (
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             <button
                                                 onClick={() => handleOpenModal(employee)}
@@ -194,6 +198,7 @@ export default function EmployeeGrid({ searchTerm = "" }: EmployeeGridProps) {
                                                 </svg>
                                             </button>
                                         </div>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             )) : <></>}

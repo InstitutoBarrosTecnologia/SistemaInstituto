@@ -9,12 +9,14 @@ import SearchInput from "../../../components/common/SearchInput";
 import OrdemServiceGrid from "../../../components/tables/OrderServiceGrid/OrdemServiceGrid";
 import FormOrderService from "../../Forms/OrderServiceForms/FormOrderService";
 import { Toaster } from "react-hot-toast";
+import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
 
 export default function OrdemServiceTables() {
 
     const { isOpen, openModal, closeModal } = useModal();
     const [showAlert] = useState<AlertProps | null>(null);
     const { searchTerm, setSearchTerm } = useTableSearch();
+    const isReadOnly = isReadOnlyRole(getUserRoleFromToken(localStorage.getItem("token")));
 
     return (
         <>
@@ -33,7 +35,7 @@ export default function OrdemServiceTables() {
                         placeholder="Buscar por referência, cliente, fisioterapeuta..."
                     />
                 </div>
-                <button onClick={openModal} className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition  px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 ">
+                <button onClick={openModal} style={isReadOnly ? { display: "none" } : {}} className="inline-flex w-3xs items-center justify-center gap-2 rounded-lg transition  px-5 py-3.5 text-sm bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300 ">
                     <span className="flex items-center">
                         <svg
                             width="1em"
