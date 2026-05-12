@@ -19,7 +19,7 @@ const newsletterTemplate: EmailTemplate = {
   id: 'newsletter',
   name: 'Newsletter/Informativo',
   description: 'Template moderno e ilustrado para novidades e comunicados',
-  variables: ['nome_cliente', 'titulo', 'empresa', 'ano_atual'],
+  variables: ['nome_cliente', 'titulo', 'conteudo', 'empresa', 'ano_atual'],
   html: `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -213,21 +213,7 @@ const newsletterTemplate: EmailTemplate = {
       <h1>{{titulo}}</h1>
       
       <div class="content">
-        <p style="font-size: 16px; margin-bottom: 15px;">
-          Temos <strong style="color: #0b1f4d;">ótimas novidades</strong> para compartilhar com você! Nossa equipe está sempre trabalhando para oferecer o melhor atendimento e cuidado.
-        </p>
-        <p style="font-size: 16px; margin-bottom: 15px;">
-          Confira algumas das novidades que preparamos especialmente para você:
-        </p>
-        <ul style="margin: 20px 0; padding-left: 25px;">
-          <li style="margin-bottom: 12px; font-size: 15px;">✨ <strong>Novos serviços</strong> disponíveis para melhor atendê-lo</li>
-          <li style="margin-bottom: 12px; font-size: 15px;">📅 <strong>Agendamento online</strong> mais rápido e prático</li>
-          <li style="margin-bottom: 12px; font-size: 15px;">🎯 <strong>Atendimento personalizado</strong> focado em você</li>
-          <li style="margin-bottom: 12px; font-size: 15px;">💎 <strong>Promoções exclusivas</strong> para nossos clientes</li>
-        </ul>
-        <p style="font-size: 16px; margin-top: 20px;">
-          Estamos à disposição para qualquer dúvida ou agendamento. Entre em contato conosco!
-        </p>
+        {{conteudo}}
       </div>
 
       <div class="divider"></div>
@@ -281,7 +267,7 @@ const promocionalTemplate: EmailTemplate = {
   id: 'promocional',
   name: 'Promocional/Marketing',
   description: 'Template vibrante e ilustrado para promoções e ofertas especiais',
-  variables: ['nome_cliente', 'titulo', 'cta_texto', 'cta_link', 'empresa', 'ano_atual'],
+  variables: ['nome_cliente', 'titulo', 'conteudo', 'cta_texto', 'cta_link', 'empresa', 'ano_atual'],
   html: `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -579,21 +565,7 @@ const promocionalTemplate: EmailTemplate = {
       <h1>{{titulo}}</h1>
       
       <div class="content">
-        <p style="font-size: 17px; margin-bottom: 18px;">
-          Preparamos uma <strong style="color: #f5576c;">oferta especial</strong> exclusiva para você! Esta é uma oportunidade única de aproveitar condições imperdíveis.
-        </p>
-        <p style="font-size: 17px; margin-bottom: 18px;">
-          Por tempo limitado, você terá acesso a:
-        </p>
-        <ul style="margin: 25px 0; padding-left: 25px;">
-          <li style="margin-bottom: 15px; font-size: 16px;">🎁 <strong>Descontos exclusivos</strong> em todos os serviços</li>
-          <li style="margin-bottom: 15px; font-size: 16px;">⚡ <strong>Atendimento prioritário</strong> para agendamentos</li>
-          <li style="margin-bottom: 15px; font-size: 16px;">💎 <strong>Bônus especiais</strong> para você</li>
-          <li style="margin-bottom: 15px; font-size: 16px;">🎯 <strong>Condições facilitadas</strong> de pagamento</li>
-        </ul>
-        <p style="font-size: 17px; margin-top: 20px; color: #f5576c; font-weight: 600;">
-          Não deixe essa oportunidade passar! Clique no botão abaixo e garanta já sua vaga.
-        </p>
+        {{conteudo}}
       </div>
 
       <!-- Features em Grid -->
@@ -673,7 +645,7 @@ const transacionalTemplate: EmailTemplate = {
   id: 'transacional',
   name: 'Transacional/Confirmação',
   description: 'Template moderno e ilustrado para confirmações e notificações',
-  variables: ['nome_cliente', 'titulo', 'data_atual', 'hora', 'empresa', 'ano_atual'],
+  variables: ['nome_cliente', 'titulo', 'conteudo', 'data_atual', 'hora', 'empresa', 'ano_atual'],
   html: `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -940,15 +912,7 @@ const transacionalTemplate: EmailTemplate = {
       <p class="subtitle">Olá, <strong>{{nome_cliente}}</strong>! 🎉</p>
       
       <div class="content">
-        <p style="font-size: 16px; margin-bottom: 18px;">
-          Confirmamos o recebimento da sua solicitação! Estamos muito felizes em tê-lo(a) conosco.
-        </p>
-        <p style="font-size: 16px; margin-bottom: 18px;">
-          Seu agendamento foi registrado com sucesso em nosso sistema. Confira abaixo os detalhes:
-        </p>
-        <p style="font-size: 16px; margin-top: 20px; color: #1e40af; font-weight: 600;">
-          ✅ Tudo certo! Aguardamos você na data e horário marcados.
-        </p>
+        {{conteudo}}
       </div>
 
       <!-- Card com Informações -->

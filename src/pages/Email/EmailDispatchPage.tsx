@@ -13,7 +13,7 @@ import { CustomerResponseDto } from "../../services/model/Dto/Response/CustomerR
 import EmailPreview from "../../components/Email/EmailPreview";
 import EmailEditor from "../../components/Email/EmailEditor";
 import { getTemplateList, getTemplateById } from "../../constants/emailTemplates";
-import { EmailVariables } from "../../utils/emailVariables";
+import { EmailVariables, replaceVariables } from "../../utils/emailVariables";
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   Pendente: { label: "Pendente", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
@@ -127,6 +127,15 @@ export default function EmailDispatchPage() {
     );
   });
 
+  // Função para limpar todos os campos do formulário
+  const resetForm = () => {
+    setForm({ titulo: "", corpo: "", destinatarioIds: [], emailConfigurationId: configs[0]?.id });
+    setSelectedTemplate("");
+    setTemplateVariables({});
+    setSearchCliente("");
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (form.destinatarioIds.length === 0) {
@@ -140,10 +149,25 @@ export default function EmailDispatchPage() {
     setSending(true);
     setError(null);
     try {
-      await EmailDispatchService.send(form);
+      // Se há template selecionado, substitui as variáveis do template antes de enviar
+      let corpoFinal = form.corpo;
+      if (selectedTemplate) {
+        corpoFinal = replaceVariables(form.corpo, {
+          ...templateVariables,
+          titulo: form.titulo,
+        }, false); // useDefaults = false para não substituir variáveis do cliente
+      }
+      
+      await EmailDispatchService.send({
+        ...form,
+        corpo: corpoFinal,
+      });
       setSuccessMsg("Disparo iniciado com sucesso!");
       setShowForm(false);
-      setForm({ titulo: "", corpo: "", destinatarioIds: [], emailConfigurationId: configs[0]?.id });
+      
+      // Limpa todos os campos do formulário
+      resetForm();
+      
       await carregarDados();
       setTimeout(() => setSuccessMsg(null), 5000);
     } catch (err: unknown) {
@@ -183,7 +207,14 @@ export default function EmailDispatchPage() {
               </div>
             </div>
             <button
-              onClick={() => setShowForm((v) => !v)}
+              onClick={() => {
+                const newShowForm = !showForm;
+                setShowForm(newShowForm);
+                // Se está fechando o formulário, limpa os campos
+                if (!newShowForm) {
+                  resetForm();
+                }
+              }}
               className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition"
             >
               <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -271,6 +302,23 @@ export default function EmailDispatchPage() {
                   />
                 </div>
 
+                {/* NOVO: Campo de Conteúdo quando template é selecionado */}
+                {selectedTemplate && (
+                  <div>
+                    <label className={labelClass}>Conteúdo do E-mail *</label>
+                    <textarea
+                      className={`${inputClass} min-h-[150px] resize-y`}
+                      required
+                      placeholder="Digite o conteúdo principal do seu e-mail aqui. Você pode usar HTML (ex: <p>, <strong>, <ul>, etc.)"
+                      value={templateVariables.conteudo || ''}
+                      onChange={(e) => setTemplateVariables((prev) => ({ ...prev, conteudo: e.target.value }))}
+                    />
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      💡 Dica: Você pode usar tags HTML como <code className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">&lt;p&gt;</code>, <code className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">&lt;strong&gt;</code>, <code className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">&lt;ul&gt;</code> para formatar seu texto.
+                    </p>
+                  </div>
+                )}
+
                 {/* NOVO: Campos adicionais para template promocional */}
                 {selectedTemplate === 'promocional' && (
                   <div className="space-y-3 p-3 bg-orange-50 border border-orange-200 rounded-lg dark:bg-orange-900/10 dark:border-orange-800">
@@ -310,7 +358,7 @@ export default function EmailDispatchPage() {
                     placeholder="Digite o conteúdo do e-mail aqui ou selecione um template acima..."
                     required
                     forceHtmlMode={selectedTemplate !== ''}
-                    defaultMode={selectedTemplate !== '' ? 'html' : 'visual'}
+                    defaultMode="html"
                   />
                 </div>
 
@@ -375,7 +423,10 @@ export default function EmailDispatchPage() {
                 <div className="flex gap-3 justify-end pt-1">
                   <button
                     type="button"
-                    onClick={() => { setShowForm(false); setError(null); }}
+                    onClick={() => { 
+                      setShowForm(false); 
+                      resetForm();
+                    }}
                     className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
                   >
                     Cancelar
@@ -412,8 +463,26 @@ export default function EmailDispatchPage() {
                   variables={{
                     ...templateVariables,
                     titulo: form.titulo,
+                    // Usa nome do primeiro cliente selecionado, ou valor padrão
+                    nome_cliente: form.destinatarioIds.length > 0 
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.nome || 'Cliente'
+                      : undefined,
+                    // Outros dados do primeiro cliente selecionado
+                    email_cliente: form.destinatarioIds.length > 0
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.email || undefined
+                      : undefined,
+                    telefone_cliente: form.destinatarioIds.length > 0
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.telefone || undefined
+                      : undefined,
+                    cidade_cliente: form.destinatarioIds.length > 0
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.cidade || undefined
+                      : undefined,
+                    estado_cliente: form.destinatarioIds.length > 0
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.estado || undefined
+                      : undefined,
                   }}
                   title="Preview do Email"
+                  usingRealData={form.destinatarioIds.length > 0}
                 />
               </div>
             </div>

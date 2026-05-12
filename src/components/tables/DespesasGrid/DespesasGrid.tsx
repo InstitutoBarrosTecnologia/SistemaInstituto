@@ -377,6 +377,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                     <TableCell className="px-4 py-3 text-start">
                       <div className="flex gap-2">
                         {!isReadOnly && (
+                        <>
                         <Button
                           size="sm"
                           variant="outline"
@@ -401,6 +402,7 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
                         >
                           Excluir
                         </Button>
+                        </>
                         )}
                         <Button
                           size="sm"

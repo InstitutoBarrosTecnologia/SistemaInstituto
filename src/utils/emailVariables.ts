@@ -13,7 +13,8 @@
  * - {{ano_atual}}           - Ano atual (yyyy)
  * - {{empresa}}             - Nome da empresa (Instituto Barros)
  * - {{titulo}}              - Título/assunto do email
- * - {{corpo}}               - Corpo/conteúdo do email
+ * - {{conteudo}}            - Conteúdo principal do email (usado nos templates)
+ * - {{corpo}}               - Corpo/conteúdo do email (usado quando não há template)
  * - {{cta_texto}}           - Texto do botão de Call-to-Action (templates promocionais)
  * - {{cta_link}}            - Link do botão de Call-to-Action (templates promocionais)
  * - {{hora}}                - Hora atual formatada (HH:mm)
@@ -31,6 +32,7 @@ export interface EmailVariables {
   endereco_completo?: string;
   titulo?: string;
   corpo?: string;
+  conteudo?: string;
   empresa?: string;
   ano_atual?: string;
   data_atual?: string;
@@ -52,6 +54,7 @@ export const DEFAULT_VARIABLES: EmailVariables = {
   cpf_cliente: '123.456.789-00',
   endereco_completo: 'Rua Exemplo, nº 123, Centro, São Paulo, SP, CEP: 01234-567',
   titulo: 'Novidades do Instituto Barros',
+  conteudo: '<p style="font-size: 16px; margin-bottom: 15px;">Temos <strong>ótimas novidades</strong> para você! Nossa equipe trabalha constantemente para oferecer o melhor atendimento.</p><p style="font-size: 16px;">Entre em contato conosco para saber mais!</p>',
   empresa: 'Instituto Barros',
   ano_atual: new Date().getFullYear().toString(),
   data_atual: new Date().toLocaleDateString('pt-BR', { 

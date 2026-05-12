@@ -10,6 +10,8 @@ interface EmailPreviewProps {
   title?: string;
   /** Classe CSS adicional */
   className?: string;
+  /** Indica se está usando dados reais de um destinatário */
+  usingRealData?: boolean;
 }
 
 /**
@@ -20,7 +22,8 @@ export default function EmailPreview({
   htmlContent, 
   variables = {}, 
   title = "Preview do Email",
-  className = "" 
+  className = "",
+  usingRealData = false
 }: EmailPreviewProps) {
   
   // Mescla variáveis fornecidas com defaults e substitui no HTML
@@ -154,10 +157,18 @@ export default function EmailPreview({
                 </svg>
                 <div className="flex-1">
                   <p className="text-sm font-bold text-blue-900 dark:text-blue-200 mb-1.5 flex items-center gap-2">
-                    ✨ Preview com Dados de Exemplo
+                    {usingRealData ? '👤 Preview com Dados do Destinatário' : '✨ Preview com Dados de Exemplo'}
                   </p>
                   <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
-                    As variáveis como <code className="px-1.5 py-0.5 bg-white dark:bg-gray-800 rounded text-xs font-mono border border-blue-300">{'{{nome_cliente}}'}</code> serão substituídas pelos <strong>dados reais</strong> de cada destinatário ao enviar o email.
+                    {usingRealData ? (
+                      <>
+                        Visualizando como o e-mail ficará para <strong>{variables.nome_cliente || 'este destinatário'}</strong>. Ao enviar, cada cliente receberá com seus próprios dados.
+                      </>
+                    ) : (
+                      <>
+                        As variáveis como <code className="px-1.5 py-0.5 bg-white dark:bg-gray-800 rounded text-xs font-mono border border-blue-300">{'{{nome_cliente}}'}</code> serão substituídas pelos <strong>dados reais</strong> de cada destinatário ao enviar o email.
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
