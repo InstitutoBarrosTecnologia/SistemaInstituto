@@ -161,6 +161,15 @@ export default function RelatorioOperacional() {
   const [clienteId,       setClienteId]       = useState<string>("");
   const [funcionarioId,   setFuncionarioId]   = useState<string>("");
 
+  const limparFiltros = useCallback(() => {
+    setDataInicio(mesAtualInicio());
+    setDataFim(mesAtualFim());
+    setStatusFiltro("");
+    setCategoriaFiltro("");
+    setClienteId("");
+    setFuncionarioId("");
+  }, []);
+
   const buscar = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -413,9 +422,13 @@ export default function RelatorioOperacional() {
                 placeholder="Buscar fisioterapeuta..."
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <button onClick={buscar} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition">
                 Recarregar
+              </button>
+              <button onClick={limparFiltros} className="flex items-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                Limpar
               </button>
             </div>
           </div>

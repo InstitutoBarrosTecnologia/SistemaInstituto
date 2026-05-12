@@ -104,6 +104,20 @@ export default function RelatorioAgenda() {
   const [funcionarioId,   setFuncionarioId]   = useState("");
   const [apenasAvaliacao, setApenasAvaliacao] = useState(false);
 
+  const limparFiltros = useCallback(() => {
+    const hoje = new Date();
+    const inicio = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-01`;
+    const fimD = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    const fim = `${fimD.getFullYear()}-${String(fimD.getMonth() + 1).padStart(2, "0")}-${String(fimD.getDate()).padStart(2, "0")}`;
+    setDataInicio(inicio);
+    setDataFim(fim);
+    setStatusFiltro("");
+    setSearchTitulo("");
+    setClienteId("");
+    setFuncionarioId("");
+    setApenasAvaliacao(false);
+  }, []);
+
   const buscar = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -268,9 +282,13 @@ export default function RelatorioAgenda() {
                 ))}
               </select>
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <button onClick={buscar} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition">
                 Filtrar
+              </button>
+              <button onClick={limparFiltros} className="flex items-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                Limpar
               </button>
             </div>
 
