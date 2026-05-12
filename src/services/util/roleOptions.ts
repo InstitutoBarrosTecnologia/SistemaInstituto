@@ -9,6 +9,7 @@ export interface RoleOption {
 // Função para obter as opções de perfil para o formulário de funcionário
 export const getRoleOptionsForEmployeeForm = (): RoleOption[] => {
   return [
+    { label: "Administrador", value: USER_ROLES.ADMINISTRADOR },
     { label: "Administrativo", value: USER_ROLES.ADMINISTRATIVO },
     { label: "Comercial", value: USER_ROLES.COMERCIAL },
     { label: "Fisioterapeuta", value: USER_ROLES.FISIOTERAPEUTA },
