@@ -1202,15 +1202,16 @@ const Calendar: React.FC = () => {
 
     // Converter as datas para o formato compatível com datetime-local (YYYY-MM-DDTHH:mm)
     const startDate = new Date(selectInfo.start);
-    const endDate = selectInfo.end
-      ? new Date(selectInfo.end)
-      : new Date(selectInfo.start);
+    const endDate = new Date(selectInfo.start); // Sempre usar start como base
 
     // Se for um clique em um dia (sem horário específico), definir horários padrão
     // FullCalendar retorna 00:00 quando clica em um dia no month view
     if (startDate.getHours() === 0 && startDate.getMinutes() === 0) {
       startDate.setHours(8, 0); // Início às 8h
-      endDate.setHours(9, 0); // Fim às 9h
+      endDate.setHours(9, 0); // Fim às 9h (mesmo dia)
+    } else {
+      // Se já tem horário específico (clique na grade de horários), adicionar 1 hora
+      endDate.setTime(startDate.getTime() + 60 * 60 * 1000); // +1 hora
     }
 
     // Formato YYYY-MM-DDTHH:mm para datetime-local
@@ -1460,20 +1461,21 @@ const Calendar: React.FC = () => {
                   
                   // Verificar se é erro de duplicação
                   const errorMsg = checkInError?.response?.data?.message || 
+                                   checkInError?.response?.data?.error ||
                                    checkInError?.message || 
                                    "Erro desconhecido";
                   
                   if (errorMsg.includes("já possui um check-in") || 
                       errorMsg.includes("already exists") ||
                       checkInError?.response?.status === 409) {
-                    toast.info("Check-in já existe para este paciente nesta data e plano.");
+                    toast.info("Já foi realizado check-in para esse paciente dentro de 24 horas");
                   } else {
                     toast.error(`Erro ao criar check-in automático: ${errorMsg}`);
                   }
                 }
               } else {
                 console.log("ℹ️ Check-in já existe neste plano para esta data");
-                toast.info("Check-in já existe para este paciente nesta data e plano.");
+                toast.info("Já foi realizado check-in para esse paciente dentro de 24 horas");
               }
               // Se já tem check-in neste plano neste dia: segue sem duplicar
             } else {
