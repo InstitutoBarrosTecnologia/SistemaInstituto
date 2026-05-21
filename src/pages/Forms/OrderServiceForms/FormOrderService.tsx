@@ -308,7 +308,7 @@ export default function FormOrderService({
         observacoes: "",
         clienteId: orderServiceData.clienteId,
         numeroParcelas: orderServiceData.formaPagamento === EFormaPagamento.CartaoCreditoParcelado ? numeroParcelas : 0,
-        status: 2, // EDespesaStatus.Aprovada
+        status: EDespesaStatus.Concluida, // Regra negócio: nova OS já sobe como Concluída
         // Mixed payment
         ...(options?.mixedPayment && {
           valorSinal: options.downPaymentAmount,

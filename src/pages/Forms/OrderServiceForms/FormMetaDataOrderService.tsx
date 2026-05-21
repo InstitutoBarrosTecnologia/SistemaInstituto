@@ -1,9 +1,12 @@
 import Label from "../../../components/form/Label";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/OrderServiceResponseDto";
 import { OrderServiceRequestDto } from "../../../services/model/Dto/Request/OrderServiceRequestDto";
+import { OrderServiceHistoryResponseDto } from "../../../services/model/Dto/Response/OrderServiceHistoryResponseDto";
 import Badge from "../../../components/ui/badge/Badge";
 import { formatCurrencyPtBr, formatDate, formatPaymentMethod } from "../../../components/helper/formatUtils";
+import { getOrderServiceHistoricoAsync } from "../../../services/service/OrderServiceService";
 
 interface FormOrderServiceProps {
     data?: OrderServiceResponseDto;
@@ -12,9 +15,13 @@ interface FormOrderServiceProps {
 
 export default function FormMetaDataOrderService({ data, edit }: FormOrderServiceProps) {
 
-    console.log("=== INICIO FormMetaDataOrderService ===");
-    console.log("data recebido:", data);
-    console.log("edit:", edit);
+    const [showHistorico, setShowHistorico] = useState(false);
+
+    const { data: historico = [], isFetching: loadingHistorico } = useQuery<OrderServiceHistoryResponseDto[]>({
+        queryKey: ["orderservice-historico", data?.id],
+        queryFn: () => getOrderServiceHistoricoAsync(data!.id!),
+        enabled: !!data?.id && showHistorico,
+    });
 
     const [formData, setFormData] = useState<OrderServiceRequestDto>({
         referencia: "",
@@ -225,6 +232,56 @@ export default function FormMetaDataOrderService({ data, edit }: FormOrderServic
                                 <Label>Data pagamento</Label>
                                 <Label>{formatDate(formData.dataPagamento)}</Label>
                             </div>
+                        </div>
+
+                        <br></br>
+                        {/* ── Histórico de Alterações ── */}
+                        <div>
+                            <button
+                                type="button"
+                                onClick={() => setShowHistorico(prev => !prev)}
+                                className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                                <span>{showHistorico ? "▲" : "▼"}</span>
+                                Histórico de Alterações
+                            </button>
+
+                            {showHistorico && (
+                                <div className="mt-3">
+                                    {loadingHistorico ? (
+                                        <p className="text-sm text-gray-500">Carregando...</p>
+                                    ) : historico.length === 0 ? (
+                                        <p className="text-sm text-gray-400 italic">Nenhuma alteração registrada.</p>
+                                    ) : (
+                                        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                                            <table className="min-w-full text-sm">
+                                                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 uppercase text-xs">
+                                                    <tr>
+                                                        <th className="px-3 py-2 text-left">Campo</th>
+                                                        <th className="px-3 py-2 text-left">Antes</th>
+                                                        <th className="px-3 py-2 text-left">Depois</th>
+                                                        <th className="px-3 py-2 text-left">Usuário</th>
+                                                        <th className="px-3 py-2 text-left">Data</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                                    {historico.map(h => (
+                                                        <tr key={h.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                            <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">{h.campo}</td>
+                                                            <td className="px-3 py-2 text-red-500 dark:text-red-400 max-w-[140px] truncate" title={h.valorAnterior ?? "—"}>{h.valorAnterior ?? "—"}</td>
+                                                            <td className="px-3 py-2 text-green-600 dark:text-green-400 max-w-[140px] truncate" title={h.valorNovo ?? "—"}>{h.valorNovo ?? "—"}</td>
+                                                            <td className="px-3 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{h.usuarioNome ?? "—"}</td>
+                                                            <td className="px-3 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                                                {new Date(h.dataAtualizacao).toLocaleString("pt-BR")}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -192,10 +192,26 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
         };
     }, [ordemSelecionada]);
 
+    // Verificar se já existe check-in neste plano neste dia
+    const jaFezCheckInNestePlanoDia = useMemo(() => {
+        if (!formData.orderServiceId || !formData.dataSessao) return false;
+        return sessions.some((s) => {
+            const sessaoDate = typeof s.dataSessao === "string"
+                ? s.dataSessao.split("T")[0]
+                : "";
+            return sessaoDate === formData.dataSessao && s.orderServiceId === formData.orderServiceId;
+        });
+    }, [sessions, formData.orderServiceId, formData.dataSessao]);
+
     // Validar se pode fazer check-in
     const podeRealizarCheckIn = useMemo(() => {
         // Precisa ter uma ordem selecionada
         if (!formData.orderServiceId) {
+            return false;
+        }
+
+        // Já existe check-in neste plano neste dia → bloqueia
+        if (jaFezCheckInNestePlanoDia) {
             return false;
         }
 
@@ -206,7 +222,7 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
 
         // Para outros status (Faltou, Reagendada, Cancelada), pode registrar
         return true;
-    }, [formData.orderServiceId, formData.statusSessao, sessaoInfo.limiteAtingido]);
+    }, [formData.orderServiceId, formData.statusSessao, sessaoInfo.limiteAtingido, jaFezCheckInNestePlanoDia]);
 
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -218,6 +234,12 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
                 `Limite de sessões atingido! Este paciente já completou todas as ${sessaoInfo.sessaoTotal} sessões desta ordem de serviço.`,
                 { duration: 5000 }
             );
+            return;
+        }
+
+        // Validação de check-in duplicado: mesmo plano + mesmo dia
+        if (jaFezCheckInNestePlanoDia) {
+            toast.error("Este paciente já possui um check-in neste plano de tratamento na data informada.", { duration: 5000 });
             return;
         }
 
@@ -627,10 +649,12 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
                                 type="submit"
                                 disabled={mutation.isPending || !podeRealizarCheckIn}
                                 title={
-                                    !podeRealizarCheckIn 
-                                        ? sessaoInfo.limiteAtingido 
-                                            ? "Limite de sessões atingido para esta ordem de serviço"
-                                            : "Selecione uma ordem de serviço"
+                                    !podeRealizarCheckIn
+                                        ? jaFezCheckInNestePlanoDia
+                                            ? "Já existe check-in neste plano nesta data"
+                                            : sessaoInfo.limiteAtingido
+                                                ? "Limite de sessões atingido para esta ordem de serviço"
+                                                : "Selecione uma ordem de serviço"
                                         : "Registrar check-in"
                                 }
                             >
@@ -644,7 +668,7 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
                                     </>
                                 ) : (
                                     <>
-                                        {!podeRealizarCheckIn && sessaoInfo.limiteAtingido ? (
+                                        {!podeRealizarCheckIn && (jaFezCheckInNestePlanoDia || sessaoInfo.limiteAtingido) ? (
                                             <>
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />

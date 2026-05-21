@@ -1,6 +1,7 @@
 import { instanceApi } from "./AxioService";
 import { OrderServiceRequestDto } from "../model/Dto/Request/OrderServiceRequestDto";
 import { OrderServiceResponseDto } from "../model/Dto/Response/OrderServiceResponseDto";
+import { OrderServiceHistoryResponseDto } from "../model/Dto/Response/OrderServiceHistoryResponseDto";
 import { EOrderServiceStatus } from "../model/Enum/EOrderServiceStatus";
 
 // Criar ordem de serviço
@@ -101,6 +102,16 @@ export const getOrderServicesByStatusAsync = async (
   const params = statusList.map(s => `statusPrestacao=${s}`).join("&");
   const response = await instanceApi.get<OrderServiceResponseDto[]>(
     `/OrderService/GetByStatus?${params}`
+  );
+  return response.data;
+};
+
+// Buscar histórico de alterações de uma OS
+export const getOrderServiceHistoricoAsync = async (
+  id: string
+): Promise<OrderServiceHistoryResponseDto[]> => {
+  const response = await instanceApi.get<OrderServiceHistoryResponseDto[]>(
+    `/OrderService/${id}/historico`
   );
   return response.data;
 };

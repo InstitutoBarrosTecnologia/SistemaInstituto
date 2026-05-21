@@ -14,7 +14,8 @@ import EmployeeService from "../services/service/EmployeeService";
 import { getAllCustomersAsync, getCustomerHistoryAsync } from "../services/service/CustomerService";
 import { CustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
 import { HistoryCustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
-import { getAllSessionsAsync } from "../services/service/SessionService";
+import { getAllSessionsAsync, createSessionAsync } from "../services/service/SessionService";
+import { getAllOrderServicesAsync } from "../services/service/OrderServiceService";
 import { OrderServiceSessionResponseDto } from "../services/model/Dto/Response/OrderServiceSessionResponseDto";
 import Label from "../components/form/Label";
 import Select from "../components/form/Select";
@@ -1402,6 +1403,61 @@ const Calendar: React.FC = () => {
 
       // Lógica normal para evento único ou edição
       if (selectedEvent) {
+        // ── Auto check-in quando status muda para Finalizado ──────────────────
+        if (selectedStatus === EScheduleStatus.Finalizado && selectedCliente) {
+          try {
+            // 1. Buscar sessões existentes do paciente
+            const sessoesRaw = await getAllSessionsAsync(selectedCliente);
+            const sessoesArray: OrderServiceSessionResponseDto[] = Array.isArray(sessoesRaw) ? sessoesRaw : [];
+
+            // 2. Data do evento (apenas YYYY-MM-DD)
+            const eventDate = eventStartDate.split("T")[0];
+
+            // 3. Buscar OS mais recente ativa do paciente
+            const ordensRaw = await getAllOrderServicesAsync({ clienteId: selectedCliente });
+            const ordensArray = Array.isArray(ordensRaw) ? ordensRaw : [];
+
+            const osMaisRecente = ordensArray
+              .filter((os) => !os.dataDesativacao)
+              .sort((a, b) =>
+                new Date(b.dataCadastro ?? 0).getTime() - new Date(a.dataCadastro ?? 0).getTime()
+              )[0];
+
+            if (osMaisRecente) {
+              // 4. Verificar se já existe check-in neste plano nesta data
+              const jaFezCheckInNestePlano = sessoesArray.some((s) => {
+                const sessaoDate = typeof s.dataSessao === "string"
+                  ? s.dataSessao.split("T")[0]
+                  : "";
+                return sessaoDate === eventDate && s.orderServiceId === osMaisRecente.id;
+              });
+
+              if (!jaFezCheckInNestePlano) {
+                // 5. Extrair hora do evento no formato HH:MM:SS
+                const timePart = eventStartDate.includes("T")
+                  ? eventStartDate.split("T")[1].substring(0, 8).padEnd(8, "0")
+                  : "08:00:00";
+
+                await createSessionAsync({
+                  clienteId: selectedCliente,
+                  orderServiceId: osMaisRecente.id!,
+                  dataSessao: eventDate,
+                  horaSessao: timePart,
+                  statusSessao: 0, // Realizada
+                });
+                toast.success("Check-in automático realizado para o paciente.");
+              }
+              // Se já tem check-in neste plano neste dia: segue sem duplicar
+            } else {
+              toast("Nenhum plano de tratamento ativo encontrado para realizar check-in automático.", { icon: "⚠️" });
+            }
+          } catch (err) {
+            console.error("Erro ao realizar check-in automático:", err);
+            toast.error("Erro ao realizar check-in automático.");
+          }
+        }
+        // ── Fim auto check-in ──────────────────────────────────────────────────
+
         await mutateUpdateEvent({
           id: selectedEvent.id,
           titulo: eventTitle,
@@ -2390,7 +2446,21 @@ const Calendar: React.FC = () => {
                           id="event-start-date"
                           type="datetime-local"
                           value={eventStartDate}
-                          onChange={(e) => setEventStartDate(e.target.value)}
+                          onChange={(e) => {
+                            const newStart = e.target.value;
+                            setEventStartDate(newStart);
+                            // Ao criar novo evento, auto-preenche fim com início + 1h
+                            if (!selectedEvent && newStart) {
+                              const start = new Date(newStart);
+                              start.setHours(start.getHours() + 1);
+                              const year = start.getFullYear();
+                              const month = String(start.getMonth() + 1).padStart(2, "0");
+                              const day = String(start.getDate()).padStart(2, "0");
+                              const hours = String(start.getHours()).padStart(2, "0");
+                              const minutes = String(start.getMinutes()).padStart(2, "0");
+                              setEventEndDate(`${year}-${month}-${day}T${hours}:${minutes}`);
+                            }
+                          }}
                           className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                         />
                       </div>
