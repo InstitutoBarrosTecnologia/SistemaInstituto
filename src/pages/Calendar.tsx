@@ -1438,22 +1438,52 @@ const Calendar: React.FC = () => {
                   ? eventStartDate.split("T")[1].substring(0, 8).padEnd(8, "0")
                   : "08:00:00";
 
-                await createSessionAsync({
-                  clienteId: selectedCliente,
-                  orderServiceId: osMaisRecente.id!,
-                  dataSessao: eventDate,
-                  horaSessao: timePart,
-                  statusSessao: 0, // Realizada
-                });
-                toast.success("Check-in automático realizado para o paciente.");
+                try {
+                  const checkInResult = await createSessionAsync({
+                    clienteId: selectedCliente,
+                    orderServiceId: osMaisRecente.id!,
+                    dataSessao: eventDate,
+                    horaSessao: timePart,
+                    statusSessao: 0, // Realizada
+                  });
+                  
+                  // Validar se o check-in foi criado com sucesso
+                  if (checkInResult?.id || checkInResult?.data?.id) {
+                    console.log("✅ Check-in automático criado com sucesso:", checkInResult);
+                    toast.success("Check-in automático realizado para o paciente.");
+                  } else {
+                    console.warn("⚠️ Check-in retornou sem ID:", checkInResult);
+                    toast.warning("Check-in pode não ter sido criado. Verifique manualmente.");
+                  }
+                } catch (checkInError: any) {
+                  console.error("❌ Erro ao criar check-in automático:", checkInError);
+                  
+                  // Verificar se é erro de duplicação
+                  const errorMsg = checkInError?.response?.data?.message || 
+                                   checkInError?.message || 
+                                   "Erro desconhecido";
+                  
+                  if (errorMsg.includes("já possui um check-in") || 
+                      errorMsg.includes("already exists") ||
+                      checkInError?.response?.status === 409) {
+                    toast.info("Check-in já existe para este paciente nesta data e plano.");
+                  } else {
+                    toast.error(`Erro ao criar check-in automático: ${errorMsg}`);
+                  }
+                }
+              } else {
+                console.log("ℹ️ Check-in já existe neste plano para esta data");
+                toast.info("Check-in já existe para este paciente nesta data e plano.");
               }
               // Se já tem check-in neste plano neste dia: segue sem duplicar
             } else {
+              console.warn("⚠️ Nenhum plano de tratamento ativo encontrado");
               toast("Nenhum plano de tratamento ativo encontrado para realizar check-in automático.", { icon: "⚠️" });
             }
-          } catch (err) {
-            console.error("Erro ao realizar check-in automático:", err);
-            toast.error("Erro ao realizar check-in automático.");
+          } catch (err: any) {
+            console.error("❌ Erro geral ao processar check-in automático:", err);
+            const errorMsg = err?.response?.data?.message || err?.message || "Erro ao realizar check-in automático";
+            toast.error(errorMsg);
           }
         }
         // ── Fim auto check-in ──────────────────────────────────────────────────
