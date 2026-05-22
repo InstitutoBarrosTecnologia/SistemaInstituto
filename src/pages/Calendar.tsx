@@ -1449,12 +1449,12 @@ const Calendar: React.FC = () => {
                   });
                   
                   // Validar se o check-in foi criado com sucesso
-                  if (checkInResult?.id || checkInResult?.data?.id) {
+                  if (checkInResult?.data?.id) {
                     console.log("✅ Check-in automático criado com sucesso:", checkInResult);
                     toast.success("Check-in automático realizado para o paciente.");
                   } else {
                     console.warn("⚠️ Check-in retornou sem ID:", checkInResult);
-                    toast.warning("Check-in pode não ter sido criado. Verifique manualmente.");
+                    toast("Check-in pode não ter sido criado. Verifique manualmente.", { icon: "⚠️" });
                   }
                 } catch (checkInError: any) {
                   console.error("❌ Erro ao criar check-in automático:", checkInError);
@@ -1468,14 +1468,14 @@ const Calendar: React.FC = () => {
                   if (errorMsg.includes("já possui um check-in") || 
                       errorMsg.includes("already exists") ||
                       checkInError?.response?.status === 409) {
-                    toast.info("Já foi realizado check-in para esse paciente dentro de 24 horas");
+                    toast("Já foi realizado check-in para esse paciente dentro de 24 horas", { icon: "ℹ️" });
                   } else {
                     toast.error(`Erro ao criar check-in automático: ${errorMsg}`);
                   }
                 }
               } else {
                 console.log("ℹ️ Check-in já existe neste plano para esta data");
-                toast.info("Já foi realizado check-in para esse paciente dentro de 24 horas");
+                toast("Já foi realizado check-in para esse paciente dentro de 24 horas", { icon: "ℹ️" });
               }
               // Se já tem check-in neste plano neste dia: segue sem duplicar
             } else {

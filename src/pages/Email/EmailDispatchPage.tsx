@@ -472,13 +472,13 @@ export default function EmailDispatchPage() {
                       ? customers.find(c => c.id === form.destinatarioIds[0])?.email || undefined
                       : undefined,
                     telefone_cliente: form.destinatarioIds.length > 0
-                      ? customers.find(c => c.id === form.destinatarioIds[0])?.telefone || undefined
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.nrTelefone || undefined
                       : undefined,
                     cidade_cliente: form.destinatarioIds.length > 0
-                      ? customers.find(c => c.id === form.destinatarioIds[0])?.cidade || undefined
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.endereco?.cidade || undefined
                       : undefined,
                     estado_cliente: form.destinatarioIds.length > 0
-                      ? customers.find(c => c.id === form.destinatarioIds[0])?.estado || undefined
+                      ? customers.find(c => c.id === form.destinatarioIds[0])?.endereco?.estado || undefined
                       : undefined,
                   }}
                   title="Preview do Email"

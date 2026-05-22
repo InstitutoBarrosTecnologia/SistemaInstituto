@@ -89,11 +89,6 @@ export default function EmailEditor({
     onChange(newValue);
   };
 
-  // Handler para alternar modo
-  const toggleMode = () => {
-    setEditorMode((prev) => prev === 'visual' ? 'html' : 'visual');
-  };
-
   return (
     <div className={`flex flex-col ${className}`}>
       {/* Header com toggle */}

@@ -94,12 +94,9 @@ export default function DespesasGrid({ filters }: DespesasGridProps) {
     isLoading,
     isError,
     updateTransactionStatus,
-    updateTransaction,
-    updateTransactionAsync,
     updateFormaPagamentoAsync,
     deleteTransaction,
     isUpdatingStatus,
-    isUpdating,
     isUpdatingFormaPagamento,
     isDeleting,
   } = useFinancialTransactions(filters);
