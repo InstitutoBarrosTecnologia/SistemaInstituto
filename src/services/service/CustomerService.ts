@@ -1,6 +1,7 @@
 import { CustomerRequestDto, HistoryCustomerRequestDto } from "../model/Dto/Request/CustomerRequestDto";
 import { CustomerFilterRequestDto } from "../model/Dto/Request/CustomerFilterRequestDto";
 import { CustomerResponseDto, HistoryCustomerResponseDto } from "../model/Dto/Response/CustomerResponseDto";
+import { CustomerSummaryResponseDto } from "../model/Dto/Response/CustomerSummaryResponseDto";
 import { instanceApi } from "./AxioService";
 
 
@@ -20,6 +21,12 @@ export const getCustomerEmailAsync = async (email: string): Promise<CustomerResp
 // GET - Buscar cliente por ID
 export const getCustomerIdAsync = async (id: string): Promise<CustomerResponseDto | null> => {
     const response = await instanceApi.get<CustomerResponseDto | null>(`/Customer/GetCustomerId?id=${id}`);
+    return response.data;
+};
+
+// GET - Listar clientes resumidos (apenas id e nome) — para selects e filtros
+export const getAllCustomersSummaryAsync = async (): Promise<CustomerSummaryResponseDto[] | null> => {
+    const response = await instanceApi.get<CustomerSummaryResponseDto[] | null>('/Customer/GetAllCustomerSummary');
     return response.data;
 };
 

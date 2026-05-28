@@ -11,7 +11,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { BranchOfficeService } from '../services/service/BranchOfficeService';
 import EmployeeService from '../services/service/EmployeeService';
-import { getAllCustomersAsync } from '../services/service/CustomerService';
+import { getAllCustomersSummaryAsync } from '../services/service/CustomerService';
 import {
   getUserRoleFromToken,
   getUserFuncionarioIdFromToken,
@@ -67,7 +67,7 @@ export function useCalendarFilters() {
   useEffect(() => {
     const loadClientes = async () => {
       try {
-        const clientes = await getAllCustomersAsync();
+        const clientes = await getAllCustomersSummaryAsync();
         const options = (clientes || []).map((c: any) => ({
           label: c.nome,
           value: c.id,

@@ -11,7 +11,7 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { BranchOfficeService } from "../services/service/BranchOfficeService";
 import EmployeeService from "../services/service/EmployeeService";
-import { getAllCustomersAsync, getCustomerHistoryAsync } from "../services/service/CustomerService";
+import { getAllCustomersSummaryAsync, getAllCustomersAsync, getCustomerHistoryAsync } from "../services/service/CustomerService";
 import { CustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
 import { HistoryCustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
 import { getAllSessionsAsync, createSessionAsync } from "../services/service/SessionService";
@@ -796,9 +796,10 @@ const Calendar: React.FC = () => {
     retryDelay: 30000,
   });
 
+  // Usa endpoint leve (apenas id+nome) para o select de filtro do calendário
   const { data: clientesData, isError: isErrorClientes } = useQuery({
-    queryKey: ["clientes"],
-    queryFn: () => getAllCustomersAsync(),
+    queryKey: ["clientes-summary"],
+    queryFn: () => getAllCustomersSummaryAsync(),
     retry: 3,
     retryDelay: 30000,
   });
