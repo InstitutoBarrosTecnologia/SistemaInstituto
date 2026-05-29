@@ -36,8 +36,11 @@ export default function SessionsGrid() {
   const [selectedSession, setSelectedSession] =
     useState<OrderServiceSessionResponseDto | null>(null);
 
-  // Hook de sessões
-  const { sessions, isLoading, deleteSession, isDeleting } = useSessions();
+  // Hook de sessões — filtro de data passado para a API (server-side)
+  const { sessions, isLoading, deleteSession, isDeleting } = useSessions({
+    dataInicio,
+    dataFim,
+  });
 
   // Funções auxiliares
   const getStatusLabel = (status: ESessionStatus) => {

@@ -1,15 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAllSessionsAsync, deleteSessionAsync } from '../services/service/SessionService';
+import { getAllSessionsAsync, deleteSessionAsync, SessionFilters } from '../services/service/SessionService';
 import toast from 'react-hot-toast';
 
-export const useSessions = (clienteId?: string) => {
+interface UseSessionsOptions {
+  clienteId?: string;
+  dataInicio?: string;
+  dataFim?: string;
+}
+
+export const useSessions = (options?: string | UseSessionsOptions) => {
   const queryClient = useQueryClient();
+
+  // suporte retroativo: string = clienteId direto
+  const filters: SessionFilters = typeof options === 'string'
+    ? { clienteId: options }
+    : { ...options };
 
   // Query para listar sessões
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['sessions', clienteId],
-    queryFn: () => getAllSessionsAsync(clienteId),
-    staleTime: 1000 * 60 * 5, // 5 minutos
+    queryKey: ['sessions', filters],
+    queryFn: () => getAllSessionsAsync(filters),
+    staleTime: 0, // sem cache — dados de check-in devem ser sempre frescos
   });
 
   // Mutation para deletar sessão
