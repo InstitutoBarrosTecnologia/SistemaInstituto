@@ -11,11 +11,10 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { BranchOfficeService } from "../services/service/BranchOfficeService";
 import EmployeeService from "../services/service/EmployeeService";
-import { getAllCustomersAsync, getCustomerHistoryAsync } from "../services/service/CustomerService";
+import { getAllCustomersSummaryAsync, getAllCustomersAsync, getCustomerHistoryAsync } from "../services/service/CustomerService";
 import { CustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
 import { HistoryCustomerResponseDto } from "../services/model/Dto/Response/CustomerResponseDto";
-import { getAllSessionsAsync, createSessionAsync } from "../services/service/SessionService";
-import { getAllOrderServicesAsync } from "../services/service/OrderServiceService";
+import { getAllSessionsAsync } from "../services/service/SessionService";
 import { OrderServiceSessionResponseDto } from "../services/model/Dto/Response/OrderServiceSessionResponseDto";
 import Label from "../components/form/Label";
 import Select from "../components/form/Select";
@@ -796,9 +795,10 @@ const Calendar: React.FC = () => {
     retryDelay: 30000,
   });
 
+  // Usa endpoint leve (apenas id+nome) para o select de filtro do calendário
   const { data: clientesData, isError: isErrorClientes } = useQuery({
-    queryKey: ["clientes"],
-    queryFn: () => getAllCustomersAsync(),
+    queryKey: ["clientes-summary"],
+    queryFn: () => getAllCustomersSummaryAsync(),
     retry: 3,
     retryDelay: 30000,
   });
@@ -1404,92 +1404,9 @@ const Calendar: React.FC = () => {
 
       // Lógica normal para evento único ou edição
       if (selectedEvent) {
-        // ── Auto check-in quando status muda para Finalizado ──────────────────
-        if (selectedStatus === EScheduleStatus.Finalizado && selectedCliente) {
-          try {
-            // 1. Buscar sessões existentes do paciente
-            const sessoesRaw = await getAllSessionsAsync(selectedCliente);
-            const sessoesArray: OrderServiceSessionResponseDto[] = Array.isArray(sessoesRaw) ? sessoesRaw : [];
-
-            // 2. Data do evento (apenas YYYY-MM-DD)
-            const eventDate = eventStartDate.split("T")[0];
-
-            // 3. Buscar OS mais recente ativa do paciente
-            const ordensRaw = await getAllOrderServicesAsync({ clienteId: selectedCliente });
-            const ordensArray = Array.isArray(ordensRaw) ? ordensRaw : [];
-
-            const osMaisRecente = ordensArray
-              .filter((os) => !os.dataDesativacao)
-              .sort((a, b) =>
-                new Date(b.dataCadastro ?? 0).getTime() - new Date(a.dataCadastro ?? 0).getTime()
-              )[0];
-
-            if (osMaisRecente) {
-              // 4. Verificar se já existe check-in neste plano nesta data
-              const jaFezCheckInNestePlano = sessoesArray.some((s) => {
-                const sessaoDate = typeof s.dataSessao === "string"
-                  ? s.dataSessao.split("T")[0]
-                  : "";
-                return sessaoDate === eventDate && s.orderServiceId === osMaisRecente.id;
-              });
-
-              if (!jaFezCheckInNestePlano) {
-                // 5. Extrair hora do evento no formato HH:MM:SS
-                const timePart = eventStartDate.includes("T")
-                  ? eventStartDate.split("T")[1].substring(0, 8).padEnd(8, "0")
-                  : "08:00:00";
-
-                try {
-                  const checkInResult = await createSessionAsync({
-                    clienteId: selectedCliente,
-                    orderServiceId: osMaisRecente.id!,
-                    dataSessao: eventDate,
-                    horaSessao: timePart,
-                    statusSessao: 0, // Realizada
-                  });
-                  
-                  // Validar se o check-in foi criado com sucesso
-                  if (checkInResult?.data?.id) {
-                    console.log("✅ Check-in automático criado com sucesso:", checkInResult);
-                    toast.success("Check-in automático realizado para o paciente.");
-                  } else {
-                    console.warn("⚠️ Check-in retornou sem ID:", checkInResult);
-                    toast("Check-in pode não ter sido criado. Verifique manualmente.", { icon: "⚠️" });
-                  }
-                } catch (checkInError: any) {
-                  console.error("❌ Erro ao criar check-in automático:", checkInError);
-                  
-                  // Verificar se é erro de duplicação
-                  const errorMsg = checkInError?.response?.data?.message || 
-                                   checkInError?.response?.data?.error ||
-                                   checkInError?.message || 
-                                   "Erro desconhecido";
-                  
-                  if (errorMsg.includes("já possui um check-in") || 
-                      errorMsg.includes("already exists") ||
-                      checkInError?.response?.status === 409) {
-                    toast("Já foi realizado check-in para esse paciente dentro de 24 horas", { icon: "ℹ️" });
-                  } else {
-                    toast.error(`Erro ao criar check-in automático: ${errorMsg}`);
-                  }
-                }
-              } else {
-                console.log("ℹ️ Check-in já existe neste plano para esta data");
-                toast("Já foi realizado check-in para esse paciente dentro de 24 horas", { icon: "ℹ️" });
-              }
-              // Se já tem check-in neste plano neste dia: segue sem duplicar
-            } else {
-              console.warn("⚠️ Nenhum plano de tratamento ativo encontrado");
-              toast("Nenhum plano de tratamento ativo encontrado para realizar check-in automático.", { icon: "⚠️" });
-            }
-          } catch (err: any) {
-            console.error("❌ Erro geral ao processar check-in automático:", err);
-            const errorMsg = err?.response?.data?.message || err?.message || "Erro ao realizar check-in automático";
-            toast.error(errorMsg);
-          }
-        }
-        // ── Fim auto check-in ──────────────────────────────────────────────────
-
+        // Check-in deve ser feito exclusivamente pelo botão "Check-in" → FormSession
+        // O auto check-in foi removido para evitar duplicações quando o fisioterapeuta
+        // usava ambos os caminhos (FormSession + Atualizar com status Finalizado)
         await mutateUpdateEvent({
           id: selectedEvent.id,
           titulo: eventTitle,

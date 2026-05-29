@@ -17,11 +17,28 @@ export const createSessionAsync = async (
   };
 };
 
-// GET: Lista todas as sessões ou filtra por clienteId (opcional)
+export interface SessionFilters {
+  clienteId?: string;
+  dataInicio?: string; // formato YYYY-MM-DD
+  dataFim?: string;    // formato YYYY-MM-DD
+}
+
+// GET: Lista sessões com filtros opcionais (clienteId, dataInicio, dataFim)
 export const getAllSessionsAsync = async (
-  clienteId?: string
+  clienteIdOrFilters?: string | SessionFilters
 ): Promise<OrderServiceSessionResponseDto[]> => {
-  const query = clienteId ? `?clienteId=${clienteId}` : "";
+  const params = new URLSearchParams();
+
+  if (typeof clienteIdOrFilters === "string") {
+    // compatibilidade retroativa: passar clienteId como string diretamente
+    if (clienteIdOrFilters) params.append("ClienteId", clienteIdOrFilters);
+  } else if (clienteIdOrFilters) {
+    if (clienteIdOrFilters.clienteId) params.append("ClienteId", clienteIdOrFilters.clienteId);
+    if (clienteIdOrFilters.dataInicio) params.append("dataInicio", clienteIdOrFilters.dataInicio);
+    if (clienteIdOrFilters.dataFim) params.append("dataFim", clienteIdOrFilters.dataFim);
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : "";
   const response = await instanceApi.get<OrderServiceSessionResponseDto[]>(
     `/SessionService/GetByAllSessionService${query}`
   );
