@@ -9,6 +9,7 @@ export interface SessionDetailResponseDto {
   dataSessao: string; // ISO date string
   horaSessao: string; // Time format HH:mm:ss
   statusSessao: string;
+  tipoCheckIn: number; // 0 = Fisio, 1 = Plano
   observacaoSessao?: string;
   
   // Dados do Fisioterapeuta/Funcionário

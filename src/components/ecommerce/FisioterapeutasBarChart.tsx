@@ -22,7 +22,7 @@ export default function FisioterapeutasBarChart({
 
   const series = [
     {
-      name: "Sessões Realizadas",
+      name: "Check-ins Registrados (Fisio)",
       data: chartData.map((item) => item.total),
     },
   ];
