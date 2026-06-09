@@ -277,7 +277,11 @@ export default function OrdemServiceGrid({ searchTerm = "" }: OrdemServiceGridPr
 
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         {(() => {
-                                            const totalRealizadas = (ordem.sessoes ?? []).filter(sessao => sessao.statusSessao === 0).length;
+                                            // Conta sessões que debitaram o plano: tipoCheckIn=1 (Plano) + status Realizada(0) ou Faltou(1)
+                                            const totalRealizadas = (ordem.sessoes ?? []).filter(sessao =>
+                                                (sessao.tipoCheckIn === 1 || sessao.tipoCheckIn === undefined) &&
+                                                (sessao.statusSessao === 0 || sessao.statusSessao === 1)
+                                            ).length;
                                             const totalPrevistas = ordem.qtdSessaoTotal ?? 0;
                                             return `${totalRealizadas}/${totalPrevistas}`;
                                         })()}
