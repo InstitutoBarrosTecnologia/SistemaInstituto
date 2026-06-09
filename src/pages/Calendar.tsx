@@ -3383,7 +3383,6 @@ const Calendar: React.FC = () => {
               </button>
             </div>
           </div>
-          <Toaster position="bottom-right" />
         </Modal>
 
         {/* Modal de Check-in / Sessão de Fisioterapia */}
@@ -3719,7 +3718,6 @@ const Calendar: React.FC = () => {
               </div>
             </form>
           </div>
-          <Toaster position="bottom-right" />
          </Modal>
 
         {/* Modal de Confirmação Severa para Exclusão Total de Recorrência */}
@@ -3823,6 +3821,9 @@ const Calendar: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Toaster fora dos modais para garantir visibilidade após fechamento */}
+      <Toaster position="bottom-right" />
     </>
   );
 };
