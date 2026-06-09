@@ -11,6 +11,7 @@ import { OrderServiceSessionRequestDto } from "../../../services/model/Dto/Reque
 import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/OrderServiceResponseDto";
 import { createSessionAsync, getAllSessionsAsync } from "../../../services/service/SessionService";
 import { ESessionStatus } from "../../../services/model/Enum/ESessionStatus";
+import { ETipoCheckIn } from "../../../services/model/Enum/ETipoCheckIn";
 import { OrderServiceSessionResponseDto } from "../../../services/model/Dto/Response/OrderServiceSessionResponseDto";
 import TextArea from "../../../components/form/input/TextArea";
 import { HistoryCustomerRequestDto } from "../../../services/model/Dto/Request/CustomerRequestDto";
@@ -43,7 +44,8 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
         observacaoSessao: "",
         dataSessao: new Date().toISOString().split("T")[0],
         horaSessao: getCurrentTime(),
-        statusSessao: ESessionStatus.Realizada
+        statusSessao: ESessionStatus.Realizada,
+        tipoCheckIn: ETipoCheckIn.Fisio  // Check-in do fisioterapeuta: apenas informativo
     });
     const [showHistorico, setShowHistorico] = useState(false);
     const [showSessaoHistorico, setShowSessao] = useState(false);
@@ -215,6 +217,11 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
             return false;
         }
 
+        // Check-in do fisioterapeuta exige preenchimento do histórico/conduta médica
+        if (formData.tipoCheckIn === ETipoCheckIn.Fisio && !historicoTemp.trim()) {
+            return false;
+        }
+
         // Se o status for "Realizada" (0), precisa validar o limite
         if (formData.statusSessao === ESessionStatus.Realizada) {
             return !sessaoInfo.limiteAtingido;
@@ -222,11 +229,17 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
 
         // Para outros status (Faltou, Reagendada, Cancelada), pode registrar
         return true;
-    }, [formData.orderServiceId, formData.statusSessao, sessaoInfo.limiteAtingido, jaFezCheckInNestePlanoDia]);
+    }, [formData.orderServiceId, formData.statusSessao, formData.tipoCheckIn, historicoTemp, sessaoInfo.limiteAtingido, jaFezCheckInNestePlanoDia]);
 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Check-in do fisioterapeuta exige histórico/conduta médica preenchido
+        if (formData.tipoCheckIn === ETipoCheckIn.Fisio && !historicoTemp.trim()) {
+            toast.error("O preenchimento do histórico/conduta médica é obrigatório para realizar o check-in.", { duration: 5000 });
+            return;
+        }
 
         // Validação adicional de limite de sessões
         if (formData.statusSessao === ESessionStatus.Realizada && sessaoInfo.limiteAtingido) {
@@ -455,8 +468,16 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
                                 </div>
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
                                     <div>
-                                        <Label>Histórico</Label>
-                                        <TextArea placeholder="Escreva o histórico que desejar" value={historicoTemp} onChange={(value) => setHistoricoTemp(value)} />
+                                        <Label>
+                                            Histórico / Conduta Médica
+                                            <span className="text-red-400 ml-1">*</span>
+                                        </Label>
+                                        <TextArea placeholder="Descreva a conduta médica e evolução do paciente nesta sessão (obrigatório)" value={historicoTemp} onChange={(value) => setHistoricoTemp(value)} />
+                                        {!historicoTemp.trim() && (
+                                            <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+                                                O histórico/conduta médica é obrigatório para realizar o check-in.
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -654,7 +675,9 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
                                             ? "Já existe check-in neste plano nesta data"
                                             : sessaoInfo.limiteAtingido
                                                 ? "Limite de sessões atingido para esta ordem de serviço"
-                                                : "Selecione uma ordem de serviço"
+                                                : !historicoTemp.trim()
+                                                    ? "Preencha o histórico/conduta médica antes de realizar o check-in"
+                                                    : "Selecione uma ordem de serviço"
                                         : "Registrar check-in"
                                 }
                             >
