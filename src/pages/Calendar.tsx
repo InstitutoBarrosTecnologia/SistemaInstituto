@@ -132,6 +132,24 @@ const Calendar: React.FC = () => {
   const [filter, setFilter] = useState<Filter>({});
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
   const [userRole, setUserRole] = useState<string | string[] | null>(null);
+
+  // Perfil Administrador pode editar mesmo em status finais
+  const isAdministrador = Array.isArray(userRole)
+    ? userRole.includes("Administrador")
+    : userRole === "Administrador";
+
+  // Status que bloqueiam edição/check-in para não-admins
+  const STATUSES_BLOQUEADOS = [
+    EScheduleStatus.Faltou,
+    EScheduleStatus.Finalizado,
+    EScheduleStatus.CanceladoPeloProfissional,
+    EScheduleStatus.CanceladoPeloPaciente,
+  ];
+  const eventoEncerrado =
+    selectedEvent != null &&
+    STATUSES_BLOQUEADOS.includes(selectedStatus as EScheduleStatus);
+  const buttonsDisabled = eventoEncerrado && !isAdministrador;
+
   const [currentEventData, setCurrentEventData] = useState<any>(null);
   const [selectedClienteData, setSelectedClienteData] =
     useState<CustomerResponseDto | null>(null);
@@ -3329,7 +3347,13 @@ const Calendar: React.FC = () => {
                 <button
                   onClick={openModalCheckIn}
                   type="button"
-                  className="flex w-full justify-center rounded-lg border border-green-500 bg-green-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-600 sm:w-auto"
+                  disabled={buttonsDisabled}
+                  title={buttonsDisabled ? "Evento encerrado — edição bloqueada para este perfil" : undefined}
+                  className={`flex w-full justify-center rounded-lg border px-4 py-2.5 text-sm font-medium sm:w-auto ${
+                    buttonsDisabled
+                      ? "border-gray-300 bg-gray-200 text-gray-400 cursor-not-allowed dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500"
+                      : "border-green-500 bg-green-500 text-white hover:bg-green-600"
+                  }`}
                 >
                   Check-in
                 </button>
@@ -3338,9 +3362,10 @@ const Calendar: React.FC = () => {
               <button
                 onClick={handleAddOrUpdateEvent}
                 type="button"
-                disabled={isSaving}
+                disabled={isSaving || buttonsDisabled}
+                title={buttonsDisabled ? "Evento encerrado — edição bloqueada para este perfil" : undefined}
                 className={`btn btn-success btn-update-event flex w-full justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white sm:w-auto ${
-                  isSaving
+                  isSaving || buttonsDisabled
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-brand-500 hover:bg-brand-600"
                 }`}
