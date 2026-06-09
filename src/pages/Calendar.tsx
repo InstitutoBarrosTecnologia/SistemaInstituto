@@ -1461,8 +1461,8 @@ const Calendar: React.FC = () => {
         // Buscar todas as sessões da recorrência para exibir na tabela
         try {
           const filterAllSessions: Filter = {
-            idCliente: currentEventData.clienteId,
-            idFuncionario: currentEventData.funcionarioId,
+            idCliente: currentEventData.idCliente ?? currentEventData.clienteId,
+            idFuncionario: currentEventData.idFuncionario ?? currentEventData.funcionarioId,
           };
 
           const allSchedules = await getAllSchedulesAsync(filterAllSessions);
@@ -1571,8 +1571,8 @@ const Calendar: React.FC = () => {
       // Buscar TODAS as sessões do cliente + fisioterapeuta direto da API
       // sem limitação de data, para pegar sessões em qualquer período
       const filterAllSessions: Filter = {
-        idCliente: currentEventData.clienteId,
-        idFuncionario: currentEventData.funcionarioId,
+        idCliente: currentEventData.idCliente ?? currentEventData.clienteId,
+        idFuncionario: currentEventData.idFuncionario ?? currentEventData.funcionarioId,
       };
 
       const allSchedules = await getAllSchedulesAsync(filterAllSessions);
