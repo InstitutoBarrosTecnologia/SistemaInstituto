@@ -33,6 +33,7 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
     unidadesDistribuicao: [],
     servicosMaisAgendados: [],
     sessoesPorFisioterapeuta: [],
+    sessoesComparativoFisioPlano: {},
     patologiasAgrupadas: [],
     
     // Estados de loading
@@ -93,6 +94,7 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
         unidadesDistribuicao,
         servicosMaisAgendados,
         sessoesPorFisioterapeuta,
+        sessoesComparativoFisioPlano,
         patologiasAgrupadas,
       ] = await Promise.all([
         DashboardService.getPacientesAtivos(filter),
@@ -111,6 +113,7 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
         DashboardService.getUnidadesDistribuicao(filter),
         DashboardService.getServicosMaisAgendados(filter),
         DashboardService.getSessoesPorFisioterapeuta(filter),
+        DashboardService.getSessoesComparativoFisioPlano(filter).catch(() => ({})),
         DashboardService.getPatologiasAgrupadas(filter),
       ]);
 
@@ -142,8 +145,9 @@ export const useDashboard = (filter: DashboardFilterRequestDto = {}) => {
         unidadesDistribuicao,
         servicosMaisAgendados,
         sessoesPorFisioterapeuta,
+        sessoesComparativoFisioPlano,
         patologiasAgrupadas,
-        
+
         // Estados de loading
         loading: {
           pacientesAtivos: false,

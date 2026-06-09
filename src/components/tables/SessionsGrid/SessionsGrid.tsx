@@ -13,6 +13,7 @@ import { useSessions } from "../../../hooks/useSessions";
 import Badge from "../../ui/badge/Badge";
 import Button from "../../ui/button/Button";
 import { ESessionStatus } from "../../../services/model/Enum/ESessionStatus";
+import { ETipoCheckIn, getTipoCheckInLabel } from "../../../services/model/Enum/ETipoCheckIn";
 import { OrderServiceSessionResponseDto } from "../../../services/model/Dto/Response/OrderServiceSessionResponseDto";
 import { format, startOfMonth } from "date-fns";
 
@@ -25,6 +26,7 @@ export default function SessionsGrid() {
   const [paciente, setPaciente] = useState("");
   const [fisioterapeuta, setFisioterapeuta] = useState("");
   const [status, setStatus] = useState("");
+  const [tipoCheckIn, setTipoCheckIn] = useState("");
   const [ordemServico, setOrdemServico] = useState("");
 
   // Estados de paginação
@@ -89,6 +91,7 @@ export default function SessionsGrid() {
       !fisioterapeuta ||
       session.funcionario?.nome?.toLowerCase().includes(fisioterapeuta.toLowerCase());
     const matchesStatus = !status || session.statusSessao === parseInt(status);
+    const matchesTipo = !tipoCheckIn || session.tipoCheckIn === parseInt(tipoCheckIn);
     const matchesOrdem =
       !ordemServico ||
       session.orderServiceId?.toLowerCase().includes(ordemServico.toLowerCase());
@@ -98,6 +101,7 @@ export default function SessionsGrid() {
       matchesPaciente &&
       matchesFisio &&
       matchesStatus &&
+      matchesTipo &&
       matchesOrdem
     );
   });
@@ -132,6 +136,7 @@ export default function SessionsGrid() {
     setPaciente("");
     setFisioterapeuta("");
     setStatus("");
+    setTipoCheckIn("");
     setOrdemServico("");
     setCurrentPage(1);
   };
@@ -217,6 +222,22 @@ export default function SessionsGrid() {
             />
           </div>
 
+          {/* Tipo de Check-in */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tipo
+            </label>
+            <select
+              value={tipoCheckIn}
+              onChange={(e) => setTipoCheckIn(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            >
+              <option value="">Todos</option>
+              <option value={String(ETipoCheckIn.Fisio)}>Fisio</option>
+              <option value={String(ETipoCheckIn.Plano)}>Plano</option>
+            </select>
+          </div>
+
           {/* Ordem de Serviço */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -296,6 +317,12 @@ export default function SessionsGrid() {
                         isHeader
                         className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
                       >
+                        Tipo
+                      </TableCell>
+                      <TableCell
+                        isHeader
+                        className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400"
+                      >
                         Observação
                       </TableCell>
                       <TableCell
@@ -333,6 +360,14 @@ export default function SessionsGrid() {
                             color={getStatusColor(session.statusSessao) as any}
                           >
                             {getStatusLabel(session.statusSessao)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-start">
+                          <Badge
+                            size="sm"
+                            color={session.tipoCheckIn === ETipoCheckIn.Fisio ? "info" : "success"}
+                          >
+                            {getTipoCheckInLabel(session.tipoCheckIn ?? ETipoCheckIn.Plano)}
                           </Badge>
                         </TableCell>
                         <TableCell className="px-4 py-3 text-start">

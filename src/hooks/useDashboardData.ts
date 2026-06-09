@@ -30,6 +30,7 @@ export interface DashboardData {
   sessoesCanceladas: any[];
   sessionsPorMes: any[];
   sessoesPorFisioterapeuta: any[];
+  sessoesComparativoFisioPlano: Record<string, Record<string, number>>;
   servicosMaisRequisitados: any[];
   servicosPorUnidade: any[];
   faturamento: any;
@@ -83,6 +84,7 @@ async function loadAllDashboardData(
     sessoesCanceladas,
     sessionsPorMes,
     sessoesPorFisioterapeuta,
+    sessoesComparativoFisioPlano,
     servicosMaisRequisitados,
     servicosPorUnidade,
     faturamento,
@@ -94,6 +96,7 @@ async function loadAllDashboardData(
     dashboardService.getSessionsCanceladas(filters).catch(() => []),
     dashboardService.getSessionPorMes(filters).catch(() => []),
     dashboardService.getSessionPorFisioterapeuta(filters).catch(() => []),
+    dashboardService.getSessoesComparativoFisioPlano(filters).catch(() => ({})),
     dashboardService.getServicosMaisRequisitados(filters).catch(() => []),
     dashboardService.getServicosPorUnidade(filters).catch(() => []),
     dashboardService.getFaturamento(filters).catch(() => null),
@@ -107,6 +110,7 @@ async function loadAllDashboardData(
     sessoesCanceladas,
     sessionsPorMes,
     sessoesPorFisioterapeuta,
+    sessoesComparativoFisioPlano,
     servicosMaisRequisitados,
     servicosPorUnidade,
     faturamento,
@@ -137,6 +141,7 @@ export function useDashboardData(
     sessoesCanceladas: [],
     sessionsPorMes: [],
     sessoesPorFisioterapeuta: [],
+    sessoesComparativoFisioPlano: {},
     servicosMaisRequisitados: [],
     servicosPorUnidade: [],
     faturamento: null,
