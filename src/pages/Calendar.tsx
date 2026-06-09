@@ -1599,39 +1599,42 @@ const Calendar: React.FC = () => {
 
       if (allSessions.length === 0) {
         toast.error("Nenhuma sessão da recorrência encontrada.");
+        queryClient.invalidateQueries({ queryKey: ["schedules"] });
+        refetchCalendar();
+        resetModalFields();
         return;
       }
 
-      // Deletar todas as sessões da recorrência
-      const deletePromises = allSessions.map((session: any) =>
-        disableScheduleAsync(session.id),
+      // Deletar todas as sessões — allSettled: não rejeita em falha parcial
+      const results = await Promise.allSettled(
+        allSessions.map((session: any) => disableScheduleAsync(session.id)),
       );
 
-      const results = await Promise.all(deletePromises);
-      const successfulDeletes = results.filter(
-        (result) => result?.status === 200,
-      );
+      const successCount = results.filter(
+        (r) => r.status === "fulfilled" && (r.value as any)?.status === 200,
+      ).length;
+      const failCount = allSessions.length - successCount;
 
-      if (successfulDeletes.length === allSessions.length) {
+      // Toast antes do refetch para garantir visibilidade
+      if (failCount === 0) {
         toast.success(
-          `${allSessions.length} sessões da recorrência excluídas com sucesso!`,
+          `${successCount} sessão(ões) da recorrência excluída(s) com sucesso!`,
         );
       } else {
         toast.error(
-          `Apenas ${successfulDeletes.length} de ${allSessions.length} sessões foram excluídas.`,
+          `${successCount} excluída(s), ${failCount} falhou(aram). Verifique o calendário.`,
         );
       }
 
-      // Invalidar todas as queries de schedules para limpar cache de todas as datas
+      // Invalidar cache e recarregar eventos do calendário
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
-      await refetchCalendar();
+      refetchCalendar();
       resetModalFields();
     } catch (error) {
       console.error("Erro ao deletar recorrência:", error);
       toast.error("Erro ao excluir recorrência. Verifique o calendário.");
-      // Invalidar queries mesmo em caso de erro para garantir dados atualizados
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
-      await refetchCalendar();
+      refetchCalendar();
       resetModalFields();
     }
   };
