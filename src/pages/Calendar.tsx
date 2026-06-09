@@ -3822,8 +3822,8 @@ const Calendar: React.FC = () => {
         )}
       </div>
 
-      {/* Toaster fora dos modais para garantir visibilidade após fechamento */}
-      <Toaster position="bottom-right" />
+      {/* Toaster no nível raiz com z-index acima do modal (z-99999) */}
+      <Toaster position="bottom-right" containerStyle={{ zIndex: 999999 }} />
     </>
   );
 };
