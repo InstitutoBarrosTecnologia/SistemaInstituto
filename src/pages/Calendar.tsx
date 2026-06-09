@@ -133,23 +133,6 @@ const Calendar: React.FC = () => {
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
   const [userRole, setUserRole] = useState<string | string[] | null>(null);
 
-  // Perfil Administrador pode editar mesmo em status finais
-  const isAdministrador = Array.isArray(userRole)
-    ? userRole.includes("Administrador")
-    : userRole === "Administrador";
-
-  // Status que bloqueiam edição/check-in para não-admins
-  const STATUSES_BLOQUEADOS = [
-    EScheduleStatus.Faltou,
-    EScheduleStatus.Finalizado,
-    EScheduleStatus.CanceladoPeloProfissional,
-    EScheduleStatus.CanceladoPeloPaciente,
-  ];
-  const eventoEncerrado =
-    selectedEvent != null &&
-    STATUSES_BLOQUEADOS.includes(selectedStatus as EScheduleStatus);
-  const buttonsDisabled = eventoEncerrado && !isAdministrador;
-
   const [currentEventData, setCurrentEventData] = useState<any>(null);
   const [selectedClienteData, setSelectedClienteData] =
     useState<CustomerResponseDto | null>(null);
@@ -190,6 +173,23 @@ const Calendar: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<number>(
     EScheduleStatus.AConfirmar,
   );
+
+  // Perfil Administrador pode editar mesmo em status finais
+  const isAdministrador = Array.isArray(userRole)
+    ? userRole.includes("Administrador")
+    : userRole === "Administrador";
+
+  // Status que bloqueiam edição/check-in para não-admins
+  const STATUSES_BLOQUEADOS = [
+    EScheduleStatus.Faltou,
+    EScheduleStatus.Finalizado,
+    EScheduleStatus.CanceladoPeloProfissional,
+    EScheduleStatus.CanceladoPeloPaciente,
+  ];
+  const eventoEncerrado =
+    selectedEvent != null &&
+    STATUSES_BLOQUEADOS.includes(selectedStatus as EScheduleStatus);
+  const buttonsDisabled = eventoEncerrado && !isAdministrador;
 
   // Estados para exclusão personalizada de recorrência
   const [isCustomDelete, setIsCustomDelete] = useState<boolean>(false);
