@@ -20,6 +20,7 @@ import {
 } from "../../../components/helper/formatUtils";
 import { useQuery } from "@tanstack/react-query";
 import { getAllSchedulesAsync } from "../../../services/service/ScheduleService";
+import { ETipoCheckIn } from "../../../services/model/Enum/ETipoCheckIn";
 
 interface FormCustomerProps {
   data?: CustomerRequestDto;
@@ -118,10 +119,24 @@ export default function FormMetaDataCustomer({
       (total, servico) => total + (servico.qtdSessaoTotal ?? 0),
       0
     ) ?? 0,
+    // Sessões Plano debitam do plano do paciente (Realizada ou Faltou)
     totalRealizado: formData.servicos?.reduce(
       (total, servico) =>
         total +
-        (servico.sessoes?.filter((s) => s.statusSessao === 0).length ?? 0),
+        (servico.sessoes?.filter((s) =>
+          (s.tipoCheckIn === ETipoCheckIn.Plano || s.tipoCheckIn === undefined) &&
+          (s.statusSessao === 0 || s.statusSessao === 1)
+        ).length ?? 0),
+      0
+    ) ?? 0,
+    // Check-ins informativos do fisioterapeuta (Realizada ou Faltou)
+    totalCheckInFisio: formData.servicos?.reduce(
+      (total, servico) =>
+        total +
+        (servico.sessoes?.filter((s) =>
+          s.tipoCheckIn === ETipoCheckIn.Fisio &&
+          (s.statusSessao === 0 || s.statusSessao === 1)
+        ).length ?? 0),
       0
     ) ?? 0,
   };
@@ -459,7 +474,13 @@ export default function FormMetaDataCustomer({
                             isHeader
                             className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                           >
-                            Sessões
+                            Sessões Plano
+                          </TableCell>
+                          <TableCell
+                            isHeader
+                            className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                          >
+                            Check-in Fisio
                           </TableCell>
                           <TableCell
                             isHeader
@@ -473,12 +494,19 @@ export default function FormMetaDataCustomer({
                       <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                         {formData?.servicos && formData.servicos.length > 0 ? (
                           formData.servicos.map((servico, index) => {
-                            const sessoesRealizadas =
+                            const totalPrevistas = servico.qtdSessaoTotal ?? 0;
+                            const sessoesPlano =
                               servico.sessoes?.filter(
-                                (s) => s.statusSessao === 0,
+                                (s) =>
+                                  (s.tipoCheckIn === ETipoCheckIn.Plano || s.tipoCheckIn === undefined) &&
+                                  (s.statusSessao === 0 || s.statusSessao === 1),
                               ).length ?? 0;
-                            // Calcular total dinamicamente baseado em todas as sessões
-                            const totalSessoes = servico.sessoes?.length ?? 0;
+                            const checkInsFisio =
+                              servico.sessoes?.filter(
+                                (s) =>
+                                  s.tipoCheckIn === ETipoCheckIn.Fisio &&
+                                  (s.statusSessao === 0 || s.statusSessao === 1),
+                              ).length ?? 0;
                             const precoOriginal = servico.precoOrdem ?? 0;
                             const desconto = servico.precoDesconto ?? 0;
                             const valorFinal = precoOriginal - desconto;
@@ -535,7 +563,13 @@ export default function FormMetaDataCustomer({
 
                                 <TableCell className="px-5 py-4 sm:px-6 text-start">
                                   <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                                    {`${sessoesRealizadas}/${totalSessoes}`}
+                                    {`${sessoesPlano}/${totalPrevistas}`}
+                                  </span>
+                                </TableCell>
+
+                                <TableCell className="px-5 py-4 sm:px-6 text-start">
+                                  <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                                    {`${checkInsFisio}/${totalPrevistas}`}
                                   </span>
                                 </TableCell>
 
@@ -575,7 +609,7 @@ export default function FormMetaDataCustomer({
                         ) : (
                           <TableRow>
                             <TableCell
-                              colSpan={8}
+                              colSpan={9}
                               className="px-5 py-4 text-center text-gray-500 dark:text-gray-400"
                             >
                               Nenhum serviço registrado para este paciente.
@@ -613,7 +647,7 @@ export default function FormMetaDataCustomer({
 
             {showSessoes && (
               <div className="mt-3">
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-3">
                   <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                       Total de Sessões Disponível
@@ -624,10 +658,18 @@ export default function FormMetaDataCustomer({
                   </div>
                   <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-700">
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                      Sessões Realizadas
+                      Sessões Plano (Realizadas)
                     </p>
                     <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
                       {resumoSessoes.totalRealizado}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-200 dark:border-indigo-700">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                      Check-in Fisio (Realizados)
+                    </p>
+                    <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
+                      {resumoSessoes.totalCheckInFisio}
                     </p>
                   </div>
                 </div>
