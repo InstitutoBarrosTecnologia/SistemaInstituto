@@ -18,8 +18,6 @@ import { getCustomerHistoryAsync, postCustomerHistoryAsync } from "../../../serv
 import { HistoryCustomerResponseDto, CustomerResponseDto } from "../../../services/model/Dto/Response/CustomerResponseDto";
 import { putScheduleAsync } from "../../../services/service/ScheduleService";
 import { EScheduleStatus } from "../../../services/model/Enum/EScheduleStatus";
-import { ETipoCheckIn } from "../../../services/model/Enum/ETipoCheckIn";
-import { getUserRoleFromToken } from "../../../services/util/rolePermissions";
 
 interface FormSessionProps {
     clienteId?: string;
@@ -31,14 +29,6 @@ interface FormSessionProps {
 
 export default function FormSession({ clienteId, scheduleData, closeModal, onSuccess, onCalendarRefresh }: FormSessionProps) {
     const [historicoTemp, setHistoricoTemp] = useState("");
-
-    // Determina TipoCheckIn a partir do perfil do usuário logado
-    const userRole = getUserRoleFromToken(localStorage.getItem("token"));
-    const isFisioterapeuta = Array.isArray(userRole)
-        ? userRole.includes("Fisioterapeuta")
-        : userRole === "Fisioterapeuta";
-    // Fisioterapeuta → Fisio(0) fixo; demais → Plano(1) fixo
-    const tipoCheckInFixo: ETipoCheckIn = isFisioterapeuta ? ETipoCheckIn.Fisio : ETipoCheckIn.Plano;
 
     const getCurrentTime = () => {
         const now = new Date();
@@ -188,10 +178,7 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
 
         const sessaoTotal = ordemSelecionada.qtdSessaoTotal ?? 0;
         const sessoesRealizadas = (ordemSelecionada.sessoes ?? [])
-            .filter(s =>
-                (s.tipoCheckIn === 1 || s.tipoCheckIn === undefined) && // 1=Plano (debita), undefined=legado
-                (s.statusSessao === 0 || s.statusSessao === 1)           // 0=Realizada, 1=Faltou
-            )
+            .filter(s => s.statusSessao === 0) // 0 = Realizada
             .length;
 
         const limiteAtingido = sessoesRealizadas >= sessaoTotal;
@@ -250,12 +237,6 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
             return;
         }
 
-        // Fisioterapeuta deve preencher histórico/conduta antes de salvar
-        if (isFisioterapeuta && (!historicoTemp || historicoTemp.trim() === "")) {
-            toast.error("Fisioterapeuta deve preencher o histórico/conduta antes de registrar o check-in.", { duration: 5000 });
-            return;
-        }
-
         // Validação de check-in duplicado: mesmo plano + mesmo dia
         if (jaFezCheckInNestePlanoDia) {
             toast.error("Este paciente já possui um check-in neste plano de tratamento na data informada.", { duration: 5000 });
@@ -283,8 +264,7 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
         const payload = {
             ...formData,
             dataSessao: finalDataSessao,
-            horaSessao: convertToTimeSpan(finalHoraSessao),
-            tipoCheckIn: tipoCheckInFixo,
+            horaSessao: convertToTimeSpan(finalHoraSessao)
         };
 
         mutation.mutate(payload);
@@ -475,17 +455,7 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
                                 </div>
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-1">
                                     <div>
-                                        <Label>
-                                            Histórico/Conduta
-                                            {isFisioterapeuta && (
-                                                <span className="ml-1 text-error-500 font-bold" title="Obrigatório para Fisioterapeuta">*</span>
-                                            )}
-                                        </Label>
-                                        {isFisioterapeuta && (
-                                            <p className="mb-1 text-xs text-amber-600 dark:text-amber-400">
-                                                Obrigatório: descreva a conduta clínica realizada nesta sessão.
-                                            </p>
-                                        )}
+                                        <Label>Histórico</Label>
                                         <TextArea placeholder="Escreva o histórico que desejar" value={historicoTemp} onChange={(value) => setHistoricoTemp(value)} />
                                     </div>
                                 </div>

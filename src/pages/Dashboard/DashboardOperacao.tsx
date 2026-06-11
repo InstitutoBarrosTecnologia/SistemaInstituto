@@ -12,7 +12,6 @@ import Badge from "../../components/ui/badge/Badge";
 import MonthlySessionsChart from "../../components/ecommerce/MonthlySessionsChart";
 import UnidadesPieChart from "../../components/ecommerce/UnidadesPieChart";
 import FisioterapeutasBarChart from "../../components/ecommerce/FisioterapeutasBarChart";
-import FisioVsPlanoBarChart from "../../components/ecommerce/FisioVsPlanoBarChart";
 import ServicosPieChart from "../../components/ecommerce/ServicosPieChart";
 import PatologiasPieChart from "../../components/ecommerce/PatologiasPieChart";
 import DashboardFilters, { DashboardFilterValues } from "../../components/common/DashboardFilters";
@@ -39,7 +38,6 @@ export default function DashboardOperacao() {
     unidadesDistribuicao,
     servicosMaisAgendados,
     sessoesPorFisioterapeuta,
-    sessoesComparativoFisioPlano,
     patologiasAgrupadas,
     loading,
     error,
@@ -392,14 +390,6 @@ export default function DashboardOperacao() {
         <div className="mb-8">
           <FisioterapeutasBarChart
             data={sessoesPorFisioterapeuta}
-            loading={loading.graficos}
-          />
-        </div>
-
-        {/* Gráfico Comparativo Fisio vs Plano */}
-        <div className="mb-8">
-          <FisioVsPlanoBarChart
-            data={sessoesComparativoFisioPlano}
             loading={loading.graficos}
           />
         </div>

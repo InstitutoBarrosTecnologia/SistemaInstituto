@@ -91,7 +91,6 @@ export interface DashboardState {
   unidadesDistribuicao: DashboardUnitDistributionResponse[];
   servicosMaisAgendados: DashboardTopServicesResponse[];
   sessoesPorFisioterapeuta: DashboardPhysiotherapistSessionsResponse[];
-  sessoesComparativoFisioPlano: Record<string, Record<string, number>>;
   patologiasAgrupadas: import('./Dto/Response/DashboardPathologyResponseDto').DashboardPathologyResponseDto[];
   
   // Estados de loading

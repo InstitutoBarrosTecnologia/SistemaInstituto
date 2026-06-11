@@ -132,7 +132,6 @@ const Calendar: React.FC = () => {
   const [filter, setFilter] = useState<Filter>({});
   const [idDeleteRegister, setIdDeleteRegister] = useState<string>("");
   const [userRole, setUserRole] = useState<string | string[] | null>(null);
-
   const [currentEventData, setCurrentEventData] = useState<any>(null);
   const [selectedClienteData, setSelectedClienteData] =
     useState<CustomerResponseDto | null>(null);
@@ -173,23 +172,6 @@ const Calendar: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<number>(
     EScheduleStatus.AConfirmar,
   );
-
-  // Perfil Administrador pode editar mesmo em status finais
-  const isAdministrador = Array.isArray(userRole)
-    ? userRole.includes("Administrador")
-    : userRole === "Administrador";
-
-  // Status que bloqueiam edição/check-in para não-admins
-  const STATUSES_BLOQUEADOS = [
-    EScheduleStatus.Faltou,
-    EScheduleStatus.Finalizado,
-    EScheduleStatus.CanceladoPeloProfissional,
-    EScheduleStatus.CanceladoPeloPaciente,
-  ];
-  const eventoEncerrado =
-    selectedEvent != null &&
-    STATUSES_BLOQUEADOS.includes(selectedStatus as EScheduleStatus);
-  const buttonsDisabled = eventoEncerrado && !isAdministrador;
 
   // Estados para exclusão personalizada de recorrência
   const [isCustomDelete, setIsCustomDelete] = useState<boolean>(false);
@@ -1479,8 +1461,8 @@ const Calendar: React.FC = () => {
         // Buscar todas as sessões da recorrência para exibir na tabela
         try {
           const filterAllSessions: Filter = {
-            idCliente: currentEventData.idCliente ?? currentEventData.clienteId,
-            idFuncionario: currentEventData.idFuncionario ?? currentEventData.funcionarioId,
+            idCliente: currentEventData.clienteId,
+            idFuncionario: currentEventData.funcionarioId,
           };
 
           const allSchedules = await getAllSchedulesAsync(filterAllSessions);
@@ -1589,8 +1571,8 @@ const Calendar: React.FC = () => {
       // Buscar TODAS as sessões do cliente + fisioterapeuta direto da API
       // sem limitação de data, para pegar sessões em qualquer período
       const filterAllSessions: Filter = {
-        idCliente: currentEventData.idCliente ?? currentEventData.clienteId,
-        idFuncionario: currentEventData.idFuncionario ?? currentEventData.funcionarioId,
+        idCliente: currentEventData.clienteId,
+        idFuncionario: currentEventData.funcionarioId,
       };
 
       const allSchedules = await getAllSchedulesAsync(filterAllSessions);
@@ -1617,42 +1599,39 @@ const Calendar: React.FC = () => {
 
       if (allSessions.length === 0) {
         toast.error("Nenhuma sessão da recorrência encontrada.");
-        queryClient.invalidateQueries({ queryKey: ["schedules"] });
-        refetchCalendar();
-        resetModalFields();
         return;
       }
 
-      // Deletar todas as sessões — allSettled: não rejeita em falha parcial
-      const results = await Promise.allSettled(
-        allSessions.map((session: any) => disableScheduleAsync(session.id)),
+      // Deletar todas as sessões da recorrência
+      const deletePromises = allSessions.map((session: any) =>
+        disableScheduleAsync(session.id),
       );
 
-      const successCount = results.filter(
-        (r) => r.status === "fulfilled" && (r.value as any)?.status === 200,
-      ).length;
-      const failCount = allSessions.length - successCount;
+      const results = await Promise.all(deletePromises);
+      const successfulDeletes = results.filter(
+        (result) => result?.status === 200,
+      );
 
-      // Toast antes do refetch para garantir visibilidade
-      if (failCount === 0) {
+      if (successfulDeletes.length === allSessions.length) {
         toast.success(
-          `${successCount} sessão(ões) da recorrência excluída(s) com sucesso!`,
+          `${allSessions.length} sessões da recorrência excluídas com sucesso!`,
         );
       } else {
         toast.error(
-          `${successCount} excluída(s), ${failCount} falhou(aram). Verifique o calendário.`,
+          `Apenas ${successfulDeletes.length} de ${allSessions.length} sessões foram excluídas.`,
         );
       }
 
-      // Invalidar cache e recarregar eventos do calendário
+      // Invalidar todas as queries de schedules para limpar cache de todas as datas
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
-      refetchCalendar();
+      await refetchCalendar();
       resetModalFields();
     } catch (error) {
       console.error("Erro ao deletar recorrência:", error);
       toast.error("Erro ao excluir recorrência. Verifique o calendário.");
+      // Invalidar queries mesmo em caso de erro para garantir dados atualizados
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
-      refetchCalendar();
+      await refetchCalendar();
       resetModalFields();
     }
   };
@@ -3347,13 +3326,7 @@ const Calendar: React.FC = () => {
                 <button
                   onClick={openModalCheckIn}
                   type="button"
-                  disabled={buttonsDisabled}
-                  title={buttonsDisabled ? "Evento encerrado — edição bloqueada para este perfil" : undefined}
-                  className={`flex w-full justify-center rounded-lg border px-4 py-2.5 text-sm font-medium sm:w-auto ${
-                    buttonsDisabled
-                      ? "border-gray-300 bg-gray-200 text-gray-400 cursor-not-allowed dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500"
-                      : "border-green-500 bg-green-500 text-white hover:bg-green-600"
-                  }`}
+                  className="flex w-full justify-center rounded-lg border border-green-500 bg-green-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-600 sm:w-auto"
                 >
                   Check-in
                 </button>
@@ -3362,10 +3335,9 @@ const Calendar: React.FC = () => {
               <button
                 onClick={handleAddOrUpdateEvent}
                 type="button"
-                disabled={isSaving || buttonsDisabled}
-                title={buttonsDisabled ? "Evento encerrado — edição bloqueada para este perfil" : undefined}
+                disabled={isSaving}
                 className={`btn btn-success btn-update-event flex w-full justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white sm:w-auto ${
-                  isSaving || buttonsDisabled
+                  isSaving
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-brand-500 hover:bg-brand-600"
                 }`}
@@ -3408,6 +3380,7 @@ const Calendar: React.FC = () => {
               </button>
             </div>
           </div>
+          <Toaster position="bottom-right" />
         </Modal>
 
         {/* Modal de Check-in / Sessão de Fisioterapia */}
@@ -3743,6 +3716,7 @@ const Calendar: React.FC = () => {
               </div>
             </form>
           </div>
+          <Toaster position="bottom-right" />
          </Modal>
 
         {/* Modal de Confirmação Severa para Exclusão Total de Recorrência */}
@@ -3846,9 +3820,6 @@ const Calendar: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Toaster no nível raiz com z-index acima do modal (z-99999) */}
-      <Toaster position="bottom-right" containerStyle={{ zIndex: 999999 }} />
     </>
   );
 };

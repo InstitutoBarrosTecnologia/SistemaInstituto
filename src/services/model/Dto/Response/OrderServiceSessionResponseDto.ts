@@ -8,8 +8,6 @@ export interface OrderServiceSessionResponseDto {
     dataSessao: string;
     horaSessao: string;
     statusSessao: number;
-    /** 0 = Fisio (informativo), 1 = Plano (debita QtdSessaoRealizada) */
-    tipoCheckIn?: number;
     observacaoSessao?: string;
     funcionario?: EmployeeResponseDto;
     cliente?: CustomerResponseDto;

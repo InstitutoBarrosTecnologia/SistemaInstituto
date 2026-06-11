@@ -240,23 +240,6 @@ class DashboardService {
   }
 
   /**
-   * Comparativo mensal: check-ins Fisio (produtividade) vs baixas Plano (consumo paciente)
-   */
-  async getSessoesComparativoFisioPlano(
-    filter: DashboardFilterRequestDto = {}
-  ): Promise<Record<string, Record<string, number>>> {
-    const params = new URLSearchParams();
-    if (filter.dataInicio) params.append('dataInicio', filter.dataInicio);
-    if (filter.dataFim) params.append('dataFim', filter.dataFim);
-    if (filter.filialId) params.append('filialId', filter.filialId);
-
-    const response = await instanceApi.get(
-      `${this.baseUrl}/sessoes-comparativo-fisio-plano?${params.toString()}`
-    );
-    return response.data;
-  }
-
-  /**
    * Retorna as patologias dos clientes agrupadas por quantidade
    */
   async getPatologiasAgrupadas(
