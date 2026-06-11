@@ -30,6 +30,7 @@ import FormMetaDataCustomer from "../../../pages/Forms/Customer/FormMetaDataCust
 import FormSession from "../../../pages/Forms/OrderServiceForms/FormSession";
 import { CustomerFilterRequestDto } from "../../../services/model/Dto/Request/CustomerFilterRequestDto";
 import { getUserRoleFromToken, userHasRole, USER_ROLES, isReadOnlyRole } from "../../../services/util/rolePermissions";
+import { ETipoCheckIn } from "../../../services/model/Enum/ETipoCheckIn";
 
 type SortField = 'nome' | 'sessoes' | 'status' | null;
 type SortDirection = 'asc' | 'desc';
@@ -87,18 +88,24 @@ export default function CustomerTableComponent({ filters, sortField, sortDirecti
                     const nomeB = b.nome?.toLowerCase() || '';
                     compareValue = nomeA.localeCompare(nomeB);
                 } else if (sortField === 'sessoes') {
-                    // Calcula quantidade de sessões realizadas para cada paciente
+                    // Calcula quantidade de sessões Plano realizadas para cada paciente
                     const sessoesA = (a.servicos ?? [])
                         .filter(s => s && (s.qtdSessaoTotal ?? 0) > 0)
                         .reduce((total, s) => {
-                            const realizadas = (s.sessoes ?? []).filter(sessao => sessao.statusSessao === 0).length;
+                            const realizadas = (s.sessoes ?? []).filter(sessao =>
+                                (sessao.tipoCheckIn === ETipoCheckIn.Plano || sessao.tipoCheckIn === undefined) &&
+                                (sessao.statusSessao === 0 || sessao.statusSessao === 1)
+                            ).length;
                             return total + realizadas;
                         }, 0);
 
                     const sessoesB = (b.servicos ?? [])
                         .filter(s => s && (s.qtdSessaoTotal ?? 0) > 0)
                         .reduce((total, s) => {
-                            const realizadas = (s.sessoes ?? []).filter(sessao => sessao.statusSessao === 0).length;
+                            const realizadas = (s.sessoes ?? []).filter(sessao =>
+                                (sessao.tipoCheckIn === ETipoCheckIn.Plano || sessao.tipoCheckIn === undefined) &&
+                                (sessao.statusSessao === 0 || sessao.statusSessao === 1)
+                            ).length;
                             return total + realizadas;
                         }, 0);
 
@@ -246,7 +253,10 @@ export default function CustomerTableComponent({ filters, sortField, sortDirecti
                                     Status
                                 </TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
-                                    Sessão
+                                    Sessões Plano
+                                </TableCell>
+                                <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
+                                    Check-in Fisio
                                 </TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-start text-theme-xs font-medium text-gray-500 dark:text-gray-400">
                                     Ações
@@ -351,13 +361,34 @@ export default function CustomerTableComponent({ filters, sortField, sortDirecti
                                                 .sort((a, b) => new Date(b.dataCadastro ?? "").getTime() - new Date(a.dataCadastro ?? "").getTime())[0];
 
                                             if (ultimaOrdemComSessao) {
-                                                const totalRealizadas = (ultimaOrdemComSessao.sessoes ?? [])
-                                                    .filter(sessao => sessao.statusSessao === 0) // Filtra apenas status 0 (realizado)
-                                                    .length;
-
                                                 const totalPrevistas = ultimaOrdemComSessao.qtdSessaoTotal ?? 0;
+                                                const sessoesPlano = (ultimaOrdemComSessao.sessoes ?? [])
+                                                    .filter(sessao =>
+                                                        (sessao.tipoCheckIn === ETipoCheckIn.Plano || sessao.tipoCheckIn === undefined) &&
+                                                        (sessao.statusSessao === 0 || sessao.statusSessao === 1)
+                                                    ).length;
 
-                                                return `${totalRealizadas}/${totalPrevistas}`;
+                                                return `${sessoesPlano}/${totalPrevistas}`;
+                                            }
+
+                                            return "—";
+                                        })()}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                        {(() => {
+                                            const ultimaOrdemComSessao = (customer.servicos ?? [])
+                                                .filter((s) => s && (s.qtdSessaoTotal ?? 0) > 0)
+                                                .sort((a, b) => new Date(b.dataCadastro ?? "").getTime() - new Date(a.dataCadastro ?? "").getTime())[0];
+
+                                            if (ultimaOrdemComSessao) {
+                                                const totalPrevistas = ultimaOrdemComSessao.qtdSessaoTotal ?? 0;
+                                                const checkInsFisio = (ultimaOrdemComSessao.sessoes ?? [])
+                                                    .filter(sessao =>
+                                                        sessao.tipoCheckIn === ETipoCheckIn.Fisio &&
+                                                        (sessao.statusSessao === 0 || sessao.statusSessao === 1)
+                                                    ).length;
+
+                                                return `${checkInsFisio}/${totalPrevistas}`;
                                             }
 
                                             return "—";
