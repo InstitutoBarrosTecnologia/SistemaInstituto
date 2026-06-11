@@ -180,7 +180,10 @@ export default function FormSession({ clienteId, scheduleData, closeModal, onSuc
 
         const sessaoTotal = ordemSelecionada.qtdSessaoTotal ?? 0;
         const sessoesRealizadas = (ordemSelecionada.sessoes ?? [])
-            .filter(s => s.statusSessao === 0) // 0 = Realizada
+            .filter(s =>
+                (s.tipoCheckIn === ETipoCheckIn.Plano || s.tipoCheckIn === undefined) && // Plano debita do plano do paciente
+                (s.statusSessao === 0 || s.statusSessao === 1)                          // Realizada ou Faltou
+            )
             .length;
 
         const limiteAtingido = sessoesRealizadas >= sessaoTotal;

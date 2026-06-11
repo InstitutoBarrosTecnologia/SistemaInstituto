@@ -21,6 +21,7 @@ import FormOrderService from "../../../pages/Forms/OrderServiceForms/FormOrderSe
 import { OrderServiceResponseDto } from "../../../services/model/Dto/Response/OrderServiceResponseDto";
 import FormMetaDataOrderService from "../../../pages/Forms/OrderServiceForms/FormMetaDataOrderService";
 import { getUserRoleFromToken, isReadOnlyRole } from "../../../services/util/rolePermissions";
+import { ETipoCheckIn } from "../../../services/model/Enum/ETipoCheckIn";
 
 interface OrdemServiceGridProps {
     searchTerm?: string;
@@ -244,7 +245,13 @@ export default function OrdemServiceGrid({ searchTerm = "" }: OrdemServiceGridPr
                                     isHeader
                                     className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                                 >
-                                    Sessões
+                                    Sessões Plano
+                                </TableCell>
+                                <TableCell
+                                    isHeader
+                                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                >
+                                    Check-in Fisio
                                 </TableCell>
                                 <TableCell
                                     isHeader
@@ -277,9 +284,25 @@ export default function OrdemServiceGrid({ searchTerm = "" }: OrdemServiceGridPr
 
                                     <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                         {(() => {
-                                            const totalRealizadas = (ordem.sessoes ?? []).filter(sessao => sessao.statusSessao === 0).length;
+                                            // Conta sessões que debitaram o plano: tipoCheckIn=Plano + status Realizada ou Faltou
+                                            const totalPlano = (ordem.sessoes ?? []).filter(sessao =>
+                                                (sessao.tipoCheckIn === ETipoCheckIn.Plano || sessao.tipoCheckIn === undefined) &&
+                                                (sessao.statusSessao === 0 || sessao.statusSessao === 1)
+                                            ).length;
                                             const totalPrevistas = ordem.qtdSessaoTotal ?? 0;
-                                            return `${totalRealizadas}/${totalPrevistas}`;
+                                            return `${totalPlano}/${totalPrevistas}`;
+                                        })()}
+                                    </TableCell>
+
+                                    <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                        {(() => {
+                                            // Conta check-ins informativos do fisioterapeuta
+                                            const totalFisio = (ordem.sessoes ?? []).filter(sessao =>
+                                                sessao.tipoCheckIn === ETipoCheckIn.Fisio &&
+                                                (sessao.statusSessao === 0 || sessao.statusSessao === 1)
+                                            ).length;
+                                            const totalPrevistas = ordem.qtdSessaoTotal ?? 0;
+                                            return `${totalFisio}/${totalPrevistas}`;
                                         })()}
                                     </TableCell>
 
